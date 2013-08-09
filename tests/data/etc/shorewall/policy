@@ -1,0 +1,3 @@
+fw all ACCEPT
+lan0 fw DROP
+all all DROP

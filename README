@@ -1,0 +1,51 @@
+Dependencies
+============
+* python-augeas
+* python-sphinx
+
+apt-get install python-augeas python-sphinx
+
+
+
+Test Lifecycle and Augeas
+=========================
+cd mss/agent/classes/mss3
+export PYTHONPATH=$PWD
+mkdir /tmp/etc
+cp -r /etc/mysql /tmp/etc/
+
+
+Non interactive test
+---------------------
+python tests/lifecycle.py
+
+Interactive tests
+-----------------
+python agent-xmlrpc.py &
+python client-xmlrpc.py help
+python client-xmlrpc.py list
+python client-xmlrpc.py load Mysql
+python client-xmlrpc.py states Mysql
+python client-xmlrpc.py goto Mysql Active -l     #list requires needed to go to Active
+python client-xmlrpc.py goto Mysql Active port:8080 augeas_root:/tmp/
+python client-xmlrpc.py provide Mysql
+
+
+To get module documentation
+---------------------------
+python client-xmlrpc.py load Mysql
+python client-xmlrpc.py dot Mysql > mysql.dot
+dotty mysql.dot
+
+
+To get full documentation
+-------------------------
+cd doc/
+make html
+firefox build/html/index.html
+
+
+Ideas
+=====
+* Specify stability of states: unstable, exp, stable ...
+  In order to manage community modules

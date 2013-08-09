@@ -1,0 +1,11 @@
+SECTION NEW
+ACCEPT	lan0	fw	tcp	8000	
+SSH/ACCEPT	lan0	fw			
+Web/ACCEPT	lan0	fw			
+SMTP/ACCEPT	lan0	fw			
+SMTPS/ACCEPT	lan0	fw			
+IMAPS/ACCEPT	lan0	fw			
+POP3S/ACCEPT	lan0	fw			
+SMB/ACCEPT	lan0	fw			
+ACCEPT	lan0	fw	udp	67:68	
+DNS/ACCEPT	lan0	fw			

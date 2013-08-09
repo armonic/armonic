@@ -1,0 +1,36 @@
+Requires:
+	Add mulitplicity parameters
+	Add variable type checking
+	Add choice value for variables
+
+	Add a kind of variables set by the provide return value
+
+
+States: 
+	Add a info method.  Suppose a chooseTemplate state. The info
+	method could return the template in order to know what it is
+	exactly.  This cannot be done with provide because when you
+	call a provide, its state must be in the stack and we don't
+	want that know a template before applying it.
+
+	Add a check method. This method try to know if this state is
+	already applied or not. This is useful to restart the
+	mss-agent and go back to the correct state.
+
+
+Multithread:
+	It should be possible to launch several module in parallel.
+	Concerning logging, you could add filter on thread id to avoid redirection of all messages to all clients.
+
+State machine initialization:
+      Simple way: status of state machine are saved in a file and restore when agent is started
+
+      Safe way: we use a file to save status of state
+      machines. Moreover, each state could have a 'check' method that
+      try to know if it is already applied. For instance,
+      SystemdActive check method does a systemctl status service to
+      know if service is already started or not.
+      
+
+Augeas:
+	It is currently hard to comment/uncomment. Maybe rename command could be used to do this.
