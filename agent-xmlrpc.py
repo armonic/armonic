@@ -1,11 +1,9 @@
+import os
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
 import mss.lifecycle
+import mss.common
 
-import mss.modules.mysql
-import mss.modules.wordpress
-import mss.modules.apache
-import mss.modules.varnish
 
 # Restrict to a particular path.
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -37,6 +35,7 @@ server = XMLRPCServer(("0.0.0.0", port),
                       allow_none=True,
                       logRequests=False)
 server.register_introspection_functions()
+mss.common.load_lifecycles(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules'))
 server.register_instance(mss.lifecycle.LifecycleManager())
 
 # Run the server's main loop

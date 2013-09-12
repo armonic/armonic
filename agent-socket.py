@@ -13,6 +13,7 @@ Protocol:
 
 """
 
+import os
 import logging
 import logging.handlers
 import pickle
@@ -22,13 +23,8 @@ import struct
 import mss.lifecycle
 import mss.common
 
-import mss.modules.mysql
-import mss.modules.wordpress
-import mss.modules.apache
-import mss.modules.varnish
-
+mss.common.load_lifecycles(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules'))
 lfm = mss.lifecycle.LifecycleManager()
-
 
 def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
