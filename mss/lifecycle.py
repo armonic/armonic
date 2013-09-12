@@ -618,7 +618,10 @@ class LifecycleManager(object):
                 self.lf_loaded[lf_name]
             except KeyError:
                 self.load(lf_name)
-        return self.lf_loaded[lf_name]
+        try:
+            return self.lf_loaded[lf_name]
+        except KeyError:
+            raise LifecycleNotExist("%s is not loaded" % lf_name)
 
     @expose
     def state_list(self, lf_name, doc=False):
@@ -633,7 +636,7 @@ class LifecycleManager(object):
             return [{'name':s.name,'doc':s.__doc__} for s in self.get_by_name(lf_name).state_list()]
         else:
             return [s.name for s in self.get_by_name(lf_name).state_list()]
-        
+
     @expose
     def state_current(self, lf_name):
         """Get the current state name of the lifecycle object
