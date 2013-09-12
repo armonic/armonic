@@ -612,7 +612,7 @@ class LifecycleManager(object):
         else:
             return self.lf_loaded.keys()
 
-    def get_by_name(self, lf_name):
+    def _get_by_name(self, lf_name):
         if self._autoload:
             try:
                 self.lf_loaded[lf_name]
@@ -633,9 +633,9 @@ class LifecycleManager(object):
         :type verbose: bool
         :rtype: list of strings (states names)"""
         if doc:
-            return [{'name':s.name,'doc':s.__doc__} for s in self.get_by_name(lf_name).state_list()]
+            return [{'name':s.name,'doc':s.__doc__} for s in self._get_by_name(lf_name).state_list()]
         else:
-            return [s.name for s in self.get_by_name(lf_name).state_list()]
+            return [s.name for s in self._get_by_name(lf_name).state_list()]
 
     @expose
     def state_current(self, lf_name):
@@ -645,7 +645,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :rtype: name of the state
         """
-        return self.get_by_name(lf_name).state_current().name
+        return self._get_by_name(lf_name).state_current().name
 
     @expose
     def state_goto_path(self, lf_name, state_name):
@@ -657,7 +657,7 @@ class LifecycleManager(object):
         :param state_name: The name of the state
         :type state_name: str
         :rtype: list of transitions"""
-        return [(i[0].name, i[1]) for i in self.get_by_name(lf_name).state_goto_path(state_name)]
+        return [(i[0].name, i[1]) for i in self._get_by_name(lf_name).state_goto_path(state_name)]
 
     @expose
     def state_goto_requires(self, lf_name, state_name):
@@ -668,7 +668,7 @@ class LifecycleManager(object):
         :param state_name: The name of the state
         :type state_name: str
         :rtype: dict of requires"""
-        return self.get_by_name(lf_name).state_goto_requires(state_name)
+        return self._get_by_name(lf_name).state_goto_requires(state_name)
 
     @expose
     def state_goto(self, lf_name, state_name, requires={}):
@@ -680,7 +680,7 @@ class LifecycleManager(object):
         :type state_name: str
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
-        return self.get_by_name(lf_name).state_goto(state_name, requires)
+        return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
     def provide_list(self, lf_name, in_stack=False):
@@ -693,9 +693,9 @@ class LifecycleManager(object):
         :type in_stack: bool"""
         acc = {}
         if in_stack:
-            ps = self.get_by_name(lf_name).provide_list_in_stack()
+            ps = self._get_by_name(lf_name).provide_list_in_stack()
         else:
-            ps = self.get_by_name(lf_name).provide_list()
+            ps = self._get_by_name(lf_name).provide_list()
         for (s, p) in ps:
             acc.update({s.name: [i.to_primitive() for i in p]})
         return acc
@@ -707,7 +707,7 @@ class LifecycleManager(object):
 
         :param lf_name: The name of the lifecycle object
         :param provide_name: The name of the provide"""
-        return self.get_by_name(lf_name).provide_call_requires(provide_name)
+        return self._get_by_name(lf_name).provide_call_requires(provide_name)
 
     @expose
     def provide_call_args(self, lf_name, provide_name):
@@ -717,7 +717,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        return self.get_by_name(lf_name).provide_call_args(provide_name)
+        return self._get_by_name(lf_name).provide_call_args(provide_name)
 
     @expose
     def provide_call_path(self, lf_name, provide_name):
@@ -728,7 +728,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        return [(s.name, a) for (s, a) in self.get_by_name(lf_name).provide_call_path(provide_name)]
+        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(provide_name)]
 
     @expose
     def provide_call(self, lf_name, provide_name, requires={}, provide_args={}):
@@ -743,7 +743,7 @@ class LifecycleManager(object):
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
-        return self.get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
+        return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
 
     @expose
     def to_dot(self, lf_name):
@@ -752,4 +752,4 @@ class LifecycleManager(object):
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self.get_by_name(lf_name).to_dot()
+        return self._get_by_name(lf_name).to_dot()
