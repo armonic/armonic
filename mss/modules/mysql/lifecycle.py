@@ -23,7 +23,7 @@ class Configured(State):
               Require([VString("augeas_root",default="/")])]
     def entry(self,requires):
         """ set mysql port """
-        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.module(),self.name,requires))
+        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,requires))
         self.config=configuration.Mysql(autoload=True,augeas_root=requires['augeas_root'][0]['augeas_root'])
         self.config.port.set(requires['port'][0]['port'])
         try:
@@ -33,7 +33,7 @@ class Configured(State):
 
     @provide({'restart':True})
     def set_port(self,port):
-        logger.info("%s.%-10s: provide call: set port with value %s"%(self.module(),self.name,port))
+        logger.info("%s.%-10s: provide call: set port with value %s"%(self.lf_name,self.name,port))
         self.config.port.set(port)
         self.config.save()
         return True
@@ -46,14 +46,14 @@ class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
     requires=[Require([VString("pwd",default="root")],name="root_pwd")]
     def entry(self,requires={}):
-        logger.debug("%s.%s set mysql root password ...",self.module(),self.name)
+        logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % requires["root_pwd"][0]["pwd"]],None,None,None,None)
         thread_mysqld.start()
         thread_mysqld.join()
         if thread_mysqld.output == 0:
-            logger.event("%s.%s mysql root password is '%s'",self.module(),self.name,requires["root_pwd"][0]["pwd"])
+            logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,requires["root_pwd"][0]["pwd"])
         else:
-            logger.event("%s.%s mysql root password setting failed",self.module(),self.name)
+            logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
 
 
 class ResetRootPassword(mss.lifecycle.State):
@@ -62,12 +62,12 @@ class ResetRootPassword(mss.lifecycle.State):
     password and stop mysqld."""
     requires=[Require([VString("pwd",default="root")],name="root_pwd")]
     def entry(self,requires={}):
-        logger.debug("%s.%s changing mysql root password ...",self.module(),self.name)
+        logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = mss.process.ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
         thread_mysqld.start()
         pwd_change=False
         for i in range(1,6):
-            logger.info("%s.%s changing password ... [attempt %s/5]",self.module(),self.name,i)
+            logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
             thread_mysql = mss.process.ProcessThread("mysql -u root CHANGE_PWD to %s"%requires["root_pwd"][0]["pwd"], None, "test",["/usr/bin/mysql",
                                                                      "-u","root",
                                                                      "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%requires["root_pwd"][0]["pwd"]
@@ -77,13 +77,13 @@ class ResetRootPassword(mss.lifecycle.State):
             if thread_mysql.code == 0:
                 pwd_change=True
                 break
-            logger.info("%s.%s changing password ... attempt %s FAIL",self.module(),self.name,i)
+            logger.info("%s.%s changing password ... attempt %s FAIL",self.lf_name,self.name,i)
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.event("%s.%s mysql root password is not '%s'",self.module(),self.name,requires["root_pwd"][0]["pwd"])
+            logger.event("%s.%s mysql root password is not '%s'",self.lf_name,self.name,requires["root_pwd"][0]["pwd"])
         else:
-            logger.event("%s.%s mysql root password changing fail",self.module(),self.name)
+            logger.event("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
 class Active(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""

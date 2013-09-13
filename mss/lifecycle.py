@@ -164,7 +164,7 @@ class State(object):
     requires = []
     """ """
     provides = []
-    _module = ""
+    _lf_name = ""
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -176,6 +176,7 @@ class State(object):
     def safe_entry(self, requires):
         """Check if all state requires are satisfated.
 
+        :param requires: the requires for the state
         :type requires: {require_name1: [{value1: value, value2: value, ...}]}
         """
         for require in self.requires:
@@ -189,7 +190,9 @@ class State(object):
         return self.entry(requires)
 
     def entry(self, requires):
-        """Called when a state is applied"""
+        """Called when a state is applied
+
+        :param requires: the requires for the state"""
         return "-> %s state entry" % self.__class__.__name__
 
     def leave(self):
@@ -198,10 +201,11 @@ class State(object):
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
-        logger.info("%s.%-10s: cross state but nothing to do" % (self.module(), self.name))
+        logger.info("%s.%-10s: cross state but nothing to do" % (self.lf_name, self.name))
 
     @property
     def name(self):
+        """Name of the state"""
         return self.__class__.__name__
 
     def entry_doc(self):
@@ -213,11 +217,16 @@ class State(object):
         """
         return self.entry.__doc__
 
-    def module(self):
-        """Shity hack. This return the name of module using this
+    @property
+    def lf_name(self):
+        """Shity hack. This return the name of the lifecycle using this
         state. It is set by LF push method.
         """
-        return self._module
+        return self._lf_name
+
+    @lf_name.setter
+    def lf_name(self, name):
+        self._lf_name = name
 
     @classmethod
     def get_requires(cls):
@@ -318,7 +327,7 @@ class Lifecycle(object):
     def _is_transition_allowed(self, s, d):
         return (s, d) in self.transitions
 
-    def _push_state(self,state,requires):
+    def _push_state(self, state, requires):
         """Go to a state if transition from current state to state is allowed
         TODO: verify that state is not in stack yet.
         You should never use this method. Use goto_state instead.
@@ -327,7 +336,7 @@ class Lifecycle(object):
             cstate = self._stack[len(self._stack) - 1]
             if not self._is_transition_allowed(cstate, state):
                 raise TransitionNotAllowed("from %s to %s" % (cstate, state))
-        state._module = self.name
+        state.lf_name = self.name
         logger.event({'event': 'state_appling', 'state': state.name, 'lifecycle': self.name})
         ret = state.safe_entry(requires)
         self._stack.append(state)
@@ -552,8 +561,8 @@ class LifecycleNotExist(Exception):
 
 
 class LifecycleManager(object):
-    """This is the high level object. It permits to load module, know
-    which modules are loaded and interact with loaded modules.
+    """This is the high level object. It permits to load lifecycles, know
+    which lifecycles are loaded and interact with loaded lifecycles.
 
     All methods of this class takes and returns primitive types (ie str)
     in order to be send over network.
