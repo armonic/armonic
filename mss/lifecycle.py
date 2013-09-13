@@ -127,7 +127,7 @@ class Provide(object):
         return {"name": self.name, "args": self.args, "flags": self.flags}
 
     def __repr__(self):
-        return "%s(%s,%s)" % (self.name, self.args, self.flags)
+        return "<Provide:%s(%s,%s)>" % (self.name, self.args, self.flags)
 
 
 def provide(flags={}):
@@ -157,8 +157,8 @@ class State(object):
 
     To define a new state, it is necessary to redefine methods:
      :py:meth:`State.entry`
-     :py:meth:`leave`
-     :py:meth:`cross`
+     :py:meth:`State.leave`
+     :py:meth:`State.cross`
     """
     require_state = None
     requires = []
@@ -172,6 +172,22 @@ class State(object):
             cls._instance = super(State, cls).__new__(
                 cls, *args, **kwargs)
         return cls._instance
+
+    @property
+    def name(self):
+        """Name of the state"""
+        return self.__class__.__name__
+
+    @property
+    def lf_name(self):
+        """Shity hack. This return the name of the lifecycle using this
+        state. It is set by :py:meth:`Lifecycle._push_state` method.
+        """
+        return self._lf_name
+
+    @lf_name.setter
+    def lf_name(self, name):
+        self._lf_name = name
 
     def safe_entry(self, requires):
         """Check if all state requires are satisfated.
@@ -193,20 +209,15 @@ class State(object):
         """Called when a state is applied
 
         :param requires: the requires for the state"""
-        return "-> %s state entry" % self.__class__.__name__
+        return "-> %s state entry" % self.name
 
     def leave(self):
         """Called when a state is leaved"""
-        return "-> %s state leave" % self.__class__.__name__
+        return "-> %s state leave" % self.name
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
         logger.info("%s.%-10s: cross state but nothing to do" % (self.lf_name, self.name))
-
-    @property
-    def name(self):
-        """Name of the state"""
-        return self.__class__.__name__
 
     def entry_doc(self):
         """NOT YET IMPLEMENTED.
@@ -216,17 +227,6 @@ class State(object):
         TODO Need state to be built by LF in order to have an instance.
         """
         return self.entry.__doc__
-
-    @property
-    def lf_name(self):
-        """Shity hack. This return the name of the lifecycle using this
-        state. It is set by LF push method.
-        """
-        return self._lf_name
-
-    @lf_name.setter
-    def lf_name(self, name):
-        self._lf_name = name
 
     @classmethod
     def get_requires(cls):
@@ -247,21 +247,21 @@ class State(object):
         return acc
 
     @classmethod
-    def get_provide_args(cls, provide_name):
-        return cls._get_provide_by_name(provide_name).args
-
-    @classmethod
     def _get_provide_by_name(cls, provide_name):
         for p in cls.get_provides():
             if p.name == provide_name:
                 return p
         raise ProvideNotExist("%s doesn't exist in state %s" % (provide_name, cls.__name__))
 
+    @classmethod
+    def get_provide_args(cls, provide_name):
+        return cls._get_provide_by_name(provide_name).args
+
     def get_provide_by_name(self, provide_name):
         return self.__class__._get_provide_by_name(provide_name)
 
     def __repr__(self):
-        return self.name
+        return "<State:%s>" % self.name
 
 
 class Lifecycle(object):
@@ -308,7 +308,7 @@ class Lifecycle(object):
 
     def get_states(self):
         """To get all available states."""
-        acc=[]
+        acc = []
         for (s, d) in self.transitions:
             if s not in acc: acc += [s]
             if d not in acc: acc += [d]
@@ -378,7 +378,7 @@ class Lifecycle(object):
 
         :param requires: A dict of requires name and values. Value is a list of dict of variable_name:value ::
 
-            {req1 : [{variable1:value1,variable2:value2,...},{variable1:value3,variable2:value4,...},...],req2 ...}
+            {req1: [{variable1: value1, variable2: value2,...}, {variable1: value3, variable2: value4,...},...], req2: ...}
 
         :rtype: list of (state,["entry"|"leave"])
 
@@ -554,6 +554,9 @@ class Lifecycle(object):
             acc += "%s -> %s;\n" % (s.name, d.name)
         acc += "}\n"
         return acc
+
+    def __repr__(self):
+        return "<Lifecycle:%s>" % self.name
 
 
 class LifecycleNotExist(Exception):
