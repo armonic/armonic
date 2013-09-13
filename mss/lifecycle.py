@@ -115,10 +115,13 @@ class ProvideAmbigous(Exception):
 
 
 class Provide(object):
-    def __init__(self, name, args, flags):
-        self.name = name
-        self.args = args
-        self.flags = flags
+    def __init__(self, fct):
+        """Build a provide from a provide function. This is used to
+        return useful informations"""
+        self.name = fct.__name__
+        args=inspect.getargspec(fct)
+        self.args = (args.args[1:],args.defaults)
+        self.flags = fct._provide_flags
 
     def to_primitive(self):
         return {"name":self.name, "args":self.args, "flags":self.flags}
@@ -231,14 +234,21 @@ class State(object):
                     pass
             except AttributeError:
                 continue
-            acc.append(Provide(fname, inspect.getargspec(f).args[1:], f._provide_flags))
+            acc.append(Provide(f))
         return acc
 
-    def get_provide_by_name(self, provide_name):
-        for p in self.__class__.get_provides():
+    @classmethod
+    def get_provide_args(cls,provide_name):
+        return cls._get_provide_by_name(provide_name).args
+    @classmethod
+    def _get_provide_by_name(cls, provide_name):
+        for p in cls.get_provides():
             if p.name == provide_name:
                 return p
-        raise ProvideNotExist("%s doesn't exist in state %s" % (provide_name, self.__class__.__name__))
+        raise ProvideNotExist("%s doesn't exist in state %s" % (provide_name, cls.__name__))
+
+    def get_provide_by_name(self, provide_name):
+        return self.__class__._get_provide_by_name(provide_name)
 
     def __repr__(self):
         return self.name
@@ -453,6 +463,11 @@ class Lifecycle(object):
         else:
             return []
 
+    def get_provide_args(self, provide_name):
+        """From a provide_name, returns its needed arguments."""
+        (s, p) = self._get_state_from_provide(provide_name)
+        return s.get_provide_args(p)
+
     def get_provide_path(self, provide_name):
         """From a provide_name, return the path to the state that
         provides the "provide"."""
@@ -618,6 +633,10 @@ class LifecycleManager(object):
     @expose
     def get_provide_requires(self, lf_name, provide_name):
             return self.get_by_name(lf_name).get_provide_requires(provide_name)
+
+    @expose
+    def get_provide_args(self, lf_name, provide_name):
+            return self.get_by_name(lf_name).get_provide_args(provide_name)
 
     @expose
     def get_provide_path(self, lf_name, provide_name):

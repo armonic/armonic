@@ -42,6 +42,20 @@ class Configured(State):
     def get_port(self):
         return self.config.port.get()
 
+class SetRootPassword(mss.lifecycle.State):
+    """Set initial Mysql root password"""
+    requires=[Require([VString("pwd",default="root")],name="root_pwd")]
+    def entry(self,requires={}):
+        logger.debug("%s.%s set mysql root password ...",self.module(),self.name)
+        thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % requires["root_pwd"][0]["pwd"]],None,None,None,None)
+        thread_mysqld.start()
+        thread_mysqld.join()
+        if thread_mysqld.output == 0:
+            logger.event("%s.%s mysql root password is '%s'",self.module(),self.name,requires["root_pwd"][0]["pwd"])
+        else:
+            logger.event("%s.%s mysql root password setting failed",self.module(),self.name)
+
+
 class ResetRootPassword(mss.lifecycle.State):
     """Go to this state to change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
@@ -76,7 +90,7 @@ class Active(mss.state.ActiveWithSystemd):
     services=["mysqld"]
 
     @provide()
-    def getDatabases(self,user,password):
+    def getDatabases(self,user='root',password='root'):
         con = MySQLdb.connect('localhost', user,
                               password);
         cur = con.cursor()
@@ -139,7 +153,8 @@ class Installed(mss.state.InstallPackages):
 class Mysql(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()    ,Configured()),
+        Transition(Installed()    ,SetRootPassword()),
+        Transition(SetRootPassword()    ,Configured()),
         Transition(Configured()      ,ResetRootPassword()),
         Transition(Configured()      ,Active()),
         Transition(Configured()      ,ConfiguredSlave()),

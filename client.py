@@ -44,6 +44,8 @@ def cmd_provide(args):
             pprint.pprint(client.call('get_provide_requires', args.module, args.provide))
         elif args.path:
             pprint.pprint(client.call('get_provide_path', args.module, args.provide))
+        elif args.arguments:
+            pprint.pprint(client.call('get_provide_args', args.module, args.provide))
         elif args.call:
             if not args.require:
                 args.require = ""
@@ -92,6 +94,7 @@ parser_provide.add_argument('provide' , type=str, nargs="?", help='provide name'
 parser_provide.add_argument('-R',dest="require" , type=str,  nargs="*", help="specify requires. Format is 'require_name value1:value value2:value'")
 parser_provide.add_argument('-A',dest="arg" , type=str, nargs="*", help='specify provide arguments')
 parser_provide.add_argument('--requires-list','-r',action='store_true',help="list requires to call this provide")
+parser_provide.add_argument('--arguments','-a',action='store_true',help="print path to call this provide")
 parser_provide.add_argument('--path','-p',action='store_true',help="print path to call this provide")
 parser_provide.add_argument('--call','-c',action='store_true',help="call this provide")
 parser_provide.set_defaults(func=cmd_provide)
