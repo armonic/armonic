@@ -267,7 +267,7 @@ class Lifecycle(object):
     * :py:meth:`Lifecycle.get_states` to list available states,
     * :py:meth:`Lifecycle.get_current_state` to know the current state,
     * :py:meth:`Lifecycle.goto_state` to go from current state to another state.
-    * :py:meth:`Lifecycle.call_provide` to call a provide.
+    * :py:meth:`Lifecycle.goto_provide` to call a provide.
 
     All :class:`Lifecycle` method arguments 'state' can be a
     :class:`State` subclass or a string that describes this states
@@ -478,7 +478,7 @@ class Lifecycle(object):
         else:
             return []
 
-    def call_provide(self, provide_name, requires, provide_args):
+    def goto_provide(self, provide_name, requires, provide_args):
         """Call a provide and go to provider state if needed.
 
         :param provide_name: The name (simple or fully qualified) of the provide
@@ -490,9 +490,9 @@ class Lifecycle(object):
         (s, p) = self._get_state_from_provide(provide_name)
         if not self._is_state_in_stack(s):
             self.goto_state(s, requires)
-        return self.call_provide_in_stack(s, p, provide_args)
+        return self.goto_provide_in_stack(s, p, provide_args)
 
-    def call_provide_in_stack(self, state, provide_name, provide_args):
+    def goto_provide_in_stack(self, state, provide_name, provide_args):
         """Call a provide by name. State which provides must be in the stack.
         TODO: Use full qualified name when a provide is ambigous: State.provide
         """
@@ -711,8 +711,8 @@ class LifecycleManager(object):
         return [(s.name, a) for (s, a) in self.get_by_name(lf_name).get_provide_path(provide_name)]
 
     @expose
-    def call_provide(self, lf_name, provide_name, requires={}, provide_args={}):
-        """Call a provide of a lifecycle and go to provider state if needed
+    def goto_provide(self, lf_name, provide_name, requires={}, provide_args={}):
+        """Go to a provide of a lifecycle and go to provider state if needed
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
@@ -723,7 +723,7 @@ class LifecycleManager(object):
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
-        return self.get_by_name(lf_name).call_provide(provide_name, requires, provide_args)
+        return self.get_by_name(lf_name).goto_provide(provide_name, requires, provide_args)
 
     @expose
     def to_dot(self, lf_name):
