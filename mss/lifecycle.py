@@ -119,12 +119,12 @@ class Provide(object):
         """Build a provide from a provide function. This is used to
         return useful informations"""
         self.name = fct.__name__
-        args=inspect.getargspec(fct)
-        self.args = (args.args[1:],args.defaults)
+        args = inspect.getargspec(fct)
+        self.args = (args.args[1:], args.defaults)
         self.flags = fct._provide_flags
 
     def to_primitive(self):
-        return {"name":self.name, "args":self.args, "flags":self.flags}
+        return {"name": self.name, "args": self.args, "flags": self.flags}
 
     def __repr__(self):
         return "%s(%s,%s)" % (self.name, self.args, self.flags)
@@ -238,8 +238,9 @@ class State(object):
         return acc
 
     @classmethod
-    def get_provide_args(cls,provide_name):
+    def get_provide_args(cls, provide_name):
         return cls._get_provide_by_name(provide_name).args
+
     @classmethod
     def _get_provide_by_name(cls, provide_name):
         for p in cls.get_provides():
@@ -575,10 +576,20 @@ class LifecycleManager(object):
 
     @expose
     def list(self):
+        """List loaded lifecycle objects
+
+        :rtype: list of strings (lifecycle objects names)
+        """
         return self.lf.keys()
 
     def load(self, lf_name=None):
-        """If lf_name is not set, return a list of loaded LF."""
+        """Load a lifecycle object in the manager.
+        If lf_name is not set, return a list of loaded LF.
+
+        :param lf_name: the lifecycle to load
+        :type lf_name: str
+        :rtype: list of lifecycle objects names
+        """
         if lf_name != None:
             try:
                 lf = self.lf[lf_name]()
@@ -598,29 +609,68 @@ class LifecycleManager(object):
         return self.lf_loaded[lf_name]
 
     @expose
+    def get_states(self, lf_name):
+        """Return all available states of the lifecycle object
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :rtype: list of strings (states names)"""
+        return [s.name for s in self.get_by_name(lf_name).get_states()]
+
+    @expose
     def get_current_state(self, lf_name):
+        """Get the current state name of the lifecycle object
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :rtype: name of the state
+        """
         return self.get_by_name(lf_name).get_current_state().name
 
     @expose
     def get_state_path(self, lf_name, state_name):
+        """From the current state, return the path to goto the state of the
+        lifecycle object.
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param state_name: The name of the state
+        :type state_name: str
+        :rtype: list of transitions"""
         return [(i[0].name, i[1]) for i in self.get_by_name(lf_name).get_state_path(state_name)]
 
     @expose
     def get_state_requires(self, lf_name, state_name):
+        """Get the lifecycle state's requires
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param state_name: The name of the state
+        :type state_name: str
+        :rtype: dict of requires"""
         return self.get_by_name(lf_name).get_state_requires(state_name)
 
     @expose
     def goto_state(self, lf_name, state_name, requires={}):
-        return self.get_by_name(lf_name).goto_state(state_name, requires)
+        """From the current state go to state.
 
-    @expose
-    def get_states(self, lf_name):
-        return [s.name for s in self.get_by_name(lf_name).get_states()]
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param state_name: The name of the state to go to
+        :type state_name: str
+        :param requires: Requires needed to go to the target state
+        :type requires: dict"""
+        return self.get_by_name(lf_name).goto_state(state_name, requires)
 
     @expose
     def get_provides(self, lf_name, in_stack=False):
         """If in_stack is True, just returns provides available in
-        stack. Otherwise, returns all provides of this lf_name."""
+        stack. Otherwise, returns all provides of this lf_name.
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param in_stack: True or False (default)
+        :type in_stack: bool"""
         acc = {}
         if in_stack:
             ps = self.get_by_name(lf_name).get_stack_provides()
@@ -632,21 +682,54 @@ class LifecycleManager(object):
 
     @expose
     def get_provide_requires(self, lf_name, provide_name):
-            return self.get_by_name(lf_name).get_provide_requires(provide_name)
+        """From a provide_name, return the list of "requires" needed to
+        apply the state which provides provide_name.
+
+        :param lf_name: The name of the lifecycle object
+        :param provide_name: The name of the provide"""
+        return self.get_by_name(lf_name).get_provide_requires(provide_name)
 
     @expose
     def get_provide_args(self, lf_name, provide_name):
-            return self.get_by_name(lf_name).get_provide_args(provide_name)
+        """From a provide_name, returns its needed arguments.
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param provide_name: The name of the provide
+        :type provide_name: str"""
+        return self.get_by_name(lf_name).get_provide_args(provide_name)
 
     @expose
     def get_provide_path(self, lf_name, provide_name):
+        """From a provide_name, return the path to the state of the lifecycle that
+        provides the "provide".
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param provide_name: The name of the provide
+        :type provide_name: str"""
         return [(s.name, a) for (s, a) in self.get_by_name(lf_name).get_provide_path(provide_name)]
 
     @expose
     def call_provide(self, lf_name, provide_name, requires={}, provide_args={}):
-        print "ARGS" % provide_args
+        """Call a provide of a lifecycle and go to provider state if needed
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param provide_name: The name of the provide to go to
+        :type provide_name: str
+        :param requires: Requires needed to reach the state that provides this provide
+                         See :py:meth:`Lifecycle.goto_state` for more information
+        :type requires: dict
+        :param provide_args: Args needed by this provide
+        :type provide_args: dict"""
         return self.get_by_name(lf_name).call_provide(provide_name, requires, provide_args)
 
     @expose
     def to_dot(self, lf_name):
+        """Return the dot string of a lifecyle object
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :rtype: dot file string"""
         return self.get_by_name(lf_name).to_dot()
