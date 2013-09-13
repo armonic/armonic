@@ -51,7 +51,7 @@ def cmd_provide(args):
                 args.require = ""
             if not args.arg:
                 args.arg = ""
-            pprint.pprint(client.call('goto_provide', args.module, args.provide, parseArgs(args.require), reqList(args.arg)))
+            pprint.pprint(client.call('call_provide', args.module, args.provide, parseArgs(args.require), reqList(args.arg)))
     else:
         pprint.pprint(client.call('get_provides', args.module))
 

@@ -112,15 +112,15 @@ class TestComplex(unittest.TestCase):
         self.assertEqual(path,[(C4(),"leave"),(C5(),"entry")])
         self.lf.goto_state(C5,{})
 
-    def test_goto_provide(self):
+    def test_call_provide(self):
         self.assertEqual(self.lf.get_provides()[0][1][0].name,"p1_s2")
         self.assertDictContainsSubset(self.lf.get_provide_requires("p1_s2")[0].to_primitive(),{'name': 'r1_s2','type': 'simple','args': [{ 'type': 'str','name': 'r1_s2'}]})
 
 
-        self.assertEqual(self.lf.goto_provide("p1_s2",{'r1_s2':[{'r1_s2':"test"}]},{}),"ret_p1_s2")
+        self.assertEqual(self.lf.call_provide("p1_s2",{'r1_s2':[{'r1_s2':"test"}]},{}),"ret_p1_s2")
         self.assertEqual(self.lf.get_current_state(),C2())
         self.lf.goto_state(C4,{})
-        self.assertEqual(self.lf.goto_provide("p1_s2",{'r1_s2':[{'r1_s2':"test"}]},{}),"ret_p1_s2")
+        self.assertEqual(self.lf.call_provide("p1_s2",{'r1_s2':[{'r1_s2':"test"}]},{}),"ret_p1_s2")
         self.assertEqual(self.lf.get_current_state(),C4())
 
     def test_provide_get_state_path(self):
@@ -130,8 +130,8 @@ class TestComplex(unittest.TestCase):
 
     def test_ambigous(self):
         with self.assertRaises(mss.lifecycle.ProvideAmbigous):
-            self.lf.goto_provide("p_ambigous",{"r1_s2":"value_r1_s2"},{})
-        self.assertEqual(self.lf.goto_provide("C4.p_ambigous",{'r1_s2':[{'r1_s2':"test"}]},{}),"p_ambigous_s4")
+            self.lf.call_provide("p_ambigous",{"r1_s2":"value_r1_s2"},{})
+        self.assertEqual(self.lf.call_provide("C4.p_ambigous",{'r1_s2':[{'r1_s2':"test"}]},{}),"p_ambigous_s4")
         self.assertEqual(self.lf.get_current_state(),C4())
 
 
