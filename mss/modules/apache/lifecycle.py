@@ -39,7 +39,7 @@ class Active(mss.state.ActiveWithSystemd):
         logger.info("Apache activation...")
 
 class Installed(mss.state.InstallPackages):
-    packages=["httpd"]
+    packages=["apache"]
 
 class Httpd(Lifecycle):
     transitions=[

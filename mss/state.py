@@ -41,7 +41,8 @@ class RunScript(mss.lifecycle.State):
             logger.event("%s.%s run script %s failed.", self.module(), self.name, script_path)
             logger.debug("%s",thread.output)
 
-
+class UrpmiError(Exception):
+    pass
 class InstallPackages(mss.lifecycle.State):
     packages = []
 
@@ -63,7 +64,11 @@ class InstallPackages(mss.lifecycle.State):
                                                None, None, None, None)
                 thread.start()
                 thread.join()
-        logger.event("%s.%s urpmi %s done." % (self.module(), self.name, pkgs))
+                if thread.code == 0:
+                    logger.event("%s.%s urpmi %s done." % (self.module(), self.name, pkgs))
+                else:
+                    logger.event("%s.%s urpmi %s failed." % (self.module(), self.name, pkgs))
+                    raise UrpmiError()
 
     def leave(self):
         logger.info("%s.%-10s: urpme %s" % (self.module(), self.name, " ".join(self.packages)))
