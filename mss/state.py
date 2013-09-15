@@ -6,6 +6,8 @@ import process
 import inspect
 import os.path
 
+from shutil import copyfile
+
 import mss.lifecycle
 import mss.common
 
@@ -13,6 +15,13 @@ import mss.common
 
 logger = logging.getLogger(__name__)
 
+class CopyTemplate(mss.lifecycle.State):
+    """Copy a file from src to dst"""
+    src=""
+    dst=""
+    def entry(self,requires={}):
+        logger.event("%s.%s copy template file from '%s' to '%s' ...", self.module(), self.name, self.src, self.dst)
+        copyfile(self.src,self.dst)
 
 class RunScript(mss.lifecycle.State):
     """This state permit to run a shell script. To convert require to

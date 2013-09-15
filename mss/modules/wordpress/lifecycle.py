@@ -8,6 +8,11 @@ import logging
 logger=logging.getLogger(__name__)
 
 class NotInstalled(State):pass
+
+class Template(mss.state.CopyTemplate):
+    src="/var/www/wordpress/wp-config-sample.php"
+    dst="/var/www/wordpress/wp-config.php"
+
 class Configured(State):
     requires=[
         Require([VString("augeas_root",default="/")]),
@@ -46,7 +51,8 @@ class Installed(mss.state.InstallPackages):
 class Wordpress(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()    ,Configured()),
+        Transition(Installed()    ,Template()),
+        Transition(Template()    ,Configured()),
         Transition(Configured()      ,Active()),
         ]
 
