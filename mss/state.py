@@ -20,7 +20,7 @@ class CopyTemplate(mss.lifecycle.State):
     src=""
     dst=""
     def entry(self,requires={}):
-        logger.event("%s.%s copy template file from '%s' to '%s' ...", self.lf_name(), self.name, self.src, self.dst)
+        logger.event("%s.%s copy template file from '%s' to '%s' ...", self.lf_name, self.name, self.src, self.dst)
         copyfile(self.src,self.dst)
 
 class RunScript(mss.lifecycle.State):
@@ -74,9 +74,9 @@ class InstallPackages(mss.lifecycle.State):
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.event("%s.%s urpmi %s done." % (self.lf_name(), self.name, pkgs))
+                    logger.event("%s.%s urpmi %s done." % (self.lf_name, self.name, pkgs))
                 else:
-                    logger.event("%s.%s urpmi %s failed." % (self.lf_name(), self.name, pkgs))
+                    logger.event("%s.%s urpmi %s failed." % (self.lf_name, self.name, pkgs))
                     raise UrpmiError()
 
     def leave(self):

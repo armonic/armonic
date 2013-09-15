@@ -30,6 +30,8 @@ Code documentation
 import augeas
 import common
 import logging
+import os.path
+import inspect
 
 logger=logging.getLogger(__name__)
 
@@ -319,7 +321,8 @@ class Configuration(object):
         Return an augeas object.
         """
         if not self._augeasInstance:
-            loadpath="augeas_lenses" # FIXME
+#            loadpath="augeas_lenses" # FIXME
+            loadpath="/".join([os.path.dirname(inspect.getfile(self.__class__)),"augeas_lenses"])
             logging.debug("augtool -r %s -I %s -A -L"%(augeas_root,loadpath))
             self._augeasInstance = augeas.Augeas(root=augeas_root,
                                                  loadpath=loadpath,
