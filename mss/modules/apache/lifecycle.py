@@ -14,7 +14,7 @@ class Configured(State):
               Require([VString("augeas_root",default="/")],name="augeas")]
     def entry(self,requires):
         """Set listen and vhost port"""
-        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.module(),self.name,requires))
+        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,requires))
         self.conf=configuration.Apache(autoload=True,augeas_root=requires['augeas'][0]['augeas_root'])
         self.conf.setPort(requires['port'][0]['port'])
     def leave(self):
