@@ -36,38 +36,38 @@ def cmd_list(args):
     pprint.pprint(client.call('list'))
 
 def cmd_get_states(args):
-    pprint.pprint(client.call('get_states', args.module))
+    pprint.pprint(client.call('state_list', args.module))
 
 def cmd_provide(args):
     if args.provide:
         if args.requires_list:
-            pprint.pprint(client.call('get_provide_requires', args.module, args.provide))
+            pprint.pprint(client.call('provide_call_requires', args.module, args.provide))
         elif args.path:
-            pprint.pprint(client.call('get_provide_path', args.module, args.provide))
+            pprint.pprint(client.call('provide_call_path', args.module, args.provide))
         elif args.arguments:
-            pprint.pprint(client.call('get_provide_args', args.module, args.provide))
+            pprint.pprint(client.call('provide_call_args', args.module, args.provide))
         elif args.call:
             if not args.require:
                 args.require = ""
             if not args.arg:
                 args.arg = ""
-            pprint.pprint(client.call('call_provide', args.module, args.provide, parseArgs(args.require), reqList(args.arg)))
+            pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), reqList(args.arg)))
     else:
-        pprint.pprint(client.call('get_provides', args.module))
+        pprint.pprint(client.call('provide_list', args.module))
 
 def cmd_goto(args):
     if args.list_requires:
-        pprint.pprint(client.call('get_state_requires', args.module, args.state))
+        pprint.pprint(client.call('state_goto_requires', args.module, args.state))
     elif args.dryrun:
-        pprint.pprint(client.call('get_state_path', args.module, args.state))
+        pprint.pprint(client.call('state_goto_path', args.module, args.state))
     else:
-        pprint.pprint(client.call('goto_state', args.module, args.state, parseArgs(args.require)))
+        pprint.pprint(client.call('state_goto', args.module, args.state, parseArgs(args.require)))
 
 def cmd_dot(args):
     print client.call('to_dot', args.module)
 
 def cmd_current(args):
-    print client.call('get_current_state', args.module)
+    print client.call('state_current', args.module)
 
 parser = argparse.ArgumentParser(prog='mss')
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s))')

@@ -273,10 +273,10 @@ class Lifecycle(object):
 
     Main operations on a lifecycle are:
 
-    * :py:meth:`Lifecycle.get_states` to list available states,
-    * :py:meth:`Lifecycle.get_current_state` to know the current state,
-    * :py:meth:`Lifecycle.goto_state` to go from current state to another state.
-    * :py:meth:`Lifecycle.call_provide` to call a provide.
+    * :py:meth:`Lifecycle.state_list` to list available states,
+    * :py:meth:`Lifecycle.state_current` to know the current state,
+    * :py:meth:`Lifecycle.state_goto` to go from current state to another state.
+    * :py:meth:`Lifecycle.provide_call` to call a provide.
 
     All :class:`Lifecycle` method arguments 'state' can be a
     :class:`State` subclass or a string that describes this states
@@ -306,7 +306,7 @@ class Lifecycle(object):
     def name(self):
         return self.__class__.__name__
 
-    def get_states(self):
+    def state_list(self):
         """To get all available states."""
         acc = []
         for (s, d) in self.transitions:
@@ -314,7 +314,7 @@ class Lifecycle(object):
             if d not in acc: acc += [d]
         return acc
 
-    def get_current_state(self):
+    def state_current(self):
         """To get current state."""
         if self._stack == []:
             return None
@@ -370,9 +370,9 @@ class Lifecycle(object):
                 return [(s[1], s[2])] + r
         return []
 
-    def goto_state(self, state, requires, go_back=True):
+    def state_goto(self, state, requires, go_back=True):
         """From current state, go to state. To know 'requires', call
-        :py:meth:`Lifecycle.get_state_requires`.  :py:meth:`State.entry` or
+        :py:meth:`Lifecycle.state_goto_requires`.  :py:meth:`State.entry` or
         :py:meth:`State.leave` of intermediate states are called
         depending of the presence of states in stack.
 
@@ -383,17 +383,17 @@ class Lifecycle(object):
         :rtype: list of (state,["entry"|"leave"])
 
         """
-        path = self.get_state_path(state, go_back=go_back)
+        path = self.state_goto_path(state, go_back=go_back)
         if path == []:
             raise StateNotApply()
         for s in path:
             if s[1] == "entry":
                 self._push_state(s[0], requires)
             elif s[1] == "leave":
-                if self.get_current_state() == s[0]:
+                if self.state_current() == s[0]:
                     self._pop_state()
                 else:
-                    raise StateNotApply(self.get_current_state())
+                    raise StateNotApply(self.state_current())
 
     def _get_state_class(self, state):
         """From a string state name or a state class, try to find the state object.
@@ -409,39 +409,39 @@ class Lifecycle(object):
             state = state.name
         else:
             raise AttributeError("state must be a subclass of State or a string")
-        for s in self.get_states():
+        for s in self.state_list():
             if s.name == state:
                 return s
         raise StateNotExist("%s is not a valid state" % state)
 
-    def get_state_path(self, state, fct=None, go_back=True):
+    def state_goto_path(self, state, fct=None, go_back=True):
         """From the current state, return the path to goto the state.
         If fct is not None, fct is applied on each state on the path.
         state arg is preprocessed by _get_state_class method. It then can be a str or a class.
         """
         state = self._get_state_class(state)
         logger.debug("get_state_path state '%s'" % state)
-        r = self._get_from_state_path(self.get_current_state(), state, go_back=go_back)
+        r = self._get_from_state_path(self.state_current(), state, go_back=go_back)
         if fct != None:
             for state in r:
                 fct(state[0])
         return r
 
-    def get_state_requires(self, state, go_back=True):
+    def state_goto_requires(self, state, go_back=True):
         """Return all requires needed to go from current state to state."""
         acc = []
-        for s in self.get_state_path(state, go_back=go_back):
+        for s in self.state_goto_path(state, go_back=go_back):
             if s[1] == "entry":
                 acc += s[0].get_requires()
         return acc
 
-    def get_stack_provides(self):
+    def provide_list_in_stack(self):
         """:rtype: the list of states and provides for the current stack."""
         return [(s, s.get_provides()) for s in self._stack if s.get_provides() != []]
 
-    def get_provides(self):
+    def provide_list(self):
         """:rtype: the list of all states and provides."""
-        return [(s, s.get_provides()) for s in self.get_states() if s.get_provides() != []]
+        return [(s, s.get_provides()) for s in self.state_list() if s.get_provides() != []]
 
     def _get_state_from_provide(self, provide_name):
         """From a provide_name, return a tuple of (state, provide_name).
@@ -449,7 +449,7 @@ class Lifecycle(object):
         p = provide_name.split(".")
         if len(p) == 1: # Simple provide name
             sp = []
-            for (s, ps) in self.get_provides():
+            for (s, ps) in self.provide_list():
                 for p in ps:
                     if p.name == provide_name:
                         sp.append((s, provide_name))
@@ -464,44 +464,44 @@ class Lifecycle(object):
             s.get_provide_by_name(p[1])
             return (p[0],p[1])
 
-    def get_provide_requires(self, provide_name):
+    def provide_call_requires(self, provide_name):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name."""
         (s, p) = self._get_state_from_provide(provide_name)
         if not self._is_state_in_stack(s):
-            return self.get_state_requires(s)
+            return self.state_goto_requires(s)
         else:
             return []
 
-    def get_provide_args(self, provide_name):
+    def provide_call_args(self, provide_name):
         """From a provide_name, returns its needed arguments."""
         (s, p) = self._get_state_from_provide(provide_name)
         return s.get_provide_args(p)
 
-    def get_provide_path(self, provide_name):
+    def provide_call_path(self, provide_name):
         """From a provide_name, return the path to the state that
         provides the "provide"."""
         (s, p) = self._get_state_from_provide(provide_name)
         if not self._is_state_in_stack(s):
-            return self.get_state_path(s)
+            return self.state_goto_path(s)
         else:
             return []
 
-    def call_provide(self, provide_name, requires, provide_args):
+    def provide_call(self, provide_name, requires, provide_args):
         """Call a provide and go to provider state if needed.
 
         :param provide_name: The name (simple or fully qualified) of the provide
         :param requires: Requires needed to reach the state that provides this provide.
-                         See :py:meth:`Lifecycle.goto_state` for more informations
+                         See :py:meth:`Lifecycle.state_goto` for more informations
         :param provide_args: Args needed by this provide
 
         """
         (s, p) = self._get_state_from_provide(provide_name)
         if not self._is_state_in_stack(s):
-            self.goto_state(s, requires)
-        return self.call_provide_in_stack(s, p, provide_args)
+            self.state_goto(s, requires)
+        return self.provide_call_in_stack(s, p, provide_args)
 
-    def call_provide_in_stack(self, state, provide_name, provide_args):
+    def provide_call_in_stack(self, state, provide_name, provide_args):
         """Call a provide by name. State which provides must be in the stack.
         TODO: Use full qualified name when a provide is ambigous: State.provide
         """
@@ -533,7 +533,7 @@ class Lifecycle(object):
         acc = ""
         acc += "digraph finite_state_machine {\n"
         acc += "node [shape = ellipse];\n"
-        for s in self.get_states():
+        for s in self.state_list():
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
             requires = ""
@@ -621,26 +621,26 @@ class LifecycleManager(object):
         return self.lf_loaded[lf_name]
 
     @expose
-    def get_states(self, lf_name):
+    def state_list(self, lf_name):
         """Return all available states of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: list of strings (states names)"""
-        return [s.name for s in self.get_by_name(lf_name).get_states()]
+        return [s.name for s in self.get_by_name(lf_name).state_list()]
 
     @expose
-    def get_current_state(self, lf_name):
+    def state_current(self, lf_name):
         """Get the current state name of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: name of the state
         """
-        return self.get_by_name(lf_name).get_current_state().name
+        return self.get_by_name(lf_name).state_current().name
 
     @expose
-    def get_state_path(self, lf_name, state_name):
+    def state_goto_path(self, lf_name, state_name):
         """From the current state, return the path to goto the state of the
         lifecycle object.
 
@@ -649,10 +649,10 @@ class LifecycleManager(object):
         :param state_name: The name of the state
         :type state_name: str
         :rtype: list of transitions"""
-        return [(i[0].name, i[1]) for i in self.get_by_name(lf_name).get_state_path(state_name)]
+        return [(i[0].name, i[1]) for i in self.get_by_name(lf_name).state_goto_path(state_name)]
 
     @expose
-    def get_state_requires(self, lf_name, state_name):
+    def state_goto_requires(self, lf_name, state_name):
         """Get the lifecycle state's requires
 
         :param lf_name: The name of the lifecycle object
@@ -660,10 +660,10 @@ class LifecycleManager(object):
         :param state_name: The name of the state
         :type state_name: str
         :rtype: dict of requires"""
-        return self.get_by_name(lf_name).get_state_requires(state_name)
+        return self.get_by_name(lf_name).state_goto_requires(state_name)
 
     @expose
-    def goto_state(self, lf_name, state_name, requires={}):
+    def state_goto(self, lf_name, state_name, requires={}):
         """From the current state go to state.
 
         :param lf_name: The name of the lifecycle object
@@ -672,10 +672,10 @@ class LifecycleManager(object):
         :type state_name: str
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
-        return self.get_by_name(lf_name).goto_state(state_name, requires)
+        return self.get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
-    def get_provides(self, lf_name, in_stack=False):
+    def provide_list(self, lf_name, in_stack=False):
         """If in_stack is True, just returns provides available in
         stack. Otherwise, returns all provides of this lf_name.
 
@@ -685,34 +685,34 @@ class LifecycleManager(object):
         :type in_stack: bool"""
         acc = {}
         if in_stack:
-            ps = self.get_by_name(lf_name).get_stack_provides()
+            ps = self.get_by_name(lf_name).provide_list_in_stack()
         else:
-            ps = self.get_by_name(lf_name).get_provides()
+            ps = self.get_by_name(lf_name).provide_list()
         for (s, p) in ps:
             acc.update({s.name: [i.to_primitive() for i in p]})
         return acc
 
     @expose
-    def get_provide_requires(self, lf_name, provide_name):
+    def provide_call_requires(self, lf_name, provide_name):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
 
         :param lf_name: The name of the lifecycle object
         :param provide_name: The name of the provide"""
-        return self.get_by_name(lf_name).get_provide_requires(provide_name)
+        return self.get_by_name(lf_name).provide_call_requires(provide_name)
 
     @expose
-    def get_provide_args(self, lf_name, provide_name):
+    def provide_call_args(self, lf_name, provide_name):
         """From a provide_name, returns its needed arguments.
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        return self.get_by_name(lf_name).get_provide_args(provide_name)
+        return self.get_by_name(lf_name).provide_call_args(provide_name)
 
     @expose
-    def get_provide_path(self, lf_name, provide_name):
+    def provide_call_path(self, lf_name, provide_name):
         """From a provide_name, return the path to the state of the lifecycle that
         provides the "provide".
 
@@ -720,10 +720,10 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        return [(s.name, a) for (s, a) in self.get_by_name(lf_name).get_provide_path(provide_name)]
+        return [(s.name, a) for (s, a) in self.get_by_name(lf_name).provide_call_path(provide_name)]
 
     @expose
-    def call_provide(self, lf_name, provide_name, requires={}, provide_args={}):
+    def provide_call(self, lf_name, provide_name, requires={}, provide_args={}):
         """Call a provide of a lifecycle and go to provider state if needed
 
         :param lf_name: The name of the lifecycle object
@@ -731,11 +731,11 @@ class LifecycleManager(object):
         :param provide_name: The name of the provide to go to
         :type provide_name: str
         :param requires: Requires needed to reach the state that provides this provide
-                         See :py:meth:`Lifecycle.goto_state` for more information
+                         See :py:meth:`Lifecycle.state_goto` for more information
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
-        return self.get_by_name(lf_name).call_provide(provide_name, requires, provide_args)
+        return self.get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
 
     @expose
     def to_dot(self, lf_name):
