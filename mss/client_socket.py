@@ -7,6 +7,8 @@ import logging
 class AgentException(Exception):
     pass
 
+class ConnectionError(Exception):
+    pass
 
 class ClientSocket(object):
     def __init__(self, host="127.0.0.1", port=8000, cls_handler=logging.StreamHandler):
@@ -16,7 +18,10 @@ class ClientSocket(object):
 
     def _connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.connect((self._host, self._port))
+        try:
+            self._socket.connect((self._host, self._port))
+        except socket.error as e:
+            raise ConnectionError(e)
 
     def set_logging_handler(self, handler):
         """Set a handler. You can use handler defined by the standard logging module."""

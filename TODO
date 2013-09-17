@@ -17,6 +17,9 @@ States:
 	already applied or not. This is useful to restart the
 	mss-agent and go back to the correct state.
 
+Process:
+	Check return node in process.py. Add handler on return code.
+
 
 Multithread:
 	It should be possible to launch several module in parallel.
