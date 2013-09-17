@@ -8,6 +8,7 @@ Actions needed to control agent:
 
 import argparse
 import pprint
+from prettytable import PrettyTable
 
 # Print list of available methods
 #print lfm.system.listMethods()
@@ -36,7 +37,17 @@ def cmd_list(args):
     pprint.pprint(client.call('list'))
 
 def cmd_get_states(args):
-    pprint.pprint(client.call('state_list', args.module))
+    if args.doc:
+        x = PrettyTable(["State name", "Documentation"])
+        x.align["State name"] = "l"
+        x.align["Documentation"] = "l"
+        x.padding_width = 1 # One space between column edges and contents (default)
+        ret=client.call('state_list', args.module,doc=True)
+        for r in ret:
+            x.add_row([r['name'],r['doc']])
+        print x
+    else:
+        pprint.pprint(client.call('state_list', args.module))
 
 def cmd_provide(args):
     if args.provide:
@@ -57,7 +68,18 @@ def cmd_provide(args):
 
 def cmd_goto(args):
     if args.list_requires:
-        pprint.pprint(client.call('state_goto_requires', args.module, args.state))
+        ret=client.call('state_goto_requires', args.module, args.state)
+        x = PrettyTable(["Name","Type","ArgName", "ArgType","ArgDefault"])
+        x.align["Name"] = "l"
+        x.align["Type"] = "l"
+        x.align["Default"] = "l"
+        x.padding_width = 1 # One space between column edges and contents (default)
+        for r in ret:
+            x.add_row([r.name , r.type,"","",""])
+            for a in r.args:
+                x.add_row(["","",a.name,a.type,a.default])
+        print x
+            
     elif args.dryrun:
         pprint.pprint(client.call('state_goto_path', args.module, args.state))
     else:
@@ -86,6 +108,7 @@ parser_dot.set_defaults(func=cmd_dot)
 
 parser_getState = subparsers.add_parser('states', help='list available states of module')
 parser_getState.add_argument('module', type=str, help='a module')
+parser_getState.add_argument('--doc','-d',action='store_true',help="Print state documentation")
 parser_getState.set_defaults(func=cmd_get_states)
 
 parser_provide = subparsers.add_parser('provide', help='Call a provide, list needed requires and arguments to call it. Without provide arguement, list all provide of the module.')

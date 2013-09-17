@@ -621,14 +621,19 @@ class LifecycleManager(object):
         return self.lf_loaded[lf_name]
 
     @expose
-    def state_list(self, lf_name):
+    def state_list(self, lf_name, doc=False):
         """Return all available states of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
+        :param doc: Add state documentation
         :type lf_name: str
+        :type verbose: bool
         :rtype: list of strings (states names)"""
-        return [s.name for s in self.get_by_name(lf_name).state_list()]
-
+        if doc:
+            return [{'name':s.name,'doc':s.__doc__} for s in self.get_by_name(lf_name).state_list()]
+        else:
+            return [s.name for s in self.get_by_name(lf_name).state_list()]
+        
     @expose
     def state_current(self, lf_name):
         """Get the current state name of the lifecycle object

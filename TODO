@@ -37,3 +37,24 @@ State machine initialization:
 
 Augeas:
 	It is currently hard to comment/uncomment. Maybe rename command could be used to do this.
+
+
+CLI:
+client.py state module -[current,list,goto,path,requires]
+client.py provide module -[call,path,requires]
+client.py list
+
+OU
+
+client.py state module 
+client.py state-show module state
+client.py state-current module 
+client.py state-goto module -[requires,path]
+
+client.py provide module 
+client.py provide-show module provide-name
+client.py provide-call module provide-name -[requires,path]
+
+client.py list
+client.py show module [-dot]
+client.py status
