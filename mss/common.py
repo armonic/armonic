@@ -73,5 +73,6 @@ def load_lifecycles(dir):
                 try:
                     __import__(module)
                     logger.debug("Imported module %s" % module)
-                except ImportError:
-                    pass
+                except ImportError as e:
+                    logger.warning("Exception on import module %s" % module)
+                    logger.warning(e)
