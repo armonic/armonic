@@ -93,7 +93,7 @@ import inspect
 import logging
 
 from mss.common import is_exposed, expose
-
+import mss.utils
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,8 @@ class State(object):
     provides = []
     _lf_name = ""
     _instance = None
+
+    supported_os_type=[mss.utils.OsTypeAll()]
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
@@ -325,7 +327,10 @@ class Lifecycle(object):
         return self._get_state_class(state) in self._stack
 
     def _is_transition_allowed(self, s, d):
-        return (s, d) in self.transitions
+        """A transition is allowed if src and dst state support current os type."""
+        return (mss.utils.os_type in d.supported_os_type
+                and mss.utils.os_type in s.supported_os_type 
+                and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):
         """Go to a state if transition from current state to state is allowed
@@ -358,9 +363,9 @@ class Lifecycle(object):
         if from_state == to_state:
             return [] # It's not THE stop condition. Shity hack : FIXME !
 
-        a = [(d, d, "entry") for (s, d) in self.transitions if s == from_state and d not in used_states]
+        a = [(d, d, "entry") for (s, d) in self.transitions if self._is_transition_allowed(s,d) and s == from_state and d not in used_states]
         if go_back:
-            a += [(s, d, "leave") for (s, d) in self.transitions if d == from_state and s not in used_states]
+            a += [(s, d, "leave") for (s, d) in self.transitions if self._is_transition_allowed(s,d) and d == from_state and s not in used_states]
         # a = [( nextState , get_current_state , actionOnCurrentState )]
         for s in a:
             if s[0] == to_state:
@@ -593,6 +598,15 @@ class LifecycleManager(object):
         :rtype: list of strings (lifecycle objects names)
         """
         return self.lf.keys()
+
+    @expose
+    def info(self):
+        """Get info of mss agent
+
+        :rtype: list of strings (lifecycle objects names)
+        """
+        return {"os-type":mss.utils.os_type.name,"os-release":mss.utils.os_type.release}
+
 
     def load(self, lf_name=None):
         """Load a lifecycle object in the manager.

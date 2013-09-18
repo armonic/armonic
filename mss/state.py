@@ -155,3 +155,7 @@ class ActiveWithSystemV(mss.lifecycle.State):
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))
+
+class InitialState(mss.lifecycle.State):
+    supported_os_type=[mss.utils.OsTypeAll()]
+    

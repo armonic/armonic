@@ -7,13 +7,15 @@ import logging
 
 logger=logging.getLogger(__name__)
 
-class NotInstalled(State):pass
+class NotInstalled(mss.state.InitialState):pass
 
 class Template(mss.state.CopyTemplate):
+    supported_os_type = [mss.utils.OsTypeMBS1()]
     src="/var/www/wordpress/wp-config-sample.php"
     dst="/var/www/wordpress/wp-config.php"
 
 class Configured(State):
+    supported_os_type = [mss.utils.OsTypeMBS1()]
     requires=[
         Require([VString("augeas_root",default="/")]),
         RequireExternal("Mysql","get_db",[VString("dbName",default="wordpress_db"),
@@ -30,6 +32,7 @@ class Configured(State):
 
 
 class Active(State):
+    supported_os_type = [mss.utils.OsTypeMBS1()]
     requires=[RequireLocal("Httpd","get_documentRoot",[VString("httpdDocumentRoot",default="/var/www/wordpress")]),
               RequireLocal("Httpd","start",[])]
     def entry(self,requires):
@@ -46,12 +49,20 @@ class Active(State):
 
 
 class Installed(mss.state.InstallPackages):
+    supported_os_type = [mss.utils.OsTypeMBS1()]
     packages=["wordpress"]
+
+class InstalledOnDebian(mss.state.InstallPackages):
+    supported_os_type = [mss.utils.OsTypeDebianWheezy()]
+    packages=["wordpress"]
+    supported_os_type=[mss.utils.OsTypeDebianWheezy()]
 
 class Wordpress(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
         Transition(Installed()    ,Template()),
+        Transition(NotInstalled()    ,InstalledOnDebian()),
+        Transition(InstalledOnDebian()    ,Template()),
         Transition(Template()    ,Configured()),
         Transition(Configured()      ,Active()),
         ]

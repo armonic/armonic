@@ -2,8 +2,9 @@ Dependencies
 ============
 * python-augeas
 * python-sphinx
+* python-prettytable
 
-apt-get install python-augeas python-sphinx
+apt-get install python-augeas python-sphinx python-prettytable
 
 
 

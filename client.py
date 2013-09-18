@@ -36,6 +36,9 @@ def parseArgs(args):
 def cmd_list(args):
     pprint.pprint(client.call('list'))
 
+def cmd_info(args):
+    pprint.pprint(client.call('info'))
+
 def cmd_get_states(args):
     if args.doc:
         x = PrettyTable(["State name", "Documentation"])
@@ -101,6 +104,9 @@ subparsers = parser.add_subparsers(help='sub-command help')
 
 parser_list = subparsers.add_parser('list', help='list available modules')
 parser_list.set_defaults(func=cmd_list)
+
+parser_info = subparsers.add_parser('info', help='list available modules')
+parser_info.set_defaults(func=cmd_info)
 
 parser_dot = subparsers.add_parser('dot', help='dot modules statemachine')
 parser_dot.add_argument('module', type=str, help='a module')
