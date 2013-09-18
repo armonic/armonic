@@ -4,7 +4,7 @@ import logging
 import logging.handlers
 import json
 
-logger=logging.getLogger()
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 format = '%(asctime)s|%(levelname)6s - %(message)s'
@@ -70,4 +70,8 @@ def load_lifecycles(dir):
         sys.path.insert(0, dir)
         for module in os.listdir(dir):
             if os.path.exists(os.path.join(dir, module, '__init__.py')):
-                __import__(module)
+                try:
+                    __import__(module)
+                    logger.debug("Imported module %s" % module)
+                except ImportError:
+                    pass
