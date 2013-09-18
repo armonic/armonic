@@ -36,12 +36,13 @@ class RunScript(mss.lifecycle.State):
 
     def entry(self, requires={}):
         script_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), self.script_name)
+        script_dir = os.path.dirname(script_path)
         script_args = self.require_to_script_args(requires)
         logger.event("%s.%s run script %s %s ...", self.lf_name,
                      self.name, self.script_name, script_args)
         thread = process.ProcessThread("/bin/bash", None, "test",
                                        ["/bin/bash", script_path] + script_args,
-                                       None, None, None, None)
+                                       script_dir, None, None, None)
         thread.start()
         thread.join()
         if thread.code == 0:
