@@ -13,22 +13,16 @@ Protocol:
 
 """
 
+import os
 import logging
 import logging.handlers
 import pickle
 import SocketServer
 import struct
+import argparse
 
 import mss.lifecycle
 import mss.common
-
-import mss.modules.mysql
-import mss.modules.wordpress
-import mss.modules.apache
-import mss.modules.varnish
-
-lfm = mss.lifecycle.LifecycleManager()
-
 
 def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
@@ -102,13 +96,23 @@ class MyTCPServer(SocketServer.TCPServer):
     allow_reuse_address=True
 
 if __name__ == "__main__":
-    HOST, PORT = "0.0.0.0", 8000
+    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules')
 
-    # Create the server, binding to localhost on port 9999
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
+    parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='MSS agent IP (default: %(default)s))')
+    parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s))')
+    args = parser.parse_args()
 
-    print "Server listening on port %d"%PORT
-    server = MyTCPServer((HOST, PORT), MyTCPHandler)
+    mss.common.load_lifecycles(args.modules_dir)
+    lfm = mss.lifecycle.LifecycleManager()
 
+    print "Server listening on %s:%d" % (args.host, args.port)
+    print "Using modules from %s " % args.modules_dir
+    server = MyTCPServer((args.host, args.port), MyTCPHandler)
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print "Exiting."

@@ -1,11 +1,10 @@
+import os
+import argparse
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
 import mss.lifecycle
+import mss.common
 
-import mss.modules.mysql
-import mss.modules.wordpress
-import mss.modules.apache
-import mss.modules.varnish
 
 # Restrict to a particular path.
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -30,18 +29,28 @@ class XMLRPCServer(SimpleXMLRPCServer):
             raise Exception('method "%s" is not supported' % method)
 
 
+if __name__ == "__main__":
+    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules')
 
-port=8000
-server = XMLRPCServer(("0.0.0.0", port),
-                      requestHandler=RequestHandler,
-                      allow_none=True,
-                      logRequests=False)
-server.register_introspection_functions()
-server.register_instance(mss.lifecycle.LifecycleManager())
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
+    parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='MSS agent IP (default: %(default)s))')
+    parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s))')
+    args = parser.parse_args()
 
-# Run the server's main loop
-print "Server listening on port %d" % port
-try:
-    server.serve_forever()
-except KeyboardInterrupt:
-    print 'Exiting'
+    mss.common.load_lifecycles(args.modules_dir)
+    lfm = mss.lifecycle.LifecycleManager()
+
+    server = XMLRPCServer((args.host, args.port),
+                          requestHandler=RequestHandler,
+                          allow_none=True,
+                          logRequests=False)
+    server.register_introspection_functions()
+    server.register_instance(lfm)
+
+    print "Server listening on %s:%d" % (args.host, args.port)
+    print "Using modules from %s " % args.modules_dir
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print 'Exiting.'

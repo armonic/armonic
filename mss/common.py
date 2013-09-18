@@ -1,8 +1,10 @@
+import os
+import sys
 import logging
 import logging.handlers
 import json
 
-logger=logging.getLogger()
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 format = '%(asctime)s|%(levelname)6s - %(message)s'
@@ -60,3 +62,16 @@ def expose(f):
 def is_exposed(f):
     "Test whether another function should be publicly exposed."
     return getattr(f, 'exposed', False)
+
+
+def load_lifecycles(dir):
+    """Import Lifecycle modules from dir"""
+    if os.path.exists(os.path.join(dir, '__init__.py')):
+        sys.path.insert(0, dir)
+        for module in os.listdir(dir):
+            if os.path.exists(os.path.join(dir, module, '__init__.py')):
+                try:
+                    __import__(module)
+                    logger.debug("Imported module %s" % module)
+                except ImportError:
+                    pass
