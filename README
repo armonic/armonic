@@ -2,13 +2,19 @@ Dependencies
 ============
 * python-augeas
 * python-sphinx
-* python-prettytable
 
-apt-get install python-augeas python-sphinx python-prettytable
 
 Modules
 -------
-apt-get install python-mysqldb
+* Mysql
+  apt-get install python-mysqldb
+
+Client
+------
+* python-prettytable
+* pip install argcomplete
+
+apt-get install python-augeas python-sphinx python-prettytable python-mysqldb
 
 
 Test Lifecycle and Augeas

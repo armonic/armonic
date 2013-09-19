@@ -322,11 +322,17 @@ class Lifecycle(object):
             if isinstance(ms,MetaState):
                 transitions = [(s,i) for (s,i) in instance.transitions if i == ms]
                 states = ms.implementations
+
+                # We create new state suffixed by metaclass name This
+                # permits to create specical path.  If two metastate
+                # has same implementation, we need to create special
+                # implementations for each metastate.
+                created_states = [type('%s.%s'%(ms.__class__.__name__,s.__name__),(s,),{}) for s in ms.implementations]
                 # For each transtion to MetaState ms
                 for t in transitions:
                     update_transitions = []
                     # And for each state implementations
-                    for d in states: 
+                    for d in created_states: 
                         # We create transition to this implementation
                         update_transitions+=[(t[0],d())]
                         # And from this implementation to metastate
@@ -463,6 +469,12 @@ class Lifecycle(object):
                 return s
         raise StateNotExist("%s is not a valid state" % state)
 
+    def has_state(self,state):
+        """To know if state_name is a state of self."""
+        self._get_state_class(state)
+        return True
+    
+
     def state_goto_path(self, state, fct=None, go_back=True):
         """From the current state, return the path to goto the state.
         If fct is not None, fct is applied on each state on the path.
@@ -489,7 +501,7 @@ class Lifecycle(object):
         return [(s, s.get_provides()) for s in self._stack if s.get_provides() != []]
 
     def provide_list(self):
-        """:rtype: the list of all states and provides."""
+        """:rtype: the list of all tuple which contain states and provides."""
         return [(s, s.get_provides()) for s in self.state_list() if s.get_provides() != []]
 
     def _get_state_from_provide(self, provide_name):
@@ -744,7 +756,7 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
-    def provide_list(self, lf_name, in_stack=False):
+    def provide_list(self, lf_name, in_stack=False, state_name=None):
         """If in_stack is True, just returns provides available in
         stack. Otherwise, returns all provides of this lf_name.
 
@@ -753,10 +765,13 @@ class LifecycleManager(object):
         :param in_stack: True or False (default)
         :type in_stack: bool"""
         acc = {}
+        lf=self._get_by_name(lf_name)
         if in_stack:
-            ps = self._get_by_name(lf_name).provide_list_in_stack()
+            ps = lf.provide_list_in_stack()
         else:
-            ps = self._get_by_name(lf_name).provide_list()
+            ps = lf.provide_list()
+        if state_name != None and lf.has_state(state_name):
+            ps = [(s,p) for (s,p) in ps if s.name == state_name]
         for (s, p) in ps:
             acc.update({s.name: [i.to_primitive() for i in p]})
         return acc
