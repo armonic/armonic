@@ -16,7 +16,7 @@ Lifecycle
 ^^^^^^^^^^^^^^^^^^^^
 
 :class:`Lifecycle` is an automaton with a set of :class:`State` and
-transition between these states. See :class:`Lifecycle` for more
+transitions between these states. See :class:`Lifecycle` for more
 informations.
 
 State
@@ -25,6 +25,21 @@ State
 A state describes actions on a service. For instance, a state can
 describe packages installation, or configuration, etc. See
 :class:`State` for more informations.
+
+MetaState
+^^^^^^^^^^^^^^^^^^^^
+
+A :class:`MetaState` permits to simplify transitions writing. For instance, if
+you have a state ActiveOnDebian and ActiveOnMBS, you can create a
+metastate Active which has ActiveOnMBS and ActiveOnDebian as
+'implementations'. It is then sufficient to specify Active in
+lifecycle transitions because all metastate implementations are
+automatically added as intermediate state. See
+:class:`mss.modules.mysql.Mysql` for an example.
+
+Note: We don't use python inheritance in order to avoid provide
+replication in all metastate implementations.
+
 
 Stack
 ^^^^^^^^^^^^^^^^^^^^
@@ -84,6 +99,7 @@ Active, and if we want to add a vhost, we don't want to stop Apache
 (ie. leave Active state), goto to configuration state, and go back to
 active state. We want to reload the services. This is done via cross
 method of Httpd active state.
+
 
 Code documentation
 ------------------
@@ -149,6 +165,8 @@ class StateNotExist(Exception):
     pass
 
 
+
+
 class State(object):
     """A state describe a step during service :class:`Lifecycle`.
 
@@ -203,7 +221,7 @@ class State(object):
                 requires[require.name] = require.validate(values)
             else:
                 requires.update({require.name: require.validate([])})
-        logger.debug("applying state %s: %s" % (self.name, self.entry.__doc__))
+        logger.debug("applying state %s" % (self.name))
         logger.debug("\trequires: %s" % requires)
         return self.entry(requires)
 
@@ -265,6 +283,10 @@ class State(object):
     def __repr__(self):
         return "<State:%s>" % self.name
 
+class MetaState(State):
+    """Set by state.__new__ to add implementation of this metastate."""
+    implementations = []
+
 
 class Lifecycle(object):
     """The lifecycle of a service is represented by transitions,
@@ -290,12 +312,30 @@ class Lifecycle(object):
     """
     _initialized = False
 
-    # _instance = None
-    # def __new__(cls, *args, **kwargs):
-    #     if not cls._instance:
-    #         cls._instance = super(Lifecycle, cls).__new__(
-    #             cls, *args, **kwargs) # FIXME: should not use Lifecycle
-    #     return cls._instance
+
+    def __new__(cls, *args, **kwargs):
+        instance = super(Lifecycle, cls).__new__(
+            cls, *args, **kwargs)
+        #Update transitions to manage MetaState
+        for ms in instance._state_list():
+            # For each MetaState ms
+            if isinstance(ms,MetaState):
+                transitions = [(s,i) for (s,i) in instance.transitions if i == ms]
+                states = ms.implementations
+                # For each transtion to MetaState ms
+                for t in transitions:
+                    update_transitions = []
+                    # And for each state implementations
+                    for d in states: 
+                        # We create transition to this implementation
+                        update_transitions+=[(t[0],d())]
+                        # And from this implementation to metastate
+                        update_transitions+=[(d(),ms)]
+                    # Finally, we remove useless transitions and add new ones.
+                    if update_transitions != []:
+                        instance.transitions.remove(t)
+                        instance.transitions += update_transitions
+        return instance
 
     def init(self, state, requires={}):
         """If it is not already initialized, push state in stack."""
@@ -308,13 +348,17 @@ class Lifecycle(object):
     def name(self):
         return self.__class__.__name__
 
-    def state_list(self):
-        """To get all available states."""
+    @classmethod
+    def _state_list(cls):
         acc = []
-        for (s, d) in self.transitions:
+        for (s, d) in cls.transitions:
             if s not in acc: acc += [s]
             if d not in acc: acc += [d]
         return acc
+        
+    def state_list(self):
+        """To get all available states."""
+        return self.__class__._state_list()
 
     def state_current(self):
         """To get current state."""
@@ -523,7 +567,10 @@ class Lifecycle(object):
         """Return a dot string of lifecycle."""
 
         def dotify(string): # To remove illegal character
-            return string.replace("{","").replace("}","") # string.replace("[","").replace("]","")
+            if string != None:
+                # FIXME. We should not remove "\n".
+                return string.replace("{","").replace("}","").replace(":","").replace("\n","")
+            else : return string
 
         def list_to_table(l):
             if l == []:
@@ -546,9 +593,9 @@ class Lifecycle(object):
             provides = list_to_table([(p.name, p.args, p.flags) for p in s.get_provides()])
             label = 'label = "{State name: %s  | Method entry: %s | Method leave : %s | {Method cross: | {Doc: %s | Flags: %s}} | { Requires: | {%s} } | { Provides: | {%s}}}"\n' % (
                 s.name,
-                s.entry.__doc__,
-                s.leave.__doc__,
-                s.cross.__doc__,
+                dotify(s.entry.__doc__),
+                dotify(s.leave.__doc__),
+                dotify(s.cross.__doc__),
                 inspect.getargspec(s.cross).args[1:],
                 requires,
                 provides

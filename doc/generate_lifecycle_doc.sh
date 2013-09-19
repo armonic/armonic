@@ -24,12 +24,12 @@ do
     
 
 
-    dot=$(python -c "import mss.modules.${module}  ; print mss.modules.${module}.lifecycle.${lifecycle}().toDot()" 2>/dev/null)
+    dot=$(python -c "import mss.modules.${module}  ; print mss.modules.${module}.lifecycle.${lifecycle}().to_dot()" 2>/dev/null)
     if [ $? -eq 0 ]
     then
 	echo $dot > ${image_path}/${module}.dot
 	echo "dot file for ${module} has been created"
-	dot -Tsvg ${path}/${module}.dot > ${image_path}/${module}.svg
+	dot -Tsvg ${image_path}/${module}.dot > ${image_path}/${module}.svg
 	echo "svg file for ${module} has been created"
 
 	echo "Module ${lifecycle}

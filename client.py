@@ -81,6 +81,7 @@ def cmd_goto(args):
             x.add_row([r.name , r.type,"","",""])
             for a in r.args:
                 x.add_row(["","",a.name,a.type,a.default])
+            x.add_row(["" , "","","",""])
         print x
             
     elif args.dryrun:

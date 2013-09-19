@@ -87,11 +87,18 @@ class ResetRootPassword(mss.lifecycle.State):
         else:
             logger.event("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
+
+class ActiveOnDebian(mss.state.ActiveWithSystemV):
+    services=["mysql"]
+    supported_os_type=[mss.utils.OsTypeDebian()]
+
 class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
     supported_os_type=[mss.utils.OsTypeMBS1()]
 
+class Active(mss.lifecycle.MetaState):
+    implementations = [ActiveOnDebian, ActiveOnMBS]
     @provide()
     def getDatabases(self,user='root',password='root'):
         con = MySQLdb.connect('localhost', user,
@@ -126,9 +133,6 @@ class ActiveOnMBS(mss.state.ActiveWithSystemd):
         cur.execute("GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword))
         return True
 
-class ActiveOnDebian(mss.state.ActiveWithSystemV):
-    services=["mysql"]
-    supported_os_type=[mss.utils.OsTypeDebian()]
 
 
 class ConfiguredSlave(State):
@@ -143,7 +147,8 @@ class Dump(State):
         return "iop"
 
 
-class ActiveAsSlave(State):
+class ActiveAsSlave(mss.lifecycle.MetaState):
+    implementations = [ActiveOnDebian, ActiveOnMBS]
     @provide({'restart':False})
     def get_db(self,dbName,user):
         return "iop"
@@ -155,22 +160,25 @@ class ActiveAsMaster(State):
         return "iop"
     def cross(self,restart=False):pass
 
-class Installed(mss.state.InstallPackagesUrpm):
-    packages=["mysql-MariaDB"]
+class InstalledOnMBS(mss.state.InstallPackagesUrpm):
+    packages = ["mysql-MariaDB"]
 
 class InstalledOnDebian(mss.state.InstallPackagesApt):
     packages = ["mysql-server"]
 
+class Installed(mss.lifecycle.MetaState):
+    implementations = [InstalledOnMBS, InstalledOnDebian]
+
+
+
 class Mysql(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
-        Transition(NotInstalled()    ,InstalledOnDebian()),
         Transition(Installed()    ,SetRootPassword()),
-        Transition(InstalledOnDebian()    ,SetRootPassword()),
         Transition(SetRootPassword()    ,Configured()),
         Transition(Configured()      ,ResetRootPassword()),
-        Transition(Configured()      ,ActiveOnMBS()),
-        Transition(Configured()      ,ActiveOnDebian()),
+        Transition(Configured()      ,Active()),
+#        Transition(Configured()      ,ActiveOnDebian()),
         Transition(Configured()      ,ConfiguredSlave()),
         Transition(Configured()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),
