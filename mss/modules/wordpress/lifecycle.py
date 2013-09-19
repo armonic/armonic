@@ -48,14 +48,12 @@ class Active(State):
         return "Call Httpd.getPortByDocumentRoot('%s')"%self.httpdDocumentRoot
 
 
-class Installed(mss.state.InstallPackages):
-    supported_os_type = [mss.utils.OsTypeMBS1()]
+class Installed(mss.state.InstallPackagesUrpm):
     packages=["wordpress"]
 
-class InstalledOnDebian(mss.state.InstallPackages):
-    supported_os_type = [mss.utils.OsTypeDebianWheezy()]
+class InstalledOnDebian(mss.state.InstallPackagesUrpm):
     packages=["wordpress"]
-    supported_os_type=[mss.utils.OsTypeDebianWheezy()]
+    supported_os_type = [mss.utils.OsTypeDebianWheezy()]
 
 class Wordpress(Lifecycle):
     transitions=[

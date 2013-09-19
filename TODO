@@ -59,3 +59,6 @@ CLI:
 	client.py show module [-dot]
 	client.py status
 
+Transition: 
+	    Specify path when it is ambigous. To path are available to go to a state
+	    Currently, you can manually go to intermediate states

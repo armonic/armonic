@@ -6,6 +6,9 @@ Dependencies
 
 apt-get install python-augeas python-sphinx python-prettytable
 
+Modules
+-------
+apt-get install python-mysqldb
 
 
 Test Lifecycle and Augeas

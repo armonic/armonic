@@ -7,6 +7,7 @@ from mss.require import Require, RequireExternal, VHost, VString, VPort
 from mss.configuration_augeas import XpathNotInFile
 import mss.process
 import mss.state
+import mss.utils
 
 import configuration
 
@@ -14,9 +15,10 @@ import configuration
 logger = logging.getLogger(__name__)
 
 
-class NotInstalled(State):
+class NotInstalled(mss.state.InitialState):
     """Initial state"""
     pass
+
 class Configured(State):
     """Permit to configure a module. Basically, it sets mysql port"""
     requires=[Require([VPort("port",default="3306")]),
@@ -50,7 +52,7 @@ class SetRootPassword(mss.lifecycle.State):
         thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % requires["root_pwd"][0]["pwd"]],None,None,None,None)
         thread_mysqld.start()
         thread_mysqld.join()
-        if thread_mysqld.output == 0:
+        if thread_mysqld.code == 0:
             logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,requires["root_pwd"][0]["pwd"])
         else:
             logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
@@ -85,9 +87,10 @@ class ResetRootPassword(mss.lifecycle.State):
         else:
             logger.event("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
-class Active(mss.state.ActiveWithSystemd):
+class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
+    supported_os_type=[mss.utils.OsTypeMBS1()]
 
     @provide()
     def getDatabases(self,user='root',password='root'):
@@ -123,6 +126,11 @@ class Active(mss.state.ActiveWithSystemd):
         cur.execute("GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword))
         return True
 
+class ActiveOnDebian(mss.state.ActiveWithSystemV):
+    services=["mysql"]
+    supported_os_type=[mss.utils.OsTypeDebian()]
+
+
 class ConfiguredSlave(State):
     """Can be used to configure Mysql as a slave"""
     requires=[RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),VHost("slave_host")]),
@@ -147,16 +155,22 @@ class ActiveAsMaster(State):
         return "iop"
     def cross(self,restart=False):pass
 
-class Installed(mss.state.InstallPackages):
+class Installed(mss.state.InstallPackagesUrpm):
     packages=["mysql-MariaDB"]
+
+class InstalledOnDebian(mss.state.InstallPackagesApt):
+    packages = ["mysql-server"]
 
 class Mysql(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
+        Transition(NotInstalled()    ,InstalledOnDebian()),
         Transition(Installed()    ,SetRootPassword()),
+        Transition(InstalledOnDebian()    ,SetRootPassword()),
         Transition(SetRootPassword()    ,Configured()),
         Transition(Configured()      ,ResetRootPassword()),
-        Transition(Configured()      ,Active()),
+        Transition(Configured()      ,ActiveOnMBS()),
+        Transition(Configured()      ,ActiveOnDebian()),
         Transition(Configured()      ,ConfiguredSlave()),
         Transition(Configured()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),

@@ -51,10 +51,13 @@ class RunScript(mss.lifecycle.State):
             logger.event("%s.%s run script %s failed.", self.lf_name, self.name, script_path)
             logger.debug("%s",thread.output)
 
-class UrpmiError(Exception):
+class PackageInstallationError(Exception):
     pass
-class InstallPackages(mss.lifecycle.State):
+class UrpmiError(PackageInstallationError):
+    pass
+class InstallPackagesUrpm(mss.lifecycle.State):
     packages = []
+    supported_os_type = [mss.utils.OsTypeMBS1()]
 
     def entry(self, requires={}):
         pkgs = " ".join(self.packages)
@@ -75,13 +78,47 @@ class InstallPackages(mss.lifecycle.State):
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.event("%s.%s urpmi %s done." % (self.lf_name, self.name, pkgs))
+                    logger.event("%s.%s urpmi %s done." % (self.lf_name, self.name, p))
                 else:
-                    logger.event("%s.%s urpmi %s failed." % (self.lf_name, self.name, pkgs))
+                    logger.event("%s.%s urpmi %s failed." % (self.lf_name, self.name, p))
                     raise UrpmiError()
 
     def leave(self):
         logger.info("%s.%-10s: urpme %s" % (self.lf_name, self.name, " ".join(self.packages)))
+
+class AptGetInstallError(PackageInstallationError):
+    pass
+class InstallPackagesApt(mss.lifecycle.State):
+    packages = []
+    supported_os_type = [mss.utils.OsTypeDebian()]
+
+    def entry(self, requires={}):
+        pkgs = " ".join(self.packages)
+        logger.event("%s.%s apt-get install %s ...", self.lf_name, self.name, pkgs)
+        for p in self.packages:
+            thread = process.ProcessThread("/usr/bin/dpkg", None, "test",
+                                           ["/usr/bin/dpkg", "--status", "%s" % p],
+                                           None, None, None, None)
+            thread.start()
+            thread.join()
+            if thread.code == 0:
+                logger.info("package %s is already installed" % p)
+            else:
+                logger.info("package %s is installing..." % p)
+                thread = process.ProcessThread("/usr/bin/apt-get", None, "test",
+                                               ["/usr/bin/apt-get", "install", "--assume-yes", "%s" % p],
+                                               None, None, None, {"DEBIAN_FRONTEND":"noninteractive"})
+                thread.start()
+                thread.join()
+                if thread.code == 0:
+                    logger.event("%s.%s apt-get install %s done." % (self.lf_name, self.name, p))
+                else:
+                    logger.event("%s.%s apt-get install %s failed." % (self.lf_name, self.name, p))
+                    raise AptGetInstallError()
+
+    def leave(self):
+        logger.info("%s.%-10s: urpme %s" % (self.lf_name, self.name, " ".join(self.packages)))
+
 
 
 class ErrorSystemd(Exception):
@@ -92,6 +129,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
     """If systemctl returns a code != 0, systemctl status 'service' is
     called and exception ErrorSystemd is raised"""
     services = []
+    supported_os_type=[mss.utils.OsTypeMBS1()]
 
     def __systemctl(self, action):
         for service in self.services:
@@ -129,16 +167,26 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
 
 class ActiveWithSystemV(mss.lifecycle.State):
+    """Lauch the service via SysV."""
     services = []
+    supported_os_type=[mss.utils.OsTypeDebian()]
 
     def entry(self, requires={}):
         for service in self.services:
-            logger.event("%s.%s /etc/init.d/%s start ..." % (self.lf_name, self.name, service))
             thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
-                                           ["/etc/init.d/%s" % service, "start"],
+                                           ["/etc/init.d/%s" % service, "status"],
                                            None, None, None, None)
             thread.start()
             thread.join()
+            if thread.code != 0:
+                logger.event("%s.%s /etc/init.d/%s start ..." % (self.lf_name, self.name, service))
+                thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
+                                               ["/etc/init.d/%s" % service, "start"],
+                                               None, None, None, None)
+                thread.start()
+                thread.join()
+            else:
+                logger.event("%s.%s service %s is already started ..." % (self.lf_name, self.name, service))
             logger.event("%s.%s /etc/init.d/%s start done" % (self.lf_name, self.name, service))
 
     def leave(self):

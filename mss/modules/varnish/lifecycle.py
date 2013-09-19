@@ -22,7 +22,7 @@ class Configured(mss.state.RunScript):
 class Active(mss.state.ActiveWithSystemd):
     services=["varnish"]
 
-class Installed(mss.state.InstallPackages):
+class Installed(mss.state.InstallPackagesUrpm):
     packages=["varnish"]
 
 class Varnish(Lifecycle):

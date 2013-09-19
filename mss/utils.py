@@ -3,8 +3,11 @@
 import platform
 
 class OsType(object):
-    """Represent an linux distribution type"""
-    def __init__(self,name,release):
+    """Represent an linux distribution type.  :py:meth:`__eq__` is
+    used to know if a state has the current linux distribution in his
+    supported_os_type.
+    """
+    def __init__(self,name,release=None):
         self.name = name
         self.release = release
 
@@ -13,10 +16,15 @@ class OsType(object):
             return True
         else:
             return (self.name == other.name and
-                    self.release == other.release)
+                    (self.release == None or 
+                     other.release == None or
+                     self.release == other.release))
 
     def __repr__(self):
-        return "%s - %s" % (self.name,self.release)
+        if self.release == None:
+            return "%s - all" % (self.name)
+        else :
+            return "%s - %s" % (self.name,self.release)
 
 class OsTypeAll():
     """Use this class to specify that a state supports all os type. It
@@ -29,16 +37,24 @@ class OsTypeAll():
             return True
         return False
 
+    def __repr__(self):
+        return "all"
+
+
 class OsTypeMBS1(OsType):
     def __init__(self):
         self.name = "Mandriva Business Server"
         self.release = "1"
 
-class OsTypeDebianWheezy(OsType):
+class OsTypeDebian(OsType):
+    def __init__(self):
+        OsType.__init__(self,"debian")
+
+class OsTypeDebianWheezy(OsTypeDebian):
     def __init__(self):
         self.name = 'debian'
         self.release = 'wheezy/sid'
-
+        
 
 def find_distribution():
     t=platform.linux_distribution()

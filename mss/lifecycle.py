@@ -647,7 +647,7 @@ class LifecycleManager(object):
         :type verbose: bool
         :rtype: list of strings (states names)"""
         if doc:
-            return [{'name':s.name,'doc':s.__doc__} for s in self._get_by_name(lf_name).state_list()]
+            return [{'name':s.name,'doc':s.__doc__,'os-type':s.supported_os_type} for s in self._get_by_name(lf_name).state_list()]
         else:
             return [s.name for s in self._get_by_name(lf_name).state_list()]
 

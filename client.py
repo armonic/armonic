@@ -41,13 +41,13 @@ def cmd_info(args):
 
 def cmd_get_states(args):
     if args.doc:
-        x = PrettyTable(["State name", "Documentation"])
+        x = PrettyTable(["State name", "Os-type", "Documentation"])
         x.align["State name"] = "l"
         x.align["Documentation"] = "l"
         x.padding_width = 1 # One space between column edges and contents (default)
         ret=client.call('state_list', args.module,doc=True)
         for r in ret:
-            x.add_row([r['name'],r['doc']])
+            x.add_row([r['name'],r['os-type'],r['doc']])
         print x
     else:
         pprint.pprint(client.call('state_list', args.module))
