@@ -131,6 +131,7 @@ class VString(Variable):
     pattern_error = None
 
     def _validate(self):
+        Variable._validate(self)
         if self.pattern and not re.match(self.pattern, self.value):
             raise ValidationError(self.pattern_error)
         return self.validate()
@@ -148,6 +149,7 @@ class VInt(Variable):
     max_val = None
 
     def _validate(self):
+        Variable._validate(self)
         if self.min_val and self.value < self.min_val:
             raise ValidationError("%s value must be greater than %s" % (self.name, self.min_val))
         if self.max_val and self.value > self.max_val:

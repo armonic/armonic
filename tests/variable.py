@@ -44,6 +44,16 @@ class TestVariable(unittest.TestCase):
         t=VList("list1",inner=VString)
         t.fill(["iop1","iop2"])
 
+    def test_required(self):
+        t=VString("str")
+        with self.assertRaises(ValidationError):
+            t._validate()
+        t=Port("port")
+        with self.assertRaises(ValidationError):
+            t._validate()
+        
+        
+
 
 if __name__ == '__main__':
     unittest.main()
