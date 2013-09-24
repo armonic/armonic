@@ -1,5 +1,6 @@
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require, VString, VPort
+from mss.require import Require
+from mss.variable import VString, Port
 import mss.state
 import configuration
 
@@ -10,7 +11,7 @@ logger=logging.getLogger(__name__)
 class NotInstalled(State):pass
 class Configured(State):
     """Configure listen and vhost port"""
-    requires=[Require([VPort("port",default="8080")]),
+    requires=[Require([Port("port",default=8080)]),
               Require([VString("augeas_root",default="/")],name="augeas")]
     def entry(self,requires):
         """Set listen and vhost port"""

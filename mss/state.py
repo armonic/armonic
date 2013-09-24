@@ -19,7 +19,7 @@ class CopyTemplate(mss.lifecycle.State):
     """Copy a file from src to dst"""
     src=""
     dst=""
-    def entry(self,requires={}):
+    def entry(self):
         logger.event("%s.%s copy template file from '%s' to '%s' ...", self.lf_name, self.name, self.src, self.dst)
         copyfile(self.src,self.dst)
 
@@ -28,16 +28,16 @@ class RunScript(mss.lifecycle.State):
     shell script args, redefine :py:meth:`requireToScriptArgs`."""
     script_name = ""
 
-    def require_to_script_args(self, requires):
+    def require_to_script_args(self):
         """Return []. Redefine it if your script needs arguments.
         This must return a list of arguements.
         """
         return []
 
-    def entry(self, requires={}):
+    def entry(self):
         script_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), self.script_name)
         script_dir = os.path.dirname(script_path)
-        script_args = self.require_to_script_args(requires)
+        script_args = self.require_to_script_args()
         logger.event("%s.%s run script %s %s ...", self.lf_name,
                      self.name, self.script_name, script_args)
         thread = process.ProcessThread("/bin/bash", None, "test",
@@ -59,7 +59,7 @@ class InstallPackagesUrpm(mss.lifecycle.State):
     packages = []
     supported_os_type = [mss.utils.OsTypeMBS1()]
 
-    def entry(self, requires={}):
+    def entry(self):
         pkgs = " ".join(self.packages)
         logger.event("%s.%s urpmi %s ...", self.lf_name, self.name, pkgs)
         for p in self.packages:
@@ -150,7 +150,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
                 thread.join()
                 raise ErrorSystemd()
 
-    def entry(self, requires={}):
+    def entry(self):
         self.__systemctl("start")
 
     def leave(self):
@@ -171,7 +171,7 @@ class ActiveWithSystemV(mss.lifecycle.State):
     services = []
     supported_os_type=[mss.utils.OsTypeDebian()]
 
-    def entry(self, requires={}):
+    def entry(self):
         for service in self.services:
             thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
                                            ["/etc/init.d/%s" % service, "status"],
@@ -207,4 +207,4 @@ class ActiveWithSystemV(mss.lifecycle.State):
 
 class InitialState(mss.lifecycle.State):
     supported_os_type=[mss.utils.OsTypeAll()]
-    
+

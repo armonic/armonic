@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s))')
     args = parser.parse_args()
 
-    mss.common.load_lifecycles(args.modules_dir)
+    mss.common.load_lifecycles(os.path.abspath(args.modules_dir))
     lfm = mss.lifecycle.LifecycleManager()
 
     server = XMLRPCServer((args.host, args.port),

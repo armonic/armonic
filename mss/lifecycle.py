@@ -108,7 +108,7 @@ Code documentation
 import inspect
 import logging
 
-from mss.common import is_exposed, expose
+from mss.common import is_exposed, expose, IterContainer, DoesNotExist
 import mss.utils
 
 logger = logging.getLogger(__name__)
@@ -191,6 +191,10 @@ class State(object):
         if not cls._instance:
             cls._instance = super(State, cls).__new__(
                 cls, *args, **kwargs)
+            _requires = cls._instance.requires
+            _provides = cls._instance.provides
+            cls._instance.requires = IterContainer(_requires)
+            cls._instance.provides = IterContainer(_provides)
         return cls._instance
 
     @property
@@ -209,26 +213,29 @@ class State(object):
     def lf_name(self, name):
         self._lf_name = name
 
-    def safe_entry(self, requires):
+    def safe_entry(self, primitive):
         """Check if all state requires are satisfated.
 
-        :param requires: the requires for the state
-        :type requires: {require_name1: [{value1: value, value2: value, ...}]}
+        :param primitive: values for all requires of the State
+        :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
+        # Fill requires values first
+        for require_name, variables_values in primitive.items():
+            try:
+                require = self.requires.get(require_name)
+                logger.debug("Setting %s in %s of %s" % (variables_values, require, self.name))
+                require.fill(variables_values)
+            except DoesNotExist:
+                logger.warning("Require %s not found in %s, ignoring" % (require_name, self))
+                pass
+        # Validate each require
         for require in self.requires:
-            if require.name in requires:
-                values = requires[require.name]
-                requires[require.name] = require.validate(values)
-            else:
-                requires.update({require.name: require.validate([])})
-        logger.debug("applying state %s" % (self.name))
-        logger.debug("\trequires: %s" % requires)
-        return self.entry(requires)
+            logger.debug("Validating %s in %s" % (require, self.name))
+            require.validate()
+        return self.entry()
 
-    def entry(self, requires):
-        """Called when a state is applied
-
-        :param requires: the requires for the state"""
+    def entry(self):
+        """Called when a state is applied"""
         return "-> %s state entry" % self.name
 
     def leave(self):
@@ -379,7 +386,7 @@ class Lifecycle(object):
     def _is_transition_allowed(self, s, d):
         """A transition is allowed if src and dst state support current os type."""
         return (mss.utils.os_type in d.supported_os_type
-                and mss.utils.os_type in s.supported_os_type 
+                and mss.utils.os_type in s.supported_os_type
                 and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):

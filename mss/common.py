@@ -76,3 +76,53 @@ def load_lifecycles(dir):
                 except ImportError as e:
                     logger.warning("Exception on import module %s" % module)
                     logger.warning(e)
+
+
+class DoesNotExist(Exception):
+    pass
+
+
+class ValidationError(Exception):
+    pass
+
+
+class IterContainer(object):
+    """
+    Simple object container
+
+    Is an iterator to loop over objects:
+        objects = IterContainer(objects)
+        for object in objects:
+            print object.name, object.value
+
+    And provide easy object retrieve:
+        objects = IterContainer(objects)
+        object = objects.object_name
+        print object.name, object.value
+
+    Objects MUST have a name attribute
+    """
+    _objects = []
+
+    def __new__(cls, objects):
+        instance = super(IterContainer, cls).__new__(cls, objects)
+        for object in objects:
+            instance.__setattr__(object.name, object)
+        return instance
+
+    def __init__(self, objects):
+        self._objects = objects
+
+    def append(self, object):
+        self._objects.append(object)
+
+    def get(self, attr, *args, **kwargs):
+        if hasattr(self, attr):
+            return getattr(self, attr)
+        raise DoesNotExist("%s does not exist" % attr)
+
+    def __iter__(self):
+        return iter(self._objects)
+
+    def __repr__(self):
+        return "IterContainer(%s)" % self._objects

@@ -13,6 +13,15 @@ dict. Each dict contain a variable name and its value ::
 
 """
 
+import logging
+
+from mss.common import IterContainer, DoesNotExist
+from mss.variable import VString
+
+
+logger = logging.getLogger(__name__)
+
+
 class MissingRequire(Exception):
     def __init__(self, variable="", state=None):
         self.variable = variable
@@ -25,79 +34,41 @@ class MissingRequire(Exception):
         return "Missing require %s" % self.variable
 
 
-class Variable(object):
-    type = 'undefined'
-
-    def __init__(self, name, default=None):
-        self.name = name
-        self.default = default
-
-    def __repr__(self):
-        if self.default:
-            return "name:%s,type:%s,default:%s" % (self.name, self.type, self.default)
-        else:
-            return "name:%s,type:%s" % (self.name, self.type)
-
-    def to_primitive(self):
-        if self.default:
-            return {'name': self.name, 'type': self.type,
-                    'default': self.default}
-        else:
-            return {'name': self.name, 'type': self.type}
-
-    @property
-    def has_default_value(self):
-        return self.default != None
-
-
-class VString(Variable):
-    type = 'str'
-class VPassword(Variable):
-    type = 'password'
-class VHost(Variable):
-    type = 'host'
-class VPort(Variable):
-    type = 'port'
-
-
 class Require(object):
-    """A require to specify a configuration variable of a state.
-    :param args: A array of variables
-    :param name: A optionnal name for this require
-    """
-    def __init__(self, args, name=None):
+    """Specify configuration variables for a state."""
+
+    def __init__(self, variables, name=None):
         """
-        :param args: A variable definition
-        :param name: A optionnal name for this require
+        :param args: list of variables
+        :param name: name of the require (default: "local")
         """
-        if name:
-            self.name = name
-        elif args != []:
-            self.name = args[0].name
-        else:
-            self.name = 'undefined'
-        self.args = args
+        self.name = name if name else "this"
+        self.variables = IterContainer(variables)
         self.type = "simple"
+        self._validated = False
 
-    def __repr__(self):
-        return "type:%s,name:%s,args:%s" % (self.type, self.name, self.args)
+    def fill(self, primitive={}):
+        """Fill Require variables
 
-    def validate(self, values):
-        """Return a dict containing this args or the defaultValue"""
-        tacc = []
-        if values == []:
-            values = [{}]
-        for vDct in values:
-            acc = {}
-            for v in self.args:
-                if v.name in vDct:
-                    acc.update({v.name: vDct[v.name]})
-                elif v.default:
-                    acc.update({v.name: v.default})
-                else:
-                    raise MissingRequire(v.name)
-            tacc.append(acc)
-        return tacc
+        :param primitive: variables values for this Require
+        :type primitive: dict of variable_name: primitive_value
+        :rtype: boolean"""
+        for variable_name, variable_value in primitive.items():
+            try:
+                self.variables.get(variable_name).fill(variable_value)
+            except DoesNotExist:
+                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
+                pass
+        return True
+
+    def validate(self, values={}):
+        """Validate Require values
+
+        :rtype: boolean"""
+        for variable in self.variables:
+            variable._validate()
+        self._validated = True
+        return self._validated
 
     def to_primitive(self):
         return {"name": self.name, "args": [a.to_primitive() for a in self.args],
@@ -111,7 +82,7 @@ class Require(object):
         :param dct: To specify a argName and its value.
         """
         ret = ({}, [])
-        for a in self.args:
+        for a in self.variables:
             if a.name in dct:
                 ret[0].update({a.name: dct[a.name]})
             elif a.has_default_value:
@@ -120,30 +91,38 @@ class Require(object):
                 ret[1].append(a.name)
         return ret
 
+    def __repr__(self):
+        return "<Require(name=%s, variables=%s)>" % (self.name, self.variables)
+
 
 class RequireLocal(Require):
     """To specify a configuration variable which can be provided
-    by a *provide* of a local module."""
-    def __init__(self, module, provide, args, name=None):
-        self.module = module
-        self.provide = provide
-        self.args = args
+    by a *provide_name* of a local Lifecycle object."""
+    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None):
+        Require.__init__(self, variables, name)
+        self.lf_name = lf_name
+        self.provide_name = provide_name
+        self.provide_args = provide_args
+        self.name = name if name else "%s.%s" % (self.lf_name, self.provide_name)
         self.type = "local"
-        self.name = name if name else "%s.%s" % (self.module, self.provide)
 
     def to_primitive(self):
         return {"name": self.name,
                 "type": self.type,
-                "module": self.module,
-                "provide": self.provide,
-                "args": [v.to_primitive() for v in self.args]}
+                "lf_name": self.lf_name,
+                "provide_name": self.provide_name,
+                "provide_args": [v.to_primitive() for v in self.provide_args]}
 
     def __repr__(self):
-        return "type:%s,name:%s,module:%s,provide:%s,args:%s" % (self.type, self.name, self.module,
-                                                                 self.provide, self.args)
+        return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
+                    (self.name, self.variables, self.lf_name, self.provide_name, self.provide_args)
 
     def generate_provide_args(self, dct={}):
         return self.generate_args(dct)
+
+
+class RequireVhost(VString):
+    pass
 
 
 class RequireExternal(RequireLocal):
@@ -152,14 +131,14 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, module, provide, args, name=None):
-        RequireLocal.__init__(self, module, provide, args, name)
-        args.append(VHost('host'))
+    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None):
+        RequireLocal.__init__(self, variables, lf_name, provide_name, provide_args, name)
         self.type = "external"
+        self.provide_args.append(RequireVhost('host'))
 
     def generate_provide_args(self, dct={}):
         ret = ({},[])
-        for a in self.args:
+        for a in self.provide_args:
             if a.name == 'host':
                 continue
             if a.name in dct:
@@ -169,3 +148,7 @@ class RequireExternal(RequireLocal):
             else:
                 ret[1].append(a.name)
         return ret
+
+    def __repr__(self):
+        return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
+                    (self.name, self.variables, self.lf_name, self.provide_name, self.provide_args)

@@ -32,14 +32,21 @@ def reqList(args):
 
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    acc={}
-    if not args: return acc
-    for r in args:
-        a=reqList(r[1:])
-        if r[0] in acc:
-            acc[r[0]].append(a)
-        else: acc.update({r[0]:[a]})
-    return acc
+    requires = {}
+    current_require = None
+    for require in args:
+        for variable in require:
+            if not ':' in variable:
+                if not variable in requires:
+                    current_require = variable
+                    requires[current_require] = {}
+            else:
+                variable, value = variable.split(':')
+                if not variable in requires[current_require]:
+                    requires[current_require][variable] = [value]
+                else:
+                    requires[current_require][variable].append(value)
+    return requires
 
 
 
@@ -91,6 +98,8 @@ def cmd_state_goto(args):
     else:
         pprint.pprint(client.call('state_goto', args.module, args.state, parseArgs(args.require)))
 
+def cmd_dot(args):
+    print client.call('to_dot', args.module)
 
 def cmd_provide(args):
     if args.state:
@@ -313,12 +322,16 @@ parser_provide.add_argument('-R',dest="require" , type=str,  nargs="*", help="sp
 parser_provide.add_argument('-A',dest="arg" , type=str, nargs="*", help='specify provide arguments')
 parser_provide.add_argument('--requires-list','-r',action='store_true',help="list requires to call this provide")
 parser_provide.add_argument('--arguments','-a',action='store_true',help="print path to call this provide")
+parser_provide.add_argument('--path','-p',action='store_true',help="print path to call this provide")
 parser_provide.add_argument('--call','-c',action='store_true',help="call this provide")
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_goto = subparsers.add_parser('goto', help='Go to a module state')
 parser_goto.add_argument('module' , type=str, help='a module')
 parser_goto.add_argument('state' , type=str, help='a module')
+parser_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'")
+parser_goto.add_argument('--dryrun','-n',action='store_true',help="Dryrun mode")
+parser_goto.add_argument('--list-requires','-l',action='store_true',help="List Requires to go to this path")
 parser_goto.set_defaults(func=cmd_goto)
 
 parser_current = subparsers.add_parser('current', help='Current module state')
