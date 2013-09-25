@@ -21,34 +21,52 @@ from mss.client_socket import ClientSocket
 # Print list of available methods
 #print lfm.system.listMethods()
 
+
+def read_string(string):
+    try:
+        return int(string)
+    except ValueError:
+        return string
+
 def reqList(args):
     """take a list of "args:value" strings and return a dict"""
     acc={}
     for a in args:
         s=a.split(":")
-        acc.update({s[0]:s[1]})
+        acc.update({s[0]:read_string(s[1])})
     return acc
-
 
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    requires = {}
-    current_require = None
-    for require in args:
-        for variable in require:
-            if not ':' in variable:
-                if not variable in requires:
-                    current_require = variable
-                    requires[current_require] = {}
-            else:
-                variable, value = variable.split(':')
-                if not variable in requires[current_require]:
-                    requires[current_require][variable] = [value]
-                else:
-                    requires[current_require][variable].append(value)
-    return requires
+    acc={}
+    if not args: return acc
+    for r in args:
+        a=reqList(r[1:])
+        if r[0] in acc:
+            acc[r[0]]=[acc[r[0]]]
+            acc[r[0]].append(a)
+        else: acc.update({r[0]:a})
+    print acc
+    return acc
 
-
+# def parseArgs(args):
+#     """take a list of "args:value" strings and return a dict"""
+#     requires = {}
+#     current_require = None
+#     for require in args:
+#         for variable in require:
+#             if not ':' in variable:
+#                 if not variable in requires:
+#                     current_require = variable
+#                     requires[current_require] = {}
+#             else:
+#                 variable, value = variable.split(':')
+#                 if not variable in requires[current_require]:
+#                     requires[current_require][variable] = [value]
+#                 else:
+#                     requires[current_require][variable].append(value)
+#     print requires
+#     return requires
 
 
 def cmd_status(args):
@@ -88,7 +106,7 @@ def cmd_state_goto(args):
         x.padding_width = 1 # One space between column edges and contents (default)
         for r in ret:
             x.add_row([r.name , r.type,"","",""])
-            for a in r.args:
+            for a in r.variables:
                 x.add_row(["","",a.name,a.type,a.default])
             x.add_row(["" , "","","",""])
         print x
