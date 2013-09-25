@@ -3,11 +3,12 @@ import sys
 import logging
 import logging.handlers
 import json
+import traceback
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-format = '%(asctime)s|%(levelname)6s - %(message)s'
+format = '%(asctime)s|%(levelname)7s - %(message)s'
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(logging.Formatter(format))
@@ -72,10 +73,13 @@ def load_lifecycles(dir):
             if os.path.exists(os.path.join(dir, module, '__init__.py')):
                 try:
                     __import__(module)
-                    logger.debug("Imported module %s" % module)
+                    logger.info("Imported module %s" % module)
                 except ImportError as e:
-                    logger.warning("Exception on import module %s" % module)
-                    logger.warning(e)
+                    logger.info("Module %s can not be imported" % module)
+                    logger.debug("Exception on import module %s:" % module)
+                    tb=traceback.format_exc().split("\n")
+                    for l in tb:
+                        logger.debug("  %s"%l)
 
 
 class DoesNotExist(Exception):
