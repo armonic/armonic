@@ -14,7 +14,10 @@ Client
 * python-prettytable
 * pip install argcomplete
 
+Install All dependencies
+------------------------
 apt-get install python-augeas python-sphinx python-prettytable python-mysqldb
+pip install argcomplete
 
 
 Test Lifecycle and Augeas
@@ -27,19 +30,14 @@ cp -r /etc/mysql /tmp/etc/
 
 Non interactive test
 ---------------------
-python tests/lifecycle.py
+python tests/tests_lifecycle.py
 
 Interactive tests
 -----------------
-python agent-xmlrpc.py &
-python client-xmlrpc.py help
-python client-xmlrpc.py list
-python client-xmlrpc.py load Mysql
-python client-xmlrpc.py states Mysql
-python client-xmlrpc.py goto Mysql Active -l     #list requires needed to go to Active
-python client-xmlrpc.py goto Mysql Active port:8080 augeas_root:/tmp/
-python client-xmlrpc.py provide Mysql
+./client.py --help
 
+To add client completion, run
+eval "$(~/.local/bin/register-python-argcomplete  client.py)"
 
 To get module documentation
 ---------------------------
