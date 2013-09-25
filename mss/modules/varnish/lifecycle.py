@@ -16,9 +16,7 @@ class Configured(mss.state.RunScript):
     script_name="setup.sh"
 
     def require_to_script_args(self):
-#        hosts=[h.value for h in self.requires.get('Wordpress.get_site').variables.host]
-        hosts=[self.requires.get('Wordpress.get_site').variables.host.value]
-        print hosts
+        hosts=[v.host.value for v in self.requires.get('Wordpress.get_site').variables]
         return [",".join(hosts), 
                 str(self.requires.this.variables.port.value)]
 

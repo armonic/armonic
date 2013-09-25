@@ -11,6 +11,7 @@ dict. Each dict contain a variable name and its value ::
      ...
     ]
 
+
 """
 
 import logging
@@ -35,17 +36,35 @@ class MissingRequire(Exception):
 
 
 class Require(object):
-    """Specify configuration variables for a state."""
+    """Specify configuration variables for a state.
+    """
 
     def __init__(self, variables, name=None):
         """
         :param args: list of variables
         :param name: name of the require (default: "local")
+        :param nargs: occurence number of variables.
+        :type nargs: ["1","?","*"].
         """
         self.name = name if name else "this"
-        self.variables = IterContainer(variables)
         self.type = "simple"
         self._validated = False
+        self.variables = IterContainer(variables)
+
+    def _fill(self, iterContainer, primitive):
+        """Fill an iterContainer with value found in primitive.
+        :param iterContainer: contains some variables.
+        :type iterContainer: iterContainer.
+        :type primitive: dict of variable_name: primitive_value.
+        :rtype: boolean."""
+        for variable_name, variable_value in primitive.items():
+            try:
+                iterContainer.get(variable_name).fill(variable_value)
+            except DoesNotExist:
+                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
+                pass
+        return True
+        
 
     def fill(self, primitive={}):
         """Fill Require variables
@@ -53,22 +72,23 @@ class Require(object):
         :param primitive: variables values for this Require
         :type primitive: dict of variable_name: primitive_value
         :rtype: boolean"""
-        for variable_name, variable_value in primitive.items():
-            try:
-                self.variables.get(variable_name).fill(variable_value)
-            except DoesNotExist:
-                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
-                pass
-        return True
+        return self._fill(self.variables,primitive)
+
+
+    def _validate(self, iterContainer, values={}):
+        """Validate Require values
+
+        :rtype: boolean"""
+        for variable in iterContainer:
+            variable._validate()
+        self._validated = True
+        return self._validated
 
     def validate(self, values={}):
         """Validate Require values
 
         :rtype: boolean"""
-        for variable in self.variables:
-            variable._validate()
-        self._validated = True
-        return self._validated
+        return self._validate(self.variables,values)
 
     def to_primitive(self):
         return {"name": self.name, "args": [a.to_primitive() for a in self.args],
@@ -97,14 +117,52 @@ class Require(object):
 
 class RequireLocal(Require):
     """To specify a configuration variable which can be provided
-    by a *provide_name* of a local Lifecycle object."""
-    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None):
+    by a *provide_name* of a local Lifecycle object.
+
+    nargs parameters permits to specify how many time you can call a
+    provide. It can be '1', '?', '*' times. Then, variables is a list
+    which will contains many values for each variables.
+    """
+    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None, nargs="1"):
         Require.__init__(self, variables, name)
         self.lf_name = lf_name
         self.provide_name = provide_name
         self.provide_args = provide_args
         self.name = name if name else "%s.%s" % (self.lf_name, self.provide_name)
         self.type = "local"
+        if nargs not in ["1","?","*"]:
+            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
+        self.nargs = nargs
+        # This contains Variable submitted
+        self._variables_skel = variables
+        # This will contain Variables
+        self.variables = []
+
+    
+    def fill(self,primitives=[]):
+        """Fill variables from a list of primitive. If primitive is
+        not a list, then it is encapsulated in a list. This permit to
+        easily managed request from cli. Need to be FIXED.
+
+        NotImplementedYet: We must check if provided primitive
+        correspond to nargs.
+        """
+        if type(primitives) is not list:
+            primitives=[primitives]
+        for primitive in primitives:
+            tmp=IterContainer(self._variables_skel)
+            self._fill(tmp,primitive)
+            self.variables.append(tmp)
+        return True
+
+    def validate(self, values={}):
+        """Validate Require values
+
+        :rtype: boolean"""
+        for v in self.variables:
+            self._validate(v,values)
+        return True
+
 
     def to_primitive(self):
         return {"name": self.name,
@@ -131,8 +189,8 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None):
-        RequireLocal.__init__(self, variables, lf_name, provide_name, provide_args, name)
+    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None, nargs="1"):
+        RequireLocal.__init__(self, variables, lf_name, provide_name, provide_args, name, nargs)
         self.type = "external"
         self.provide_args.append(RequireVhost('host'))
 
