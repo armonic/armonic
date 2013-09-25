@@ -123,11 +123,13 @@ class RequireLocal(Require):
     provide. It can be '1', '?', '*' times. Then, variables is a list
     which will contains many values for each variables.
     """
-    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None, nargs="1"):
+    def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
+        variables=provide_args + provide_ret
         Require.__init__(self, variables, name)
         self.lf_name = lf_name
         self.provide_name = provide_name
         self.provide_args = provide_args
+        self.provide_ret = provide_ret
         self.name = name if name else "%s.%s" % (self.lf_name, self.provide_name)
         self.type = "local"
         if nargs not in ["1","?","*"]:
@@ -135,8 +137,10 @@ class RequireLocal(Require):
         self.nargs = nargs
         # This contains Variable submitted
         self._variables_skel = variables
-        # This will contain Variables
-        self.variables = []
+        # This will contain Variables. fill method will append
+        # IterContainer if needed, but we have to initialize it in
+        # order to manage default values.
+        self.variables = [IterContainer(variables)]
 
     
     def fill(self,primitives=[]):
@@ -149,10 +153,12 @@ class RequireLocal(Require):
         """
         if type(primitives) is not list:
             primitives=[primitives]
-        for primitive in primitives:
-            tmp=IterContainer(self._variables_skel)
-            self._fill(tmp,primitive)
-            self.variables.append(tmp)
+        if primitives != []:
+            self._fill(self.variables[0],primitives[0])
+            for primitive in primitives[1:]:
+                tmp=IterContainer(self._variables_skel)
+                self._fill(tmp,primitive)
+                self.variables.append(tmp)
         return True
 
     def validate(self, values={}):
@@ -189,10 +195,9 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, variables, lf_name, provide_name, provide_args=[], name=None, nargs="1"):
-        RequireLocal.__init__(self, variables, lf_name, provide_name, provide_args, name, nargs)
+    def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
+        RequireLocal.__init__(self, lf_name, provide_name, provide_args + [RequireVhost('host')], provide_ret, name, nargs)
         self.type = "external"
-        self.provide_args.append(RequireVhost('host'))
 
     def generate_provide_args(self, dct={}):
         ret = ({},[])

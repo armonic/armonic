@@ -99,6 +99,7 @@ def cmd_state_show(args):
 def cmd_state_goto(args):
     if args.list_requires:
         ret=client.call('state_goto_requires', args.module, args.state)
+        pprint.pprint(ret)
         x = PrettyTable(["Name","Type","ArgName", "ArgType","ArgDefault"])
         x.align["Name"] = "l"
         x.align["Type"] = "l"
@@ -106,7 +107,11 @@ def cmd_state_goto(args):
         x.padding_width = 1 # One space between column edges and contents (default)
         for r in ret:
             x.add_row([r.name , r.type,"","",""])
-            for a in r.variables:
+            if r.type == 'simple':
+                variables=r.variables
+            else:
+                variables=r.provide_args
+            for a in variables:
                 x.add_row(["","",a.name,a.type,a.default])
             x.add_row(["" , "","","",""])
         print x

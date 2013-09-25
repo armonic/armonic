@@ -174,3 +174,6 @@ class Hostname(VString):
 class Port(VInt):
     min_val = 0
     max_val = 65535
+
+class Password(VString):
+    pass
