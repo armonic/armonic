@@ -11,13 +11,13 @@ logger=logging.getLogger(__name__)
 class NotInstalled(State):pass
 class Configured(State):
     """Configure listen and vhost port"""
-    requires=[Require([Port("port",default=8080)]),
-              Require([VString("augeas_root",default="/")],name="augeas")]
-    def entry(self,requires):
+    requires=[Require([Port("port",default=8080)],name='port'),
+              Require([VString("root",default="/")],name="augeas")]
+    def entry(self):
         """Set listen and vhost port"""
-        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,requires))
-        self.conf=configuration.Apache(autoload=True,augeas_root=requires['augeas'][0]['augeas_root'])
-        self.conf.setPort(requires['port'][0]['port'])
+        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires))
+        self.conf=configuration.Apache(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
+        self.conf.setPort(str(self.requires.get('port').variables.port.value))
     def leave(self):
         """ set wordpress.php """
         logger.info("do nothing...")

@@ -3,7 +3,8 @@ import time
 import MySQLdb
 
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require, RequireExternal, VHost, VString, VPort
+from mss.require import Require, RequireExternal
+from mss.variable import Hostname, VString, Port
 from mss.configuration_augeas import XpathNotInFile
 import mss.process
 import mss.state
@@ -21,13 +22,13 @@ class NotInstalled(mss.state.InitialState):
 
 class Configured(State):
     """Permit to configure a module. Basically, it sets mysql port"""
-    requires=[Require([VPort("port",default="3306")]),
-              Require([VString("augeas_root",default="/")])]
-    def entry(self,requires):
+    requires=[Require([Port("port",default=3306)],name="port"),
+              Require([VString("root",default="/")],name="augeas")]
+    def entry(self):
         """ set mysql port """
-        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,requires))
-        self.config=configuration.Mysql(autoload=True,augeas_root=requires['augeas_root'][0]['augeas_root'])
-        self.config.port.set(requires['port'][0]['port'])
+        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
+        self.config.port.set(str(self.requires.get('port').variables.port.value))
         try:
             self.config.skipNetworking.rm()
         except XpathNotInFile : pass
@@ -47,13 +48,13 @@ class Configured(State):
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
     requires=[Require([VString("pwd",default="root")],name="root_pwd")]
-    def entry(self,requires={}):
+    def entry(self):
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
-        thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % requires["root_pwd"][0]["pwd"]],None,None,None,None)
+        thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % self.requires.get("root_pwd").variables.pwd.value],None,None,None,None)
         thread_mysqld.start()
         thread_mysqld.join()
         if thread_mysqld.code == 0:
-            logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,requires["root_pwd"][0]["pwd"])
+            logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
         else:
             logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
 
@@ -63,16 +64,16 @@ class ResetRootPassword(mss.lifecycle.State):
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
     requires=[Require([VString("pwd",default="root")],name="root_pwd")]
-    def entry(self,requires={}):
+    def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = mss.process.ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
         thread_mysqld.start()
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = mss.process.ProcessThread("mysql -u root CHANGE_PWD to %s"%requires["root_pwd"][0]["pwd"], None, "test",["/usr/bin/mysql",
+            thread_mysql = mss.process.ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
                                                                      "-u","root",
-                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%requires["root_pwd"][0]["pwd"]
+                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires.get("root_pwd").variables.pwd.value
                                                                      ],None,None,None,None)
             thread_mysql.start()
             thread_mysql.join()
@@ -83,7 +84,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.event("%s.%s mysql root password is not '%s'",self.lf_name,self.name,requires["root_pwd"][0]["pwd"])
+            logger.event("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
         else:
             logger.event("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -137,7 +138,7 @@ class Active(mss.lifecycle.MetaState):
 
 class ConfiguredSlave(State):
     """Can be used to configure Mysql as a slave"""
-    requires=[RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),VHost("slave_host")]),
+    requires=[RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
               RequireExternal("Mysql","get_dump",[VString("dbName")])
               ]
 

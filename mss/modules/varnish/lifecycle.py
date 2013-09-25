@@ -10,8 +10,8 @@ logger=logging.getLogger(__name__)
 class NotInstalled(State):pass
 class Configured(mss.state.RunScript):
     requires=[
-        RequireExternal([Hostname("host")], "Wordpress", "get_site"),
-        Require([Port("port",required=True)])
+        RequireExternal("Wordpress", "get_site", provide_args=[Hostname("host")]),
+        Require([Port("port",default=80, required=True)])
         ]
     script_name="setup.sh"
 

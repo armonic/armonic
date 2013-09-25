@@ -1,5 +1,6 @@
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require, RequireLocal, RequireExternal, VString, VPassword
+from mss.require import Require, RequireLocal, RequireExternal
+from mss.variable import VString, Password
 import mss.state
 import configuration
 import mss.common
@@ -17,15 +18,20 @@ class Template(mss.state.CopyTemplate):
 class Configured(State):
     supported_os_type = [mss.utils.OsTypeMBS1()]
     requires=[
-        Require([VString("augeas_root",default="/")]),
-        RequireExternal("Mysql","get_db",[VString("dbName",default="wordpress_db"),
-                                          VString("dbUser",default="wordpress_user"),
-                                          VPassword("dbPassword",default="wordpress_pwd")])]
-    def entry(self,requires):
+        Require([VString("root",default="/")],name='augeas'),
+        RequireExternal("Mysql","get_db",
+                        provide_args=[VString("dbName",default="wordpress_db"),
+                                      VString("dbUser",default="wordpress_user"),
+                                      Password("dbPassword",default="wordpress_pwd")],
+                        )]
+    def entry(self):
         """set value in wp-config.php"""
-        logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,requires))
-        self.conf=configuration.Wordpress(autoload=True,augeas_root=requires['augeas_root'][0]['augeas_root'])
-        self.conf.configure(requires['Mysql.get_db'][0]['dbName'],requires['Mysql.get_db'][0]['dbUser'],requires['Mysql.get_db'][0]['dbPassword'],requires['Mysql.get_db'][0]['host'])
+        logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,self.requires))
+        self.conf=configuration.Wordpress(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
+        print self.requires.get('Mysql.get_db').variables
+        tmp=self.requires.get('Mysql.get_db').variables[0]
+        self.conf.configure(tmp.dbName.value, tmp.dbUser.value, tmp.dbPassword.value, tmp.host.value)
+#        self.conf.configure(requires['Mysql.get_db'][0]['dbName'],requires['Mysql.get_db'][0]['dbUser'],requires['Mysql.get_db'][0]['dbPassword'],requires['Mysql.get_db'][0]['host'])
     def leave(self):
         """ set wordpress.php """
         logger.info("undo php wordpress configuration file modifications...")
@@ -33,12 +39,12 @@ class Configured(State):
 
 class Active(State):
     supported_os_type = [mss.utils.OsTypeMBS1()]
-    requires=[RequireLocal("Httpd","get_documentRoot",[VString("httpdDocumentRoot",default="/var/www/wordpress")]),
-              RequireLocal("Httpd","start",[])]
-    def entry(self,requires):
-        logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,requires))
-        self.httpdDocumentRoot=requires['Httpd.get_documentRoot'][0]['httpdDocumentRoot']
-        logger.info("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s"%(self.lf_name,self.name,requires['Httpd.get_documentRoot'][0]['httpdDocumentRoot']))
+    requires=[RequireLocal("Httpd","get_documentRoot",provide_args=[VString("httpdDocumentRoot",default="/var/www/wordpress")]),
+              RequireLocal("Httpd","start")]
+    def entry(self):
+        logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,self.requires))
+        self.httpdDocumentRoot=self.requires.get('Httpd.get_documentRoot').variables[0].httpdDocumentRoot.value
+        logger.info("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s"%(self.lf_name,self.name,self.httpdDocumentRoot))
     def leave(self):
         logger.info("you should call 'apache.leaveActiveState(%s)'"%self.httpdDocumentRoot)
 
