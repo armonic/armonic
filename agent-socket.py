@@ -101,10 +101,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
     parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
     parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='MSS agent IP (default: %(default)s))')
-    parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s))')
-    args = parser.parse_args()
+    parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s)')
+    parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
 
-    mss.common.load_lifecycles(os.path.abspath(args.modules_dir))
+    args = parser.parse_args()
+    mss.common.load_lifecycles(os.path.abspath(args.modules_dir),include_modules=args.module)
     lfm = mss.lifecycle.LifecycleManager()
 
     print "Server listening on %s:%d" % (args.host, args.port)

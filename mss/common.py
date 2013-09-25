@@ -65,11 +65,14 @@ def is_exposed(f):
     return getattr(f, 'exposed', False)
 
 
-def load_lifecycles(dir):
+def load_lifecycles(dir,include_modules=None):
     """Import Lifecycle modules from dir"""
     if os.path.exists(os.path.join(dir, '__init__.py')):
         sys.path.insert(0, dir)
         for module in os.listdir(dir):
+            if (include_modules is not None
+                and module not in include_modules):
+                continue
             if os.path.exists(os.path.join(dir, module, '__init__.py')):
                 try:
                     __import__(module)
