@@ -159,7 +159,7 @@ class VInt(Variable):
     def _validate_type(self, value):
         Variable._validate_type(self, value)
         if not type(value) == int:
-            raise TypeError("value must be an int")
+            raise TypeError("value must be an int (instead %s)"%type(value))
         return value
 
     def __int__(self):
