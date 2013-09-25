@@ -1,17 +1,21 @@
-""" This module contains requires classes.
+""" A :class:`Require` permits to a module developper to specify what type of value
+it must provide to go to a state. They are specified in :py:class:`mss.lifecycle.State`.
 
-Requires are used to apply a state. The minimal requires definition
-MUST contains a method :py:meth:`Require.validate`.
+Two subclasses of :class:`Require` can be used if value can be
+provided by a lifecycle provider, namely :class:`RequireLocal` and
+:class:`RequireExternal`. These requires permit to specify the name of
+a provide and what variables it needs and returns. Moreover, it is
+sometime intersting to be able to call several time this provide and
+then, to use several values returned by this provide (see
+:py:module:`mss.varnish` for instance).
 
-The method :py:meth:`Require.validate` takes as input a list a
-dict. Each dict contain a variable name and its value ::
+* :class:`RequireLocal` specify a provide call on the same agent instance.
+* :class:`RequireExternal` specify a provide call on an other agent instance.
 
-    [{'variable1' : 'value1' , 'variable2' : 'value2' , ...},
-     {'variable1' : 'value3' , 'variable2' : 'value4' , ...},
-     ...
-    ]
-
-
+To provide values to a require, :py:meth:`Require.fill` method has to
+be used. Note that this method is automatically called when a state is
+reached. :py:meth:`Require.fill` take a dict (or a list) of primitive
+types to fill values of a require.
 """
 
 import logging
@@ -36,16 +40,20 @@ class MissingRequire(Exception):
 
 
 class Require(object):
-    """Specify configuration variables for a state.
+    """Basically, a require is a set of
+    :class:`mss.variable.Variable`. They are defined in a state and
+    are used to specify, verify and store values needed to entry in
+    this state.
+
+    To submit variable values of a require, :py:meth:`fill` method
+    must be used. Then, method :py:meth:`validate` can be used to
+    validate that values respect constraints defined by the require.
+
+    :param args: list of variables
+    :param name: name of the require (default: "local")
     """
 
     def __init__(self, variables, name=None):
-        """
-        :param args: list of variables
-        :param name: name of the require (default: "local")
-        :param nargs: occurence number of variables.
-        :type nargs: ["1","?","*"].
-        """
         self.name = name if name else "this"
         self.type = "simple"
         self._validated = False
@@ -67,9 +75,9 @@ class Require(object):
         
 
     def fill(self, primitive={}):
-        """Fill Require variables
+        """Fill variable values from a dict.
 
-        :param primitive: variables values for this Require
+        :param primitive: variables values for this require
         :type primitive: dict of variable_name: primitive_value
         :rtype: boolean"""
         return self._fill(self.variables,primitive)
@@ -122,6 +130,9 @@ class RequireLocal(Require):
     nargs parameters permits to specify how many time you can call a
     provide. It can be '1', '?', '*' times. Then, variables is a list
     which will contains many values for each variables.
+
+    :param nargs: occurence number of variables.
+    :type nargs: ["1","?","*"].
     """
     def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
         variables=provide_args + provide_ret
