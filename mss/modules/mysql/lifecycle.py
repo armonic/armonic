@@ -8,7 +8,7 @@ from mss.variable import Hostname, VString, Port
 from mss.configuration_augeas import XpathNotInFile
 import mss.process
 import mss.state
-import mss.utils
+from mss.utils import OsTypeDebian, OsTypeMBS1
 
 import configuration
 
@@ -21,7 +21,9 @@ class NotInstalled(mss.state.InitialState):
     pass
 
 class Configured(State):
-    """Permit to configure a module. Basically, it sets mysql port"""
+    """Configure mysql.
+    - set port
+    - disable skipnetworking"""
     requires=[Require([Port("port",default=3306)],name="port"),
               Require([VString("root",default="/")],name="augeas")]
     def entry(self):
@@ -60,7 +62,7 @@ class SetRootPassword(mss.lifecycle.State):
 
 
 class ResetRootPassword(mss.lifecycle.State):
-    """Go to this state to change mysql root password. It launches a
+    """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
     requires=[Require([VString("pwd",default="root")],name="root_pwd")]
@@ -91,14 +93,15 @@ class ResetRootPassword(mss.lifecycle.State):
 
 class ActiveOnDebian(mss.state.ActiveWithSystemV):
     services=["mysql"]
-    supported_os_type=[mss.utils.OsTypeDebian()]
+    supported_os_type=[OsTypeDebian()]
 
 class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
-    supported_os_type=[mss.utils.OsTypeMBS1()]
+    supported_os_type=[OsTypeMBS1()]
 
 class Active(mss.lifecycle.MetaState):
+    """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
     @provide()
     def getDatabases(self,user='root',password='root'):
@@ -168,11 +171,18 @@ class InstalledOnDebian(mss.state.InstallPackagesApt):
     packages = ["mysql-server"]
 
 class Installed(mss.lifecycle.MetaState):
+    """Install mysql package (metastate)"""
     implementations = [InstalledOnMBS, InstalledOnDebian]
 
 
 
 class Mysql(Lifecycle):
+    """Mysql lifecycle permit to install and manage a mysql
+    server. Several running mode are available:
+    - use mysql as a single database server
+    - use mysql as a slave database server
+    - use mysql as a master database server
+    """
     transitions=[
         Transition(NotInstalled()    ,Installed()),
         Transition(Installed()    ,SetRootPassword()),
