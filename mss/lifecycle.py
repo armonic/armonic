@@ -369,9 +369,20 @@ class Lifecycle(object):
             if d not in acc: acc += [d]
         return acc
         
-    def state_list(self):
-        """To get all available states."""
-        return self.__class__._state_list()
+    def state_list(self,reachable=False):
+        """To get all available states.
+
+        :parama reachable: list reachable states from the current state.
+        :rtype: list of states.
+        """
+        states = self.__class__._state_list()
+        if reachable:
+            acc=[]
+            for s in states:
+                if self._get_from_state_path(self.state_current(), s, go_back=True) != []:
+                    acc.append(s)
+            states = acc
+        return states
 
     def state_current(self):
         """To get current state."""
@@ -711,18 +722,20 @@ class LifecycleManager(object):
             raise LifecycleNotExist("%s is not loaded" % lf_name)
 
     @expose
-    def state_list(self, lf_name, doc=False):
+    def state_list(self, lf_name, doc=False, reachable=False):
         """Return all available states of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
         :param doc: Add state documentation
+        :param reachable: Only reachable states from current states
         :type lf_name: str
         :type verbose: bool
         :rtype: list of strings (states names)"""
+        states=self._get_by_name(lf_name).state_list(reachable=reachable)
         if doc:
-            return [{'name':s.name,'doc':s.__doc__,'os-type':s.supported_os_type} for s in self._get_by_name(lf_name).state_list()]
+            return [{'name':s.name,'doc':s.__doc__,'os-type':s.supported_os_type} for s in states]
         else:
-            return [s.name for s in self._get_by_name(lf_name).state_list()]
+            return [s.name for s in states]
 
     @expose
     def state_current(self, lf_name):

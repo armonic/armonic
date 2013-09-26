@@ -83,12 +83,12 @@ def cmd_state(args):
         x.align["State name"] = "l"
         x.align["Documentation"] = "l"
         x.padding_width = 1 # One space between column edges and contents (default)
-        ret=client.call('state_list', args.module,doc=True)
+        ret=client.call('state_list', args.module,doc=True,reachable=args.reachable)
         for r in ret:
             x.add_row([r['name'],r['os-type'],r['doc']])
         print x
     else:
-        for s in client.call('state_list',args.module):
+        for s in client.call('state_list',args.module,reachable=args.reachable):
             print s
     
 
@@ -214,6 +214,7 @@ parser_module_show.set_defaults(func=cmd_module_show)
 parser_state = subparsers.add_parser('state', help='List available states of a module')
 parser_state.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description")
+parser_state.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_state.set_defaults(func=cmd_state)
 
 parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module')
