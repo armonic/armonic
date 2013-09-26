@@ -192,6 +192,23 @@ class RequireLocal(Require):
         return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
                     (self.name, self.variables, self.lf_name, self.provide_name, self.provide_args)
 
+    def generate_args(self, dct={}):
+        """Return a tuple. First element of tuple a dict of
+        argName:value where value is the default value. Second is a
+        list of argName without default value.
+
+        :param dct: To specify a argName and its value.
+        """
+        ret = ({}, [])
+        for a in self._variables_skel:
+            if a.name in dct:
+                ret[0].update({a.name: dct[a.name]})
+            elif a.has_default_value():
+                ret[0].update({a.name: a.default})
+            else:
+                ret[1].append(a.name)
+        return ret
+
     def generate_provide_args(self, dct={}):
         return self.generate_args(dct)
 
