@@ -72,10 +72,10 @@ def parseArgs(args):
 def cmd_status(args):
     pass
 def cmd_module(args):
-    print client.call('list')
+    print client.call('lf_list')
 
 def cmd_module_show(args):
-    print "Not implemented yet. Will show version, state ..."
+    print client.call('lf_info',args.module)
 
 def cmd_state(args):
     if args.long_description:
@@ -158,7 +158,7 @@ def ModuleCompleter(prefix, parsed_args, **kwargs):
         client = ClientSocket(parsed_args.host, parsed_args.port)
     except Exception as e:
         argcomplete.warn("Connection error to mss agent %e" % e)
-    ret = client.call('list')
+    ret = client.call('lf_list')
     return (m for m in ret if m.startswith(prefix))
 
 def StateCompleter(prefix, parsed_args, **kwargs):

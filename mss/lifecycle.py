@@ -658,14 +658,6 @@ class LifecycleManager(object):
         return func(*args, **kwargs)
 
     @expose
-    def list(self):
-        """List loaded lifecycle objects
-
-        :rtype: list of strings (lifecycle objects names)
-        """
-        return self.lf.keys()
-
-    @expose
     def info(self):
         """Get info of mss agent
 
@@ -673,6 +665,21 @@ class LifecycleManager(object):
         """
         return {"os-type":mss.utils.os_type.name,"os-release":mss.utils.os_type.release}
 
+    @expose
+    def lf_list(self):
+        """List loaded lifecycle objects
+
+        :rtype: list of strings (lifecycle objects names)
+        """
+        return self.lf.keys()
+
+    @expose
+    def lf_info(self,lf_name):
+        """List loaded lifecycle objects
+
+        :rtype: list of strings (lifecycle objects names)
+        """
+        return self._get_by_name(lf_name).__class__.__doc__
 
     def load(self, lf_name=None):
         """Load a lifecycle object in the manager.
