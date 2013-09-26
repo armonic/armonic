@@ -165,6 +165,8 @@ class RequireLocal(Require):
         if type(primitives) is not list:
             primitives=[primitives]
         if primitives != []:
+            # To avoid append on multiple calls
+            self.variables = [IterContainer(self._variables_skel)]
             self._fill(self.variables[0],primitives[0])
             for primitive in primitives[1:]:
                 tmp=IterContainer(self._variables_skel)
@@ -224,7 +226,7 @@ class RequireExternal(RequireLocal):
     It MUST be provided.
     """
     def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
-        RequireLocal.__init__(self, lf_name, provide_name, provide_args + [RequireVhost('host')], provide_ret, name, nargs)
+        RequireLocal.__init__(self, lf_name, provide_name, provide_args + [VString('host')], provide_ret, name, nargs)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):
