@@ -113,7 +113,7 @@ class Require(object):
         for a in self.variables:
             if a.name in dct:
                 ret[0].update({a.name: dct[a.name]})
-            elif a.has_default_value:
+            elif a.has_default_value():
                 ret[0].update({a.name: a.default})
             else:
                 ret[1].append(a.name)

@@ -9,6 +9,9 @@ class Variable(object):
     _value = None
 
     def __init__(self, name, default=None, label=None, help=None, required=True):
+        # FIXME : this is a problem if we use two time this require:
+        # First time, we specified a value
+        # Second time, we want to use default value but it is not use, first value instead.
         self.name = name
         self.label = label if label else name
         self.help = help
@@ -43,6 +46,10 @@ class Variable(object):
         """Override for custom validation.
         Raise ValidationError in case of error."""
         return True
+
+    def has_default_value(self):
+        print self.default
+        return self.default != None
 
     def __str__(self):
         return str(self.value)
