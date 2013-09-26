@@ -22,7 +22,7 @@ import logging
 
 from mss.common import IterContainer, DoesNotExist
 from mss.variable import VString
-
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ class RequireLocal(Require):
             self.variables = [IterContainer(self._variables_skel)]
             self._fill(self.variables[0],primitives[0])
             for primitive in primitives[1:]:
-                tmp=IterContainer(self._variables_skel)
+                tmp=IterContainer(copy.deepcopy(self._variables_skel))
                 self._fill(tmp,primitive)
                 self.variables.append(tmp)
         return True
