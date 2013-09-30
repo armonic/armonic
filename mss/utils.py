@@ -1,6 +1,8 @@
 """This module defines some utils used by mss."""
 
 import platform
+import netifaces
+from IPy import IP
 
 class OsType(object):
     """Represent an linux distribution type.  :py:meth:`__eq__` is
@@ -61,3 +63,18 @@ def find_distribution():
     return OsType(t[0],t[1])
 
 os_type=find_distribution()
+
+
+def ethernet_ifs():
+    ifs = []
+    for interface in netifaces.interfaces():
+        if interface.startswith("eth"):
+            if_detail = netifaces.ifaddresses(interface)
+            # check if interface is configured
+            if netifaces.AF_INET in if_detail:
+                addr = if_detail[netifaces.AF_INET][0]['addr']
+                netmask = if_detail[netifaces.AF_INET][0]['netmask']
+                network = IP(addr).make_net(netmask).strNormal(0)
+                ifs.append([interface, addr, network, netmask])
+
+    return ifs

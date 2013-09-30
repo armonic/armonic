@@ -5,6 +5,19 @@ import logging.handlers
 import json
 import traceback
 
+from mss.utils import ethernet_ifs
+
+class NetworkFilter(logging.Filter):
+    """Use this filter to add ip address of agent in log. Could be
+    useful if we simultaneous use several agents.
+
+    It add %(ip) formatter.
+
+    Add this filter to a handler via addFilter method."""
+    def filter(self, record):
+        record.ip = ethernet_ifs()[0]
+        return True
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -25,11 +38,10 @@ logger.addHandler(fh)
 def log_disable_stdout():
     logger.removeHandler(ch)
 
-
 EVENT_LEVELV_NUM = 25
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 def event(self, dct, *args, **kws):
-    # Yes, logger takes its '*args' as 'args'.
+    # This level is used in mss to log an event. 
     jdct = json.dumps(dct)
     self._log(EVENT_LEVELV_NUM, jdct, args, **kws)
 logging.Logger.event = event
@@ -38,6 +50,9 @@ logging.Logger.event = event
 PROCESS_LEVELV_NUM = 24
 logging.addLevelName(PROCESS_LEVELV_NUM, "PROCESS")
 def process(self, dct, *args, **kws):
+    """This level permits to log the output of processes. In fact, the
+    message is transmitted only if it contains a '\n' otherwise, it is
+    buffered until the next '\n'."""
     if not hasattr(self,"_processline"):
         self._processline = ""
     t = dct.split("\n")

@@ -61,11 +61,12 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self._logger=logging.getLogger()
         self._logger.setLevel(logging.DEBUG)
 #        format = '%(asctime)s|%(name)s|%(levelname)s: %(message)s'
-        format = '%(asctime)s|%(levelname)7s: %(message)s'
+#        format = '%(asctime)s|%(levelname)7s %(ip)15s: %(message)s'
 #        self._logHandler = logging.StreamHandler(socketIO)
         self._logHandler = MyStreamHandler(socketIO)
         self._logHandler.setLevel(logging.DEBUG)
-        self._logHandler.setFormatter(logging.Formatter(format))
+#        self._logHandler.setFormatter(logging.Formatter(format))
+        self._logHandler.addFilter(mss.common.NetworkFilter())
         self._logger.addHandler(self._logHandler)
 
     def finish(self):
