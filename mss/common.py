@@ -15,7 +15,7 @@ class NetworkFilter(logging.Filter):
 
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
-        record.ip = ethernet_ifs()[0]
+        record.ip = ethernet_ifs()[0][1]
         return True
 
 logger = logging.getLogger()
