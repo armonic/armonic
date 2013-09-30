@@ -274,7 +274,7 @@ elif args.protocol == "socket":
     sh.setLevel(args.verbose)
     sh.setFormatter(logging.Formatter(format))
     client = ClientSocket(args.host, args.port)
-    client.set_logging_handler(sh)
+    client.add_logging_handler(sh)
     args.func(args)
 
 

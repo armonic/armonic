@@ -11,10 +11,10 @@ class ConnectionError(Exception):
     pass
 
 class ClientSocket(object):
-    def __init__(self, host="127.0.0.1", port=8000, cls_handler=logging.StreamHandler):
+    def __init__(self, host="127.0.0.1", port=8000):
         self._host = host
         self._port = port
-        self.handler = cls_handler()
+        self.handlers = []
 
     def _connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,9 +23,10 @@ class ClientSocket(object):
         except socket.error as e:
             raise ConnectionError(e)
 
-    def set_logging_handler(self, handler):
-        """Set a handler. You can use handler defined by the standard logging module."""
-        self.handler = handler
+    def add_logging_handler(self, handler):
+        """Set a handler. You can use handler defined by the standard
+        logging module, for instance logging.StreamHandler"""
+        self.handlers.append(handler)
 
     def close(self):
         self._socket.close()
@@ -65,6 +66,7 @@ class ClientSocket(object):
             (l, r) = self._receive_string()
             if l:
                 break
-            if r.levelno >= self.handler.level:
-                self.handler.handle(r)
+            for h in self.handlers:
+                if r.levelno >= h.level:
+                    h.handle(r)
         return r
