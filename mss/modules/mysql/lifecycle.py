@@ -57,6 +57,7 @@ class SetRootPassword(mss.lifecycle.State):
         thread_mysqld.join()
         if thread_mysqld.code == 0:
             logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
+            self.root_password=self.requires.get("root_pwd").variables.pwd.value
         else:
             logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
 
@@ -113,9 +114,13 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
     @provide()
-    def addDatabase(self,user,password,database):
+    def addDatabase(self,this_mysql_root_password, user,password,database):
+        """Add a user and a database. User have permissions on all databases."""
+        if database in ['database']:
+            raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
         con = MySQLdb.connect('localhost', user,
                               password);
+        self.addUser('root', this_mysql_root_password, user, password)
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
         rows = cur.fetchall()
@@ -136,7 +141,6 @@ class Active(mss.lifecycle.MetaState):
         cur = con.cursor()
         cur.execute("GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword))
         return True
-
 
 
 class ConfiguredSlave(State):
