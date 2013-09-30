@@ -2,7 +2,7 @@ Dependencies
 ============
 * python-augeas
 * python-sphinx
-
+* python-netifaces, python-ipy (to log ip address)
 
 Modules
 -------
@@ -16,7 +16,7 @@ Client
 
 Install All dependencies
 ------------------------
-apt-get install python-augeas python-sphinx python-prettytable python-mysqldb
+apt-get install python-augeas python-sphinx python-prettytable python-mysqldb python-netifaces python-ipy
 pip install argcomplete
 
 
