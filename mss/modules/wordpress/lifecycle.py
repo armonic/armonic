@@ -19,19 +19,18 @@ class Configured(State):
     supported_os_type = [mss.utils.OsTypeMBS1()]
     requires=[
         Require([VString("root",default="/")],name='augeas'),
-        RequireExternal("Mysql","get_db",
-                        provide_args=[VString("dbName",default="wordpress_db"),
-                                      VString("dbUser",default="wordpress_user"),
-                                      Password("dbPassword",default="wordpress_pwd")],
+        RequireExternal("Mysql","addDatabase",
+                        provide_args=[VString("user",default="wordpress_user"),
+                                      Password("password",default="wordpress_pwd"),
+                                      VString("database",default="wordpress_db")],
                         )]
     def entry(self):
         """set value in wp-config.php"""
         logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,self.requires))
         self.conf=configuration.Wordpress(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
-        print self.requires.get('Mysql.get_db').variables
-        tmp=self.requires.get('Mysql.get_db').variables[0]
-        self.conf.configure(tmp.dbName.value, tmp.dbUser.value, tmp.dbPassword.value, tmp.host.value)
-#        self.conf.configure(requires['Mysql.get_db'][0]['dbName'],requires['Mysql.get_db'][0]['dbUser'],requires['Mysql.get_db'][0]['dbPassword'],requires['Mysql.get_db'][0]['host'])
+        print self.requires.get('Mysql.addDatabase').variables
+        tmp=self.requires.get('Mysql.addDatabase').variables[0]
+        self.conf.configure(tmp.database.value, tmp.user.value, tmp.password.value, tmp.host.value)
     def leave(self):
         """ set wordpress.php """
         logger.info("undo php wordpress configuration file modifications...")
