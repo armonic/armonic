@@ -107,6 +107,17 @@ class DoesNotExist(Exception):
 class ValidationError(Exception):
     pass
 
+class ProvideError(Exception):
+    def __init__(self, lf_name, state_name, provide_name, msg):
+        self.lf_name=lf_name
+        self.state_name=state_name
+        self.provide_name=provide_name
+        self.msg=msg
+        Exception.__init__(self, "%s.%s.%s : %s" % (lf_name, state_name, provide_name, msg))
+
+    def __reduce__(self):
+        """We need to override it to support pickle. Must be FIXED."""
+        return (ProvideError, (self.lf_name, self.state_name, self.provide_name, self.msg, )) 
 
 class IterContainer(object):
     """
