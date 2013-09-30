@@ -39,6 +39,30 @@ class MissingRequire(Exception):
         return "Missing require %s" % self.variable
 
 
+class Requires(IterContainer):
+    """Basically, this describes a list of :py:class:`Require`."""
+
+    def build_from_primitive(self,primitive):
+        """From primitive, fill and validate this requires.
+
+        :param primitive: values for all requires.
+        :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
+        """
+        # Fill requires values first
+        for require_name, variables_values in primitive.items():
+            try:
+                require = self.get(require_name)
+                logger.debug("Setting %s in %s" % (variables_values, require))
+                require.fill(variables_values)
+            except DoesNotExist:
+                logger.warning("Require %s not found in %s, ignoring" % (require_name, self))
+                pass
+        # Validate each require
+        for require in self:
+            logger.debug("Validating %s" % (require))
+            require.validate()
+
+
 class Require(object):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and

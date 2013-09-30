@@ -109,6 +109,7 @@ import inspect
 import logging
 
 from mss.common import is_exposed, expose, IterContainer, DoesNotExist
+from require import Requires
 import mss.utils
 
 logger = logging.getLogger(__name__)
@@ -193,7 +194,10 @@ class State(object):
                 cls, *args, **kwargs)
             _requires = cls._instance.requires
             _provides = cls._instance.provides
-            cls._instance.requires = IterContainer(_requires)
+            # FIXME: I think we should directly use Requires
+            # constructor in modules in order to exhibit to user
+            # what's happening!
+            cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires
             cls._instance.provides = IterContainer(_provides)
         return cls._instance
 
@@ -216,22 +220,10 @@ class State(object):
     def safe_entry(self, primitive):
         """Check if all state requires are satisfated.
 
-        :param primitive: values for all requires of the State
+        :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
-        # Fill requires values first
-        for require_name, variables_values in primitive.items():
-            try:
-                require = self.requires.get(require_name)
-                logger.debug("Setting %s in %s of %s" % (variables_values, require, self.name))
-                require.fill(variables_values)
-            except DoesNotExist:
-                logger.warning("Require %s not found in %s, ignoring" % (require_name, self))
-                pass
-        # Validate each require
-        for require in self.requires:
-            logger.debug("Validating %s in %s" % (require, self.name))
-            require.validate()
+        self.requires.build_from_primitive(primitive)
         return self.entry()
 
     def entry(self):

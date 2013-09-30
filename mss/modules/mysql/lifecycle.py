@@ -3,7 +3,7 @@ import time
 import MySQLdb
 
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require, RequireExternal
+from mss.require import Requires, Require, RequireExternal
 from mss.variable import Hostname, VString, Port
 from mss.configuration_augeas import XpathNotInFile
 import mss.process
@@ -24,8 +24,8 @@ class Configured(State):
     """Configure mysql.
     - set port
     - disable skipnetworking"""
-    requires=[Require([Port("port",default=3306)],name="port"),
-              Require([VString("root",default="/")],name="augeas")]
+    requires=Requires([Require([Port("port",default=3306)],name="port"),
+                       Require([VString("root",default="/")],name="augeas")])
     def entry(self):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
@@ -49,7 +49,7 @@ class Configured(State):
 
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
-    requires=[Require([VString("pwd",default="root")],name="root_pwd")]
+    requires=Requires([Require([VString("pwd",default="root")],name="root_pwd")])
     def entry(self):
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % self.requires.get("root_pwd").variables.pwd.value],None,None,None,None)
@@ -66,7 +66,7 @@ class ResetRootPassword(mss.lifecycle.State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
-    requires=[Require([VString("pwd",default="root")],name="root_pwd")]
+    requires=Requires([Require([VString("pwd",default="root")],name="root_pwd")])
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = mss.process.ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
@@ -145,9 +145,9 @@ class Active(mss.lifecycle.MetaState):
 
 class ConfiguredSlave(State):
     """Can be used to configure Mysql as a slave"""
-    requires=[RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
-              RequireExternal("Mysql","get_dump",[VString("dbName")])
-              ]
+    requires=Requires([RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
+                       RequireExternal("Mysql","get_dump",[VString("dbName")])
+                       ])
 
 class Dump(State):
     @provide()
