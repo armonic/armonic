@@ -27,7 +27,7 @@ class Configured(State):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @mss.lifecycle.provide({'restart':True})
+    @mss.lifecycle.provide(flags={'restart':True})
     def set_port(self,port):
         """Set listen and vhost port"""
         self.conf.setPort(port)
