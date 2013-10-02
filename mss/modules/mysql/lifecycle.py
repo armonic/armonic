@@ -36,7 +36,7 @@ class Configured(State):
         except XpathNotInFile : pass
         self.config.save()
 
-    @provide({'restart':True})
+    @provide(flags={'restart':True})
     def set_port(self,port):
         logger.info("%s.%-10s: provide call: set port with value %s"%(self.lf_name,self.name,port))
         self.config.port.set(port)
@@ -104,7 +104,8 @@ class ActiveOnMBS(mss.state.ActiveWithSystemd):
 class Active(mss.lifecycle.MetaState):
     """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
-    @provide()
+
+    @provide(requires=Requires([Require([VString('user'),VString('password')])]))
     def getDatabases(self,user='root',password='root'):
         con = MySQLdb.connect('localhost', user,
                               password);
@@ -157,7 +158,7 @@ class Dump(State):
 
 class ActiveAsSlave(mss.lifecycle.MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
-    @provide({'restart':False})
+    @provide(flags={'restart':False})
     def get_db(self,dbName,user):
         return "iop"
     def cross(self,restart=False):pass

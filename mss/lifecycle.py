@@ -109,7 +109,7 @@ import inspect
 import logging
 
 from mss.common import is_exposed, expose, IterContainer, DoesNotExist
-from require import Requires
+from mss.require import Requires
 import mss.utils
 
 logger = logging.getLogger(__name__)
@@ -139,6 +139,7 @@ class Provide(object):
         args = inspect.getargspec(fct)
         self.args = (args.args[1:], args.defaults)
         self.flags = fct._provide_flags
+        self.requires = fct._provide_requires
 
     def to_primitive(self):
         return {"name": self.name, "args": self.args, "flags": self.flags}
@@ -146,17 +147,36 @@ class Provide(object):
     def __repr__(self):
         return "<Provide:%s(%s,%s)>" % (self.name, self.args, self.flags)
 
+    def build_args_from_primitive(self,primitive):
+        self.requires.build_from_primitive(primitive)
+        args={}
+        for a in self.args[0]:
+            for r in self.requires:
+                try : 
+                    args.update({a:r.variables.get(a).value})
+                except DoesNotExist:
+                    pass
+        return args
+                        
+        
+class RequireNotMatchPrototype(Exception):pass
 
-def provide(flags={}):
+def provide(requires=None,flags={}):
     """This is a decorator to specify a method that can be used as a provide in a state.
-    Be careful, without flags, this decorator should be used as following
-    @provide()
+    Requires are checked in order to know if all function arguments are specified by it.
+
+    Be careful, without flags, this decorator should be used as
+    following @provide()
     """
     def wrapper(func):
         func._provide = True
         func._provide_flags = flags
+        func._provide_requires = requires
+        if requires != None:
+            for a in inspect.getargspec(func).args[1:]:
+                if not requires.has_variable(a):
+                    raise RequireNotMatchPrototype("Requires of function %s doesn't match its signature (argument %s is missing)" % (func.func_name, a))
         return func
-
     return wrapper
 
 
@@ -274,7 +294,7 @@ class State(object):
 
     @classmethod
     def get_provide_args(cls, provide_name):
-        return cls._get_provide_by_name(provide_name).args
+        return cls._get_provide_by_name(provide_name).requires #args
 
     def get_provide_by_name(self, provide_name):
         return self.__class__._get_provide_by_name(provide_name)
@@ -580,7 +600,8 @@ class Lifecycle(object):
         sidx = self._stack.index(state)
         p = state.get_provide_by_name(provide_name)
         sfct = state.__getattribute__(p.name)
-        ret = sfct(**provide_args)
+        args = p.build_args_from_primitive(provide_args)
+        ret = sfct(**args)
         for i in self._stack[sidx:]:
             i.cross(**(p.flags))
         return ret

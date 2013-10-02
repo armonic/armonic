@@ -38,6 +38,7 @@ def reqList(args):
 
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
+    print args
     acc={}
     if not args: return acc
     for r in args:
@@ -68,6 +69,23 @@ def parseArgs(args):
 #     print requires
 #     return requires
 
+def require_to_table(requires):
+    x = PrettyTable(["Name","Type","ArgName", "ArgType","ArgDefault"])
+    x.align["Name"] = "l"
+    x.align["Type"] = "l"
+    x.align["Default"] = "l"
+    x.padding_width = 1 # One space between column edges and contents (default)
+    for r in requires:
+        x.add_row([r.name , r.type,"","",""])
+        if r.type == 'simple':
+            variables=r.variables
+        else:
+            variables=r.provide_args
+        for a in variables:
+            x.add_row(["","",a.name,a.type,a.default])
+        x.add_row(["" , "","","",""])
+    print x
+    
 
 def cmd_status(args):
     pass
@@ -90,7 +108,6 @@ def cmd_state(args):
     else:
         for s in client.call('state_list',args.module,reachable=args.reachable):
             print s
-    
 
 def cmd_state_current(args):
     print client.call('state_current', args.module)
@@ -100,21 +117,7 @@ def cmd_state_goto(args):
     if args.list_requires:
         ret=client.call('state_goto_requires', args.module, args.state)
         pprint.pprint(ret)
-        x = PrettyTable(["Name","Type","ArgName", "ArgType","ArgDefault"])
-        x.align["Name"] = "l"
-        x.align["Type"] = "l"
-        x.align["Default"] = "l"
-        x.padding_width = 1 # One space between column edges and contents (default)
-        for r in ret:
-            x.add_row([r.name , r.type,"","",""])
-            if r.type == 'simple':
-                variables=r.variables
-            else:
-                variables=r.provide_args
-            for a in variables:
-                x.add_row(["","",a.name,a.type,a.default])
-            x.add_row(["" , "","","",""])
-        print x
+        require_to_table(ret)
             
     elif args.dryrun:
         pprint.pprint(client.call('state_goto_path', args.module, args.state))
@@ -141,17 +144,14 @@ def cmd_provide(args):
     print x
 
 def cmd_provide_show(args):
-    ret=client.call('provide_list', args.module)
     if args.path:
         pprint.pprint(client.call('provide_call_path', args.module, args.provide))
     else:
-        for i in ret.iterkeys():
-            for j in ret[i]:
-                if j['name'] == args.provide:
-                    print j['args']
+        ret=client.call('provide_call_args', args.module, args.provide)
+        require_to_table(ret)
 
 def cmd_provide_call(args):
-    pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), reqList(args.arg)))
+    pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), parseArgs(args.args)))
 
 def ModuleCompleter(prefix, parsed_args, **kwargs):
     try:
@@ -249,8 +249,8 @@ parser_provide_show.set_defaults(func=cmd_provide_show)
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_provide_call.add_argument('provide' , type=str, help='a provide').completer = ProvideCompleter
-parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", help="specify requires. Format is 'require_name value1:value value2:value'")
-parser_provide_call.add_argument('-A',dest="arg" , type=str, nargs="*", help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
+parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
+parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 argcomplete.autocomplete(parser)

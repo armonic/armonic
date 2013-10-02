@@ -63,6 +63,16 @@ class Requires(IterContainer):
             require.validate()
 
 
+    def has_variable(self, variable_name):
+        """Return True if variable_name is specified by this requires."""
+        for r in self:
+            try : 
+                r.variables.get(variable_name)
+                return True
+            except DoesNotExist:
+                pass
+        return False
+
 class Require(object):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and

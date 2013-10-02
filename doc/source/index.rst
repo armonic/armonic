@@ -15,10 +15,10 @@ Welcome to mss3's documentation!
 Module Lifecycle: To manage lifecycle of a service
 ==================================================
 
-.. automodule:: mss.require
-    :members: 
-
 .. automodule:: mss.lifecycle
+   :members: 
+
+.. automodule:: mss.require
     :members: 
 
 .. automodule:: mss.state
