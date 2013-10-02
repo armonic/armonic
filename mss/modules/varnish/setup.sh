@@ -41,4 +41,4 @@ echo "Generate" "/etc/varnish/secret" "file"
 echo "1111111111" > /etc/varnish/secret
 
 echo "Set port in" ${varnish_general_conf_file}
-sed -i "s/VARNISH_LISTEN_PORT=[0-9]\{0,6\}/VARNISH_LISTEN_PORT=${port}/" ${varnish_general_conf_file}
+sed -i "s/VARNISH_LISTEN_PORT=.*/VARNISH_LISTEN_PORT=${port}/" ${varnish_general_conf_file}

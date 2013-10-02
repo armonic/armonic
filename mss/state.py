@@ -148,7 +148,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
                                                None, None, None, None)
                 thread.start()
                 thread.join()
-                raise ErrorSystemd()
+                raise ErrorSystemd("See PROCESS log for information about systemd status %s" % service)
 
     def entry(self):
         self.__systemctl("start")
