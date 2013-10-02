@@ -169,7 +169,7 @@ def provide(requires=None,flags={}):
     following @provide()
     """
     def wrapper(func):
-        func._provide = True
+#        func._provide = Provide(func)
         func._provide_flags = flags
         func._provide_requires = requires
         if requires != None:
@@ -217,7 +217,7 @@ class State(object):
             # FIXME: I think we should directly use Requires
             # constructor in modules in order to exhibit to user
             # what's happening!
-            cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires
+            cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
             cls._instance.provides = IterContainer(_provides)
         return cls._instance
 
@@ -274,7 +274,7 @@ class State(object):
     @classmethod
     def get_provides(cls):
         """Return a list of 3-uple (functionName, argsName, flags) """
-        funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
+        funcs = inspect.getmembers(cls, predicate=inspect.ismethod) # FIXME: Do it one time in __new__
         acc = []
         for (fname, f) in funcs:
             try:
@@ -282,6 +282,7 @@ class State(object):
                     pass
             except AttributeError:
                 continue
+#            acc.append(Provide(f._provide))
             acc.append(Provide(f))
         return acc
 
