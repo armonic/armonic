@@ -132,20 +132,50 @@ class ProvideAmbigous(Exception):
 
 
 class Provide(object):
-    def __init__(self, fct):
+    def __init__(self, name, requires, func_args, func_default_args=None, flags=None):
         """Build a provide from a provide function. This is used to
         return useful informations"""
-        self.name = fct.__name__
-        args = inspect.getargspec(fct)
-        self.args = (args.args[1:], args.defaults)
-        self.flags = fct._provide_flags
-        self.requires = fct._provide_requires
+        self.name = name
+
+        self.requires = requires
+        self._validate_binding_requires_args(requires,func_args)
+        self.func_args = func_args
+
+        self.func_default_args = func_default_args
+        self.flags = flags
+
+    def _build_requires_full_name(self,prefix,separator="."):
+        """Build a requires full name by joining prefix, separator and provide name."""
+        if self.requires == None: return
+        for r in self.requires:
+            r._set_full_name(prefix+separator+self.name,separator)
+
+    def _validate_binding_requires_args(self,requires, args):
+        """Validate if all arguments in arg are in variables of requires.
+        
+        :param requires: Requires object
+        :param args: A list of argument name
+        """
+        if requires != None:
+            for a in args:
+                if not requires.has_variable(a):
+                    raise RequireNotMatchPrototype("Requires of function %s doesn't match its signature (argument %s is missing)" % (self.name, a))
+        return True
+
+    # def __init__(self, fct):
+    #     """Build a provide from a provide function. This is used to
+    #     return useful informations"""
+    #     self.name = fct.__name__
+    #     args = inspect.getargspec(fct)
+    #     self.args = (args.args[1:], args.defaults)
+    #     self.flags = fct._provide_flags
+    #     self.requires = fct._provide_requires
 
     def to_primitive(self):
-        return {"name": self.name, "args": self.args, "flags": self.flags}
+        return {"name": self.name, "args": self.func_args, "flags": self.flags}
 
     def __repr__(self):
-        return "<Provide:%s(%s,%s)>" % (self.name, self.args, self.flags)
+        return "<Provide:%s(%s,%s)>" % (self.name, self.func_args, self.flags)
 
     def build_args_from_primitive(self,primitive):
         self.requires.build_from_primitive(primitive)
@@ -159,7 +189,7 @@ class Provide(object):
         return args
                         
         
-class RequireNotMatchPrototype(Exception):pass
+class RequireHasNotFunArgs(Exception):pass
 
 def provide(requires=None,flags={}):
     """This is a decorator to specify a method that can be used as a provide in a state.
@@ -169,13 +199,8 @@ def provide(requires=None,flags={}):
     following @provide()
     """
     def wrapper(func):
-#        func._provide = Provide(func)
-        func._provide_flags = flags
-        func._provide_requires = requires
-        if requires != None:
-            for a in inspect.getargspec(func).args[1:]:
-                if not requires.has_variable(a):
-                    raise RequireNotMatchPrototype("Requires of function %s doesn't match its signature (argument %s is missing)" % (func.func_name, a))
+        args = inspect.getargspec(func)
+        func._provide = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
         return func
     return wrapper
 
@@ -219,6 +244,11 @@ class State(object):
             # what's happening!
             cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
             cls._instance.provides = IterContainer(_provides)
+
+            for p in cls.get_provides():
+                p._build_requires_full_name(cls.__name__,separator=".")
+
+
         return cls._instance
 
     @property
@@ -282,8 +312,8 @@ class State(object):
                     pass
             except AttributeError:
                 continue
-#            acc.append(Provide(f._provide))
-            acc.append(Provide(f))
+            acc.append(f._provide)
+#            acc.append(Provide(f))
         return acc
 
     @classmethod

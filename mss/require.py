@@ -92,6 +92,16 @@ class Require(object):
         self.type = "simple"
         self._validated = False
         self.variables = IterContainer(variables)
+        self._full_name = None
+
+    @property
+    def full_name(self):
+        print self._full_name
+        return self._full_name if self._full_name != None else self.name
+
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name by joining prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
 
     def _fill(self, iterContainer, primitive):
         """Fill an iterContainer with value found in primitive.
