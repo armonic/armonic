@@ -157,6 +157,18 @@ class Require(object):
         return "<Require(name=%s, variables=%s)>" % (self.name, self.variables)
 
 
+class RequireUser(Require):
+    """To specify a require which has to be known by user. For
+    instance, mysql password is just know by user who must remember
+    it."""
+    def __init__(self, variables, name=None):
+        Require.__init__(self,variables,name)
+        self.type = "user"
+    def __repr__(self):
+        return "<RequireUser(name=%s, variables=%s)>" % (self.name, self.variables)
+
+
+
 class RequireLocal(Require):
     """To specify a configuration variable which can be provided
     by a *provide_name* of a local Lifecycle object.

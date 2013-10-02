@@ -3,8 +3,8 @@ import time
 import MySQLdb
 
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Requires, Require, RequireExternal
-from mss.variable import Hostname, VString, Port
+from mss.require import Requires, Require, RequireExternal, RequireUser
+from mss.variable import Hostname, VString, Port, Password
 from mss.configuration_augeas import XpathNotInFile
 import mss.process
 import mss.state
@@ -114,14 +114,17 @@ class Active(mss.lifecycle.MetaState):
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
-    @provide()
-    def addDatabase(self,this_mysql_root_password, user,password,database):
+    @provide(requires=Requires([
+                RequireUser([Password('mysql_root_password')],name='mysql_root'),
+                Require([VString('user'), VString('password'), VString('database')])
+                ]))
+    def addDatabase(self,mysql_root_password, user,password,database):
         """Add a user and a database. User have permissions on all databases."""
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
         con = MySQLdb.connect('localhost', user,
                               password);
-        self.addUser('root', this_mysql_root_password, user, password)
+        self.addUser('root', mysql_root_password, user, password)
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
         rows = cur.fetchall()
