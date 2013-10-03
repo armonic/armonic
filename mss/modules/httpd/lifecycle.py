@@ -1,5 +1,5 @@
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require
+from mss.require import Require, Requires
 from mss.variable import VString, Port
 import mss.state
 import configuration
@@ -27,7 +27,8 @@ class Configured(State):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @mss.lifecycle.provide(flags={'restart':True})
+    @provide(requires=Requires([Require([Port("port")])]),
+             flags={'restart':True})
     def set_port(self,port):
         """Set listen and vhost port"""
         self.conf.setPort(port)

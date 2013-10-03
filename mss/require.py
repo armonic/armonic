@@ -96,7 +96,6 @@ class Require(object):
 
     @property
     def full_name(self):
-        print self._full_name
         return self._full_name if self._full_name != None else self.name
 
     def _set_full_name(self,prefix,separator="."):

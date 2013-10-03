@@ -109,7 +109,8 @@ import inspect
 import logging
 
 from mss.common import is_exposed, expose, IterContainer, DoesNotExist
-from mss.require import Requires
+from mss.require import Requires, Require
+from mss.variable import VString
 import mss.utils
 
 logger = logging.getLogger(__name__)
@@ -137,31 +138,52 @@ class Provide(object):
         return useful informations"""
         self.name = name
 
-        self.requires = requires
-        self._validate_binding_requires_args(requires,func_args)
+        self.requires = self._validate_binding_requires_args(requires,func_args)
         self.func_args = func_args
 
         self.func_default_args = func_default_args
         self.flags = flags
 
-    def _build_requires_full_name(self,prefix,separator="."):
-        """Build a requires full name by joining prefix, separator and provide name."""
+        self._full_name = None
+
+    @property
+    def full_name(self):
+        return self._full_name if self._full_name != None else self.name
+
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name and requires full names by joining
+        prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
+
         if self.requires == None: return
         for r in self.requires:
-            r._set_full_name(prefix+separator+self.name,separator)
+            r._set_full_name(self._full_name,separator)
+
 
     def _validate_binding_requires_args(self,requires, args):
-        """Validate if all arguments in arg are in variables of requires.
+        """Validate if all arguments in arg are in variables of
+        requires. If an arguments is not in a require, it is added to
+        a generetad Require.
         
         :param requires: Requires object
         :param args: A list of argument name
         """
-        if requires != None:
-            for a in args:
-                if not requires.has_variable(a):
-                    raise RequireNotMatchPrototype("Requires of function %s doesn't match its signature (argument %s is missing)" % (self.name, a))
-        return True
-
+        variables=[]
+        for a in args:
+            if requires == None or not requires.has_variable(a):
+                logger.debug("Create variable for argument %s" % a)
+                variables.append(VString(a))
+                #raise RequireHasNotFuncArgs("Requires of function %s doesn't match its signature (argument %s is missing)" % (self.name, a))
+        if variables != []:
+            logger.info("Add generated requires for arguments %s" % variables)
+        
+        newRequire=Require(variables,"generate_for_missing_args")
+        if requires == None : 
+            requires=Requires([newRequire])
+        elif variables != []:
+            requires.append(newRequire)
+        return requires
+        
     # def __init__(self, fct):
     #     """Build a provide from a provide function. This is used to
     #     return useful informations"""
@@ -172,7 +194,7 @@ class Provide(object):
     #     self.requires = fct._provide_requires
 
     def to_primitive(self):
-        return {"name": self.name, "args": self.func_args, "flags": self.flags}
+        return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
 
     def __repr__(self):
         return "<Provide:%s(%s,%s)>" % (self.name, self.func_args, self.flags)
@@ -180,7 +202,7 @@ class Provide(object):
     def build_args_from_primitive(self,primitive):
         self.requires.build_from_primitive(primitive)
         args={}
-        for a in self.args[0]:
+        for a in self.func_args:
             for r in self.requires:
                 try : 
                     args.update({a:r.variables.get(a).value})
@@ -189,7 +211,7 @@ class Provide(object):
         return args
                         
         
-class RequireHasNotFunArgs(Exception):pass
+class RequireHasNotFuncArgs(Exception):pass
 
 def provide(requires=None,flags={}):
     """This is a decorator to specify a method that can be used as a provide in a state.
@@ -200,10 +222,13 @@ def provide(requires=None,flags={}):
     """
     def wrapper(func):
         args = inspect.getargspec(func)
-        func._provide = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
+        if func.__name__ == 'entry':
+            func._requires = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
+        else:
+            func._provide = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
+        print type(func)
         return func
     return wrapper
-
 
 class StateNotApply(Exception):
     pass
@@ -225,7 +250,7 @@ class State(object):
      :py:meth:`State.cross`
     """
     require_state = None
-    requires = []
+    requires = None
     """ """
     provides = []
     _lf_name = ""
@@ -242,11 +267,22 @@ class State(object):
             # FIXME: I think we should directly use Requires
             # constructor in modules in order to exhibit to user
             # what's happening!
-            cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
             cls._instance.provides = IterContainer(_provides)
 
             for p in cls.get_provides():
-                p._build_requires_full_name(cls.__name__,separator=".")
+                p._set_full_name(cls.__name__,separator=".")
+            
+            print 'hasattr(cls.entry,"_requires")' , hasattr(cls.entry,"_requires")
+            print cls.entry.__dict__
+            if hasattr(cls.entry,"_requires"):
+                print "has requires"
+                cls._instance.entry._requires._set_full_name(cls.__name__,separator=".")
+            else : 
+#                print type(cls._instance.entry)
+                args = inspect.getargspec(cls._instance.entry)
+                cls._instance.entry.__func__._requires = Provide('entry', Requires([]), args.args[1:], args.defaults)
+            cls._instance.requires = cls._instance.entry._requires.requires # For compatibility
+            #cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
 
 
         return cls._instance
@@ -273,8 +309,8 @@ class State(object):
         :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
-        self.requires.build_from_primitive(primitive)
-        return self.entry()
+        args=self.entry._requires.build_args_from_primitive(primitive)
+        return self.entry(**args)
 
     def entry(self):
         """Called when a state is applied"""
