@@ -199,7 +199,6 @@ class Mysql(Lifecycle):
         Transition(SetRootPassword()    ,Configured()),
         Transition(Configured()      ,ResetRootPassword()),
         Transition(Configured()      ,Active()),
-#        Transition(Configured()      ,ActiveOnDebian()),
         Transition(Configured()      ,ConfiguredSlave()),
         Transition(Configured()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),

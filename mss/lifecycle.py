@@ -184,15 +184,6 @@ class Provide(object):
             requires.append(newRequire)
         return requires
         
-    # def __init__(self, fct):
-    #     """Build a provide from a provide function. This is used to
-    #     return useful informations"""
-    #     self.name = fct.__name__
-    #     args = inspect.getargspec(fct)
-    #     self.args = (args.args[1:], args.defaults)
-    #     self.flags = fct._provide_flags
-    #     self.requires = fct._provide_requires
-
     def to_primitive(self):
         return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
 
@@ -226,7 +217,6 @@ def provide(requires=None,flags={}):
             func._requires = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
         else:
             func._provide = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
-        print type(func)
         return func
     return wrapper
 
@@ -272,17 +262,12 @@ class State(object):
             for p in cls.get_provides():
                 p._set_full_name(cls.__name__,separator=".")
             
-            print 'hasattr(cls.entry,"_requires")' , hasattr(cls.entry,"_requires")
-            print cls.entry.__dict__
             if hasattr(cls.entry,"_requires"):
-                print "has requires"
                 cls._instance.entry._requires._set_full_name(cls.__name__,separator=".")
             else : 
-#                print type(cls._instance.entry)
                 args = inspect.getargspec(cls._instance.entry)
                 cls._instance.entry.__func__._requires = Provide('entry', Requires([]), args.args[1:], args.defaults)
-            cls._instance.requires = cls._instance.entry._requires.requires # For compatibility
-            #cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
+            cls.requires = cls._instance.entry._requires.requires # For compatibility
         return cls._instance
 
     @property

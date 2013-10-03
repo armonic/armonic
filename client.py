@@ -38,7 +38,6 @@ def reqList(args):
 
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    print args
     acc={}
     if not args: return acc
     for r in args:
@@ -47,7 +46,6 @@ def parseArgs(args):
             acc[r[0]]=[acc[r[0]]]
             acc[r[0]].append(a)
         else: acc.update({r[0]:a})
-    print acc
     return acc
 
 # def parseArgs(args):
@@ -116,9 +114,7 @@ def cmd_state_show(args):
 def cmd_state_goto(args):
     if args.list_requires:
         ret=client.call('state_goto_requires', args.module, args.state)
-        pprint.pprint(ret)
         require_to_table(ret)
-            
     elif args.dryrun:
         pprint.pprint(client.call('state_goto_path', args.module, args.state))
     else:
