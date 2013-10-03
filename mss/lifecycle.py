@@ -283,8 +283,6 @@ class State(object):
                 cls._instance.entry.__func__._requires = Provide('entry', Requires([]), args.args[1:], args.defaults)
             cls._instance.requires = cls._instance.entry._requires.requires # For compatibility
             #cls._instance.requires = Requires(_requires) if type(_requires) != Requires else _requires # FIXME
-
-
         return cls._instance
 
     @property

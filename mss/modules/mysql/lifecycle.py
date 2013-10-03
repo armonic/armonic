@@ -26,7 +26,7 @@ class Configured(State):
     - disable skipnetworking"""
     @provide(requires=Requires([Require([Port("port",default=3306)],name="port"),
                                 Require([VString("root",default="/")],name="augeas")]))
-    def entry(self):
+    def entry(self,port,root):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
         self.config=configuration.Mysql(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
