@@ -160,7 +160,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
         if restart:
             self.__systemctl("reload")
 
-    @mss.lifecycle.provide()
+#    @mss.lifecycle.provide()
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))
@@ -200,7 +200,7 @@ class ActiveWithSystemV(mss.lifecycle.State):
                 logger.info("%s.%-10s: /etc/init.d/%s reload" % (self.lf_name, self.name, service))
 
 
-    @mss.lifecycle.provide()
+                #@mss.lifecycle.provide()
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))

@@ -2,7 +2,7 @@ import logging
 import time
 import MySQLdb
 
-from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Requires, Require, RequireExternal, RequireUser
 from mss.variable import Hostname, VString, Port, Password
 from mss.configuration_augeas import XpathNotInFile
@@ -36,23 +36,23 @@ class Configured(State):
         except XpathNotInFile : pass
         self.config.save()
 
-    @provide(requires=Requires([Require([Port("port")])]),
-             flags={'restart':True})
+    # @provide(requires=Requires([Require([Port("port")])]),
+    #          flags={'restart':True})
     def set_port(self,port):
         logger.info("%s.%-10s: provide call: set port with value %s"%(self.lf_name,self.name,port))
         self.config.port.set(port)
         self.config.save()
         return True
 
-    @provide()
+
     def get_port(self):
         return self.config.port.get()
 
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
-    @Require.specify(Require([VString("passwordd",default="root")],name="root_pwd"))
+    @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
     def entry(self):
-        pwd = self.requires.get('root_pwd').variables.password.value
+        pwd = self.requires.get('root_pwd').variables.get('password').value #password.value
 
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
@@ -136,8 +136,8 @@ class Active(mss.lifecycle.MetaState):
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
-        con = MySQLdb.connect('localhost', user, password);
         self.addUser('root', mysql_root_pwd, user, password)
+        con = MySQLdb.connect('localhost', user, password);
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
         rows = cur.fetchall()

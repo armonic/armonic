@@ -101,8 +101,6 @@ active state. We want to reload the services. This is done via cross
 method of Httpd active state.
 
 
-Code documentation
-------------------
 """
 
 import inspect
@@ -139,96 +137,7 @@ def flags(flags):
         return func
     return wrapper
     
-
-class Provide(object):
-    def __init__(self, name, requires, func_args, func_default_args=None, flags=None):
-        """Build a provide from a provide function. This is used to
-        return useful informations"""
-        self.name = name
-
-        self.requires = self._validate_binding_requires_args(requires,func_args)
-        self.func_args = func_args
-
-        self.func_default_args = func_default_args
-        self.flags = flags
-
-        self._full_name = None
-
-    @property
-    def full_name(self):
-        return self._full_name if self._full_name != None else self.name
-
-    def _set_full_name(self,prefix,separator="."):
-        """Build a full name and requires full names by joining
-        prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
-
-        if self.requires == None: return
-        for r in self.requires:
-            r._set_full_name(self._full_name,separator)
-
-
-    def _validate_binding_requires_args(self,requires, args):
-        """Validate if all arguments in arg are in variables of
-        requires. If an arguments is not in a require, it is added to
-        a generetad Require.
-        
-        :param requires: Requires object
-        :param args: A list of argument name
-        """
-        variables=[]
-        for a in args:
-            if requires == None or not requires.has_variable(a):
-                logger.debug("Create variable for argument %s" % a)
-                variables.append(VString(a))
-                #raise RequireHasNotFuncArgs("Requires of function %s doesn't match its signature (argument %s is missing)" % (self.name, a))
-        if variables != []:
-            logger.info("Add generated requires for arguments %s" % variables)
-        
-        newRequire=Require(variables,"generate_for_missing_args")
-        if requires == None : 
-            requires=Requires([newRequire])
-        elif variables != []:
-            requires.append(newRequire)
-        return requires
-        
-    def to_primitive(self):
-        return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
-
-    def __repr__(self):
-        return "<Provide:%s(%s,%s)>" % (self.name, self.func_args, self.flags)
-
-    def build_args_from_primitive(self,primitive):
-        self.requires.build_from_primitive(primitive)
-        args={}
-        for a in self.func_args:
-            for r in self.requires:
-                try : 
-                    args.update({a:r.variables.get(a).value})
-                except DoesNotExist:
-                    pass
-        return args
-                        
-        
 class RequireHasNotFuncArgs(Exception):pass
-
-
-
-def provide(requires=None,flags={}):
-    """This is a decorator to specify a method that can be used as a provide in a state.
-    Requires are checked in order to know if all function arguments are specified by it.
-
-    Be careful, without flags, this decorator should be used as
-    following @provide()
-    """
-    def wrapper(func):
-        args = inspect.getargspec(func)
-        if func.__name__ == 'entry':
-            func._requires = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
-        else:
-            func._provide = Provide(func.__name__, requires, args.args[1:], args.defaults, flags)
-        return func
-    return wrapper
 
 class StateNotApply(Exception):
     pass
@@ -274,6 +183,7 @@ class State(object):
                     if f.__name__ == 'entry':
                         r = Requires(f.__name__, f._requires, args.args[1:], args.defaults)
                         cls.requires_entry=r
+                        logger.debug("Create requires with require %s for %s.entry"%([t.name for t in r],cls.__name__))
                     else:
                         flags = f._flags if hasattr(f,'_flags') else {}
                         r = Requires(f.__name__, f._requires, args.args[1:], args.defaults, flags)
@@ -281,7 +191,7 @@ class State(object):
 
                     r._set_full_name(cls.__name__,separator=".")
                         
-            cls._instance.requires = cls._instance.requires_entry # For compatibility
+            cls.requires = cls._instance.requires_entry # For compatibility
         return cls._instance
 
     @property
@@ -333,6 +243,9 @@ class State(object):
 
     @classmethod
     def get_requires(cls):
+        """ 
+        :rtype: Requires 
+        """
         return cls.requires
 
     @classmethod
@@ -585,7 +498,8 @@ class Lifecycle(object):
         acc = []
         for s in self.state_goto_path(state, go_back=go_back):
             if s[1] == "entry":
-                acc += s[0].get_requires()
+                r = s[0].get_requires()
+                acc += r if r != None else []
         return acc
 
     def provide_list_in_stack(self):

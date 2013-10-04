@@ -44,7 +44,7 @@ def require_to_table(requires):
     x.align["Require Name"] = "l"
     x.padding_width = 1 # One space between column edges and contents (default)
     for r in requires:
-        x.add_row([r.full_name , r.type,"","",""])
+        x.add_row([r.name , r.type,"","",""])
         if r.type in ['simple', 'user']:
             variables=r.variables
         else:

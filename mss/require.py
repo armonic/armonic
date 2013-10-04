@@ -44,6 +44,7 @@ class Requires(IterContainer):
     def __init__(self,name, require_list=[], func_args=[], func_default_args=None, flags=None):
         self.name = name
         IterContainer.__init__(self,require_list)
+#        print require_list
 #        self._validate_binding_requires_args(func_args)
         self.func_args = func_args
         self.func_default_args = func_default_args
@@ -137,7 +138,7 @@ class Requires(IterContainer):
         return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
 
     def __repr__(self):
-        return "<Requires:%s(%s,%s)>" % (self.name, self.func_args, self.flags)
+        return "<Requires:%s(%s,%s)>" % (self.name, IterContainer.__repr__(self) , self.flags)
 
 
 
