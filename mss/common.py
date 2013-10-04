@@ -137,14 +137,10 @@ class IterContainer(object):
     """
     _objects = []
 
-    def __new__(cls, objects):
-        instance = super(IterContainer, cls).__new__(cls, objects)
-        for object in objects:
-            instance.__setattr__(object.name, object)
-        return instance
-
     def __init__(self, objects):
         self._objects = objects
+        for object in objects:
+            self.__setattr__(object.name, object)
 
     def append(self, object):
         self._objects.append(object)

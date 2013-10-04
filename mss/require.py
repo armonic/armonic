@@ -41,6 +41,59 @@ class MissingRequire(Exception):
 
 class Requires(IterContainer):
     """Basically, this describes a list of :py:class:`Require`."""
+    def __init__(self,name, require_list=[], func_args=[], func_default_args=None, flags=None):
+        self.name = name
+        IterContainer.__init__(self,require_list)
+        self._validate_binding_requires_args(func_args)
+        self.func_args = func_args
+        self.func_default_args = func_default_args
+        self._full_name = None
+        self.flags = flags # Should not be in Requires ...
+
+    @property
+    def full_name(self):
+        return self._full_name if self._full_name != None else self.name
+
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name and requires full names by joining
+        prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
+
+        for r in self:
+            r._set_full_name(self._full_name,separator)
+        
+
+    def _validate_binding_requires_args(self, args):
+        """Validate if all arguments name in args correspond to
+        variable name in all requires. If an arguments is not in a
+        require, it is added to a generetad Require.
+        
+        :param requires: Requires object
+        :param args: A list of argument name
+        """
+        variables=[]
+        for a in args:
+            if not self.has_variable(a):
+                logger.debug("Create variable for argument %s" % a)
+                variables.append(VString(a))
+        if variables != []:
+            logger.info("Add generated requires for arguments %s" % variables)
+        
+        newRequire=Require(variables,"generate_for_missing_args")
+        if variables != []:
+            self.append(newRequire)
+
+
+    def build_args_from_primitive(self,primitive):
+        self.build_from_primitive(primitive)
+        args={}
+        for a in self.func_args:
+            for r in self:
+                try : 
+                    args.update({a:r.variables.get(a).value})
+                except DoesNotExist:
+                    pass
+        return args
 
     def build_from_primitive(self,primitive):
         """From primitive, fill and validate this requires.
@@ -73,6 +126,14 @@ class Requires(IterContainer):
                 pass
         return False
 
+    def to_primitive(self):
+        return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
+
+    def __repr__(self):
+        return "<Requires:%s(%s,%s)>" % (self.name, self.func_args, self.flags)
+
+
+
 class Require(object):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and
@@ -101,6 +162,23 @@ class Require(object):
     def _set_full_name(self,prefix,separator="."):
         """Build a full name by joining prefix, separator and name."""
         self._full_name = prefix + separator + self.name
+
+
+    @staticmethod
+    def specify(require):
+        """This is a decorator to specify a method that can be used as a provide in a state.
+        Requires are checked in order to know if all function arguments are specified by it.
+
+        Be careful, without flags, this decorator should be used as
+        following @provide()
+        """
+        def wrapper(func):
+            if hasattr(func,'_requires'):
+                func._requires.append(require)
+            else: func._requires=[require]
+            return func
+        return wrapper
+
 
     def _fill(self, iterContainer, primitive):
         """Fill an iterContainer with value found in primitive.
@@ -220,7 +298,7 @@ class RequireLocal(Require):
         if type(primitives) is not list:
             primitives=[primitives]
         if primitives != []:
-            # To avoid append on multiple calls
+            # To avoid vaiables append on multiple calls
             self.variables = [IterContainer(self._variables_skel)]
             self._fill(self.variables[0],primitives[0])
             for primitive in primitives[1:]:

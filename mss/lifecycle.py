@@ -131,6 +131,14 @@ class ProvideNotInStack(Exception):
 class ProvideAmbigous(Exception):
     pass
 
+def flags(flags):
+    """Decorator to add flags to a function."""
+    def wrapper(func):
+        args = inspect.getargspec(func)
+        func._flags = flags
+        return func
+    return wrapper
+    
 
 class Provide(object):
     def __init__(self, name, requires, func_args, func_default_args=None, flags=None):
@@ -204,6 +212,8 @@ class Provide(object):
         
 class RequireHasNotFuncArgs(Exception):pass
 
+
+
 def provide(requires=None,flags={}):
     """This is a decorator to specify a method that can be used as a provide in a state.
     Requires are checked in order to know if all function arguments are specified by it.
@@ -226,8 +236,6 @@ class StateNotExist(Exception):
     pass
 
 
-
-
 class State(object):
     """A state describe a step during service :class:`Lifecycle`.
 
@@ -240,9 +248,10 @@ class State(object):
      :py:meth:`State.cross`
     """
     require_state = None
-    requires = None
+#    requires = None
+#    requires_entry = None
     """ """
-    provides = []
+#    provides = []
     _lf_name = ""
     _instance = None
 
@@ -252,22 +261,27 @@ class State(object):
         if not cls._instance:
             cls._instance = super(State, cls).__new__(
                 cls, *args, **kwargs)
-            _requires = cls._instance.requires
-            _provides = cls._instance.provides
-            # FIXME: I think we should directly use Requires
-            # constructor in modules in order to exhibit to user
-            # what's happening!
-            cls._instance.provides = IterContainer(_provides)
+ #           _requires = cls._instance.requires
+ #           _provides = cls._instance.provides
 
-            for p in cls.get_provides():
-                p._set_full_name(cls.__name__,separator=".")
+            cls.requires_entry = None
+            cls.provides = []
             
-            if hasattr(cls.entry,"_requires"):
-                cls._instance.entry._requires._set_full_name(cls.__name__,separator=".")
-            else : 
-                args = inspect.getargspec(cls._instance.entry)
-                cls._instance.entry.__func__._requires = Provide('entry', Requires([]), args.args[1:], args.defaults)
-            cls.requires = cls._instance.entry._requires.requires # For compatibility
+            funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
+            for (fname, f) in funcs:
+                if hasattr(f,'_requires'):
+                    args = inspect.getargspec(f)
+                    if f.__name__ == 'entry':
+                        r = Requires(f.__name__, f._requires, args.args[1:], args.defaults)
+                        cls.requires_entry=r
+                    else:
+                        flags = f._flags if hasattr(f,'_flags') else {}
+                        r = Requires(f.__name__, f._requires, args.args[1:], args.defaults, flags)
+                        cls.provides.append(r)
+
+                    r._set_full_name(cls.__name__,separator=".")
+                        
+            cls._instance.requires = cls._instance.requires_entry # For compatibility
         return cls._instance
 
     @property
@@ -292,7 +306,10 @@ class State(object):
         :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
-        args=self.entry._requires.build_args_from_primitive(primitive)
+        if self.requires_entry != None:
+            args=self.requires_entry.build_args_from_primitive(primitive)
+        else:
+            args={}
         return self.entry(**args)
 
     def entry(self):
@@ -322,19 +339,7 @@ class State(object):
 
     @classmethod
     def get_provides(cls):
-        """Return a list of 3-uple (functionName, argsName, flags) """
-        funcs = inspect.getmembers(cls, predicate=inspect.ismethod) # FIXME: Do it one time in __new__
-        acc = []
-        for (fname, f) in funcs:
-            try:
-                if f._provide:
-                    pass
-            except AttributeError:
-                continue
-            acc.append(f._provide)
-#            acc.append(Provide(f))
-        return acc
-
+        return cls.provides
     @classmethod
     def _get_provide_by_name(cls, provide_name):
         for p in cls.get_provides():
@@ -344,7 +349,7 @@ class State(object):
 
     @classmethod
     def get_provide_args(cls, provide_name):
-        return cls._get_provide_by_name(provide_name).requires #args
+        return cls._get_provide_by_name(provide_name)
 
     def get_provide_by_name(self, provide_name):
         return self.__class__._get_provide_by_name(provide_name)
@@ -382,9 +387,10 @@ class Lifecycle(object):
     _initialized = False
 
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls):
+        print cls , type(cls)
         instance = super(Lifecycle, cls).__new__(
-            cls, *args, **kwargs)
+            cls)
         #Update transitions to manage MetaState
         for ms in instance._state_list():
             # For each MetaState ms
