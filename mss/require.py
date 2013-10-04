@@ -44,7 +44,7 @@ class Requires(IterContainer):
     def __init__(self,name, require_list=[], func_args=[], func_default_args=None, flags=None):
         self.name = name
         IterContainer.__init__(self,require_list)
-        self._validate_binding_requires_args(func_args)
+#        self._validate_binding_requires_args(func_args)
         self.func_args = func_args
         self.func_default_args = func_default_args
         self._full_name = None
@@ -120,7 +120,7 @@ class Requires(IterContainer):
         """Return True if variable_name is specified by this requires."""
         for r in self:
             try : 
-                r.variables.get(variable_name)
+                print r.variables.get(variable_name)
                 return True
             except DoesNotExist:
                 pass
@@ -248,9 +248,10 @@ class RequireUser(Require):
     """To specify a require which has to be known by user. For
     instance, mysql password is just know by user who must remember
     it."""
-    def __init__(self, variables, name=None):
+    def __init__(self, name, provided_by, variables):
         Require.__init__(self,variables,name)
         self.type = "user"
+        self.provided_by = provided_by
     def __repr__(self):
         return "<RequireUser(name=%s, variables=%s)>" % (self.name, self.variables)
 

@@ -388,7 +388,6 @@ class Lifecycle(object):
 
 
     def __new__(cls):
-        print cls , type(cls)
         instance = super(Lifecycle, cls).__new__(
             cls)
         #Update transitions to manage MetaState
@@ -592,7 +591,11 @@ class Lifecycle(object):
 
     def _get_state_from_provide(self, provide_name):
         """From a provide_name, return a tuple of (state, provide_name).
-        provide_name can be fully qualified, ie. state.provide_name."""
+        provide_name can be fully qualified, ie. state.provide_name.
+
+        :param provide_name: the name of a provide (can be fully qualified or not)
+        :rtype: a 2uple (state, provide_name)
+        """
         p = provide_name.split(".")
         if len(p) == 1: # Simple provide name
             sp = []
@@ -609,7 +612,7 @@ class Lifecycle(object):
         elif len(p) == 2: # Fully qualified provide name
             s = self._get_state_class(p[0])
             s.get_provide_by_name(p[1])
-            return (p[0],p[1])
+            return (s,p[1])
 
     def provide_call_requires(self, provide_name):
         """From a provide_name, return the list of "requires" needed to
@@ -656,8 +659,9 @@ class Lifecycle(object):
         sidx = self._stack.index(state)
         p = state.get_provide_by_name(provide_name)
         sfct = state.__getattribute__(p.name)
-        args = p.build_args_from_primitive(provide_args)
-        ret = sfct(**args)
+        #args = p.build_args_from_primitive(provide_args)
+        p.build_from_primitive(provide_args)
+        ret = sfct(p)
         for i in self._stack[sidx:]:
             i.cross(**(p.flags))
         return ret

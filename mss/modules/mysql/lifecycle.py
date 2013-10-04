@@ -50,7 +50,6 @@ class Configured(State):
 
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
-#    requires=Requires([Require([VString("pwd",default="root")],name="root_pwd")])
     @Require.specify(Require([VString("pwd",default="root")],name="root_pwd"))
     def entry(self):
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
@@ -108,7 +107,10 @@ class Active(mss.lifecycle.MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require.specify(Require([VString('user'),VString('password')]))
-    def getDatabases(self,user='root',password='root'):
+    def getDatabases(self,requires):
+        user = requires.get('this').variables.get('user').value
+        password = requires.get('this').variables.get('password').value
+
         con = MySQLdb.connect('localhost', user,
                               password);
         cur = con.cursor()
@@ -116,23 +118,31 @@ class Active(mss.lifecycle.MetaState):
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
-    @Require.specify(RequireUser([Password('mysql_root_password')],name='mysql_root'))
+    @Require.specify(RequireUser(name='mysqlRoot',
+                                 provided_by='SetRootPassword.entry.root_pwd.pwd',
+                                 variables=[Password('password')]))
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
-    def addDatabase(self,mysql_root_password, user,password,database):
+    def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
+        database = requires.get('this').variables.get('database').value
+        user = requires.get('this').variables.get('user').value
+        password = requires.get('this').variables.get('password').value
+        mysql_root_pwd = requires.get('mysqlRoot').variables.get('password').value
+
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
-        con = MySQLdb.connect('localhost', user,
-                              password);
-        self.addUser('root', mysql_root_password, user, password)
+        con = MySQLdb.connect('localhost', user, password);
+        self.addUser('root', mysql_root_pwd, user, password)
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
 
-    @Require.specify(RequireUser([Password('mysql_root_password')],name='mysql_root'))
-    @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
+    @Require.specify(RequireUser(name='mysql_root',
+                                 provided_by='SetRootPassword.entry',
+                                 variables=[Password('user'),Password('password')]))
+    @Require.specify(Require([VString('database')]))
     def rmDatabase(self,user,password,database):
         con = MySQLdb.connect('localhost', user,
                               password);
