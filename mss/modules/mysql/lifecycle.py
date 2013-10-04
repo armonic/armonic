@@ -6,7 +6,7 @@ from mss.lifecycle import State, Transition, Lifecycle, provide
 from mss.require import Requires, Require, RequireExternal, RequireUser
 from mss.variable import Hostname, VString, Port, Password
 from mss.configuration_augeas import XpathNotInFile
-import mss.process
+from mss.process import ProcessThread
 import mss.state
 from mss.utils import OsTypeDebian, OsTypeMBS1
 
@@ -26,7 +26,7 @@ class Configured(State):
     - disable skipnetworking"""
     @Require.specify(Require([Port("port",default=3306)],name="port"))
     @Require.specify(Require([VString("root",default="/")],name="augeas"))
-    def entry(self,port,root):
+    def entry(self):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
         self.config=configuration.Mysql(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
@@ -50,15 +50,20 @@ class Configured(State):
 
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
-    @Require.specify(Require([VString("pwd",default="root")],name="root_pwd"))
+    @Require.specify(Require([VString("passwordd",default="root")],name="root_pwd"))
     def entry(self):
+        pwd = self.requires.get('root_pwd').variables.password.value
+
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
-        thread_mysqld = mss.process.ProcessThread("mysqldadmin", None, "test",["/usr/bin/mysqladmin","password","%s" % self.requires.get("root_pwd").variables.pwd.value],None,None,None,None)
+        thread_mysqld = ProcessThread("mysqldadmin", None, "test",
+                                      ["/usr/bin/mysqladmin","password",pwd],
+                                      None,None,None,None)
         thread_mysqld.start()
         thread_mysqld.join()
         if thread_mysqld.code == 0:
-            logger.event("%s.%s mysql root password is '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
-            self.root_password=self.requires.get("root_pwd").variables.pwd.value
+            logger.event("%s.%s mysql root password is '%s'",
+                         self.lf_name,self.name,pwd)
+            self.root_password=pwd
         else:
             logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
 
@@ -70,12 +75,12 @@ class ResetRootPassword(mss.lifecycle.State):
     @Require.specify(Require([VString("pwd",default="root")],name="root_pwd"))
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
-        thread_mysqld = mss.process.ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
+        thread_mysqld = ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
         thread_mysqld.start()
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = mss.process.ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
                                                                      "-u","root",
                                                                      "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires.get("root_pwd").variables.pwd.value
                                                                      ],None,None,None,None)
@@ -119,7 +124,7 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
     @Require.specify(RequireUser(name='mysqlRoot',
-                                 provided_by='SetRootPassword.entry.root_pwd.pwd',
+                                 provided_by='SetRootPassword.entry.root_pwd',
                                  variables=[Password('password')]))
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addDatabase(self,requires):
@@ -167,20 +172,20 @@ class ConfiguredSlave(State):
                        ])
 
 class Dump(State):
-    @provide()
+#    @provide()
     def get_dump(self,dbName):
         return "iop"
 
 
 class ActiveAsSlave(mss.lifecycle.MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
-    @provide(flags={'restart':False})
+#    @provide(flags={'restart':False})
     def get_db(self,dbName,user):
         return "iop"
     def cross(self,restart=False):pass
 
 class ActiveAsMaster(State):
-    @provide()
+#    @provide()
     def get_auth(self,dbName,user,slave_host):
         return "iop"
     def cross(self,restart=False):pass

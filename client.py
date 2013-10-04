@@ -40,10 +40,8 @@ def parseArgs(args):
     return acc
 
 def require_to_table(requires):
-    x = PrettyTable(["Name","Type","ArgName", "ArgType","ArgDefault"])
-    x.align["Name"] = "l"
-    x.align["Type"] = "l"
-    x.align["Default"] = "l"
+    x = PrettyTable(["Require Name","Type","ArgName", "ArgType","ArgDefault"])
+    x.align["Require Name"] = "l"
     x.padding_width = 1 # One space between column edges and contents (default)
     for r in requires:
         x.add_row([r.full_name , r.type,"","",""])
@@ -105,10 +103,9 @@ def cmd_provide(args):
     x.align["Provide Name"] = "l"
     x.align["State Name"] = "l"
     x.align["Args"] = "l"
-    x.padding_width = 1 # One space between column edges and contents (default)
     for k in ret.iterkeys():
         for i in ret[k]:
-            x.add_row([i['name'],k,i['args']])
+            x.add_row([i.name,k,i.get_all_variables()])
     print x
 
 def cmd_provide_show(args):
@@ -155,7 +152,7 @@ def ProvideCompleter(prefix, parsed_args, **kwargs):
     tmp=[]
     for k in ret.iterkeys():
         for i in ret[k]:
-          tmp += [i['name']]
+          tmp += [i.name]
     return (m for m in tmp if m.startswith(prefix))
 
 

@@ -120,11 +120,18 @@ class Requires(IterContainer):
         """Return True if variable_name is specified by this requires."""
         for r in self:
             try : 
-                print r.variables.get(variable_name)
+                r.variables.get(variable_name)
                 return True
             except DoesNotExist:
                 pass
         return False
+
+    def get_all_variables(self):
+        acc=[]
+        for r in self:
+            for v in r.variables:
+                acc.append(v.name)
+        return acc
 
     def to_primitive(self):
         return {"name": self.full_name, "args": self.func_args, "flags": self.flags}

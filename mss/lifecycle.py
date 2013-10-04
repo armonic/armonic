@@ -307,10 +307,8 @@ class State(object):
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
         if self.requires_entry != None:
-            args=self.requires_entry.build_args_from_primitive(primitive)
-        else:
-            args={}
-        return self.entry(**args)
+            self.requires_entry.build_from_primitive(primitive)
+        return self.entry()
 
     def entry(self):
         """Called when a state is applied"""
@@ -339,9 +337,15 @@ class State(object):
 
     @classmethod
     def get_provides(cls):
+        """ 
+        :rtype: [Requires]
+        """
         return cls.provides
     @classmethod
     def _get_provide_by_name(cls, provide_name):
+        """ 
+        :rtype: Requires
+        """
         for p in cls.get_provides():
             if p.name == provide_name:
                 return p
@@ -352,6 +356,9 @@ class State(object):
         return cls._get_provide_by_name(provide_name)
 
     def get_provide_by_name(self, provide_name):
+        """ 
+        :rtype: Requires
+        """
         return self.__class__._get_provide_by_name(provide_name)
 
     def __repr__(self):
@@ -586,7 +593,8 @@ class Lifecycle(object):
         return [(s, s.get_provides()) for s in self._stack if s.get_provides() != []]
 
     def provide_list(self):
-        """:rtype: the list of all tuple which contain states and provides."""
+        """Return the list of all tuple which contain states and provides.
+        :rtype: [(State, [Requires])]"""
         return [(s, s.get_provides()) for s in self.state_list() if s.get_provides() != []]
 
     def _get_state_from_provide(self, provide_name):
@@ -594,7 +602,7 @@ class Lifecycle(object):
         provide_name can be fully qualified, ie. state.provide_name.
 
         :param provide_name: the name of a provide (can be fully qualified or not)
-        :rtype: a 2uple (state, provide_name)
+        :rtype: (state, provide_name)
         """
         p = provide_name.split(".")
         if len(p) == 1: # Simple provide name
@@ -870,10 +878,11 @@ class LifecycleManager(object):
             ps = lf.provide_list_in_stack()
         else:
             ps = lf.provide_list()
+        # Filter state based on state_name
         if state_name != None and lf.has_state(state_name):
             ps = [(s,p) for (s,p) in ps if s.name == state_name]
         for (s, p) in ps:
-            acc.update({s.name: [i.to_primitive() for i in p]})
+            acc.update({s.name: p})
         return acc
 
     @expose
