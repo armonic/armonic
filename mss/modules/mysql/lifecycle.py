@@ -125,14 +125,14 @@ class Active(mss.lifecycle.MetaState):
 
     @Require.specify(RequireUser(name='mysqlRoot',
                                  provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
-                                 variables=[Password('password')]))
+                                 variables=[Password('root_password')]))
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
         database = requires.get('this').variables.get('database').value
         user = requires.get('this').variables.get('user').value
         password = requires.get('this').variables.get('password').value
-        mysql_root_pwd = requires.get('mysqlRoot').variables.get('password').value
+        mysql_root_pwd = requires.get('mysqlRoot').variables.get('root_password').value
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)

@@ -1,4 +1,3 @@
-
-- If an error occurs in a module when this module is imported, this
-  raises a ImportError which is passed in load_module in common.py.
+- When value are set in a external require, we must dinb the varaible to the target require.
+  This problem appears if several variable has the same name
  
