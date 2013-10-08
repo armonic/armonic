@@ -174,7 +174,7 @@ class Require(object):
             v._set_full_name(self._full_name,separator)
 
     @staticmethod
-    def specify(require):
+    def specify(require=None):
         """This is a decorator to specify a method that can be used as a provide in a state.
         Requires are checked in order to know if all function arguments are specified by it.
 
@@ -184,7 +184,10 @@ class Require(object):
         def wrapper(func):
             if hasattr(func,'_requires'):
                 func._requires.append(require)
-            else: func._requires=[require]
+            elif require != None:
+                func._requires=[require]
+            else:
+                func._requires=[]
             return func
         return wrapper
 
