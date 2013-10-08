@@ -124,7 +124,7 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
     @Require.specify(RequireUser(name='mysqlRoot',
-                                 provided_by='SetRootPassword.entry.root_pwd',
+                                 provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
                                  variables=[Password('password')]))
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addDatabase(self,requires):
