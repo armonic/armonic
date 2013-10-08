@@ -10,6 +10,7 @@ from shutil import copyfile
 
 import mss.lifecycle
 import mss.common
+from mss.require import Require
 
 # class ConfiguredAugeas(mss.lifecycle.State,mss.configuration_augeas.Configuration):
 
@@ -160,7 +161,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
         if restart:
             self.__systemctl("reload")
 
-#    @mss.lifecycle.provide()
+    @Require.specify()
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))
