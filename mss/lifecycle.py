@@ -163,6 +163,7 @@ class State(object):
 #    provides = []
     _lf_name = ""
     _instance = None
+    _full_name = None
 
     supported_os_type=[mss.utils.OsTypeAll()]
 
@@ -193,6 +194,21 @@ class State(object):
                         
             cls.requires = cls._instance.requires_entry # For compatibility
         return cls._instance
+
+
+    @property
+    def full_name(self):
+        return self._full_name if self._full_name != None else self.name
+
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name and requires full names by joining
+        prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
+        if self.requires != None:
+            self.requires._set_full_name(self._full_name,separator)
+        for r in self.provides:
+            r._set_full_name(self._full_name,separator)
+
 
     @property
     def name(self):
@@ -335,6 +351,11 @@ class Lifecycle(object):
                     if update_transitions != []:
                         instance.transitions.remove(t)
                         instance.transitions += update_transitions
+
+        # We set full name for state, requires, require and variable
+        for ms in instance._state_list():
+            ms._set_full_name(instance.name,separator=".")
+
         return instance
 
     def init(self, state, requires={}):

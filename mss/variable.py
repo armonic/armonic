@@ -19,6 +19,15 @@ class Variable(object):
         self.default=default
         if default is not None:
             self.value = default
+        self._full_name = None
+
+    @property
+    def full_name(self):
+        return self._full_name if self._full_name != None else self.name
+
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name by joining prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
 
     @property
     def value(self):

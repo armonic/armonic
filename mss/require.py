@@ -170,7 +170,8 @@ class Require(object):
     def _set_full_name(self,prefix,separator="."):
         """Build a full name by joining prefix, separator and name."""
         self._full_name = prefix + separator + self.name
-
+        for v in self.variables:
+            v._set_full_name(self._full_name,separator)
 
     @staticmethod
     def specify(require):
@@ -295,7 +296,13 @@ class RequireLocal(Require):
         # order to manage default values.
         self.variables = [IterContainer(variables)]
 
-    
+    def _set_full_name(self,prefix,separator="."):
+        """Build a full name by joining prefix, separator and name."""
+        self._full_name = prefix + separator + self.name
+        for i in self.variables:
+            for v in i:
+                v._set_full_name(self._full_name,separator)
+
     def fill(self,primitives=[]):
         """Fill variables from a list of primitive. If primitive is
         not a list, then it is encapsulated in a list. This permit to

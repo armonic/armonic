@@ -1,4 +1,4 @@
-from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Require, Requires
 from mss.variable import VString, Port
 import mss.state
@@ -22,13 +22,13 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
-    @mss.lifecycle.provide()
+#    @mss.lifecycle.provide()
     def get_documentRoot(self):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @provide(requires=Requires([Require([Port("port")])]),
-             flags={'restart':True})
+    @Require.specify(Require([Port("port")]))
+    #flags={'restart':True})
     def set_port(self,port):
         """Set listen and vhost port"""
         self.conf.setPort(port)
@@ -36,9 +36,9 @@ class Configured(State):
 class Active(mss.state.ActiveWithSystemd):
     services=["httpd"]
 
-    @provide()
-    def start(self):
-        logger.info("Apache activation...")
+    # @provide()
+    # def start(self):
+    #     logger.info("Apache activation...")
 
 class Installed(mss.state.InstallPackagesUrpm):
     packages=["apache"]
