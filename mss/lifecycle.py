@@ -172,29 +172,27 @@ class State(object):
             cls._instance = super(State, cls).__new__(
                 cls, *args, **kwargs)
 
-            cls.requires_entry = None
+#            cls.requires_entry = None
             cls.provides = []
             
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                # If no requires are specified for entry method, we
-                # use state.requires 
-                # This should be fixed (remove state.requires and use state.requires_entry)
-                if f.__name__ == 'entry' and not hasattr(f,'_requires'):
-                    cls.requires_entry = Requires('entry', cls.requires)
-                elif hasattr(f,'_requires'):
+                if hasattr(f,'_requires'):
                     if f.__name__ == 'entry':
                         r = Requires(f.__name__, f._requires)
                         cls.requires_entry=r
-                        logger.debug("Create requires with require %s for %s.entry"%([t.name for t in r],cls.__name__))
                     else:
                         flags = f._flags if hasattr(f,'_flags') else {}
                         r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
+                    logger.debug("Create a Requires for %s.%s with Require %s"%(cls.__name__, f.__name__, [t.name for t in r]))
 
                     r._set_full_name(cls.__name__,separator=".")
-                        
-            cls.requires = cls._instance.requires_entry # For compatibility
+            # If 'entry' method has no requires specified via
+            # decorator of class variable, we create it.
+            if not hasattr(cls,'requires_entry'):
+                cls.requires_entry = Requires('entry',[])
+
         return cls._instance
 
 
@@ -206,8 +204,8 @@ class State(object):
         """Build a full name and requires full names by joining
         prefix, separator and name."""
         self._full_name = prefix + separator + self.name
-        if self.requires != None:
-            self.requires._set_full_name(self._full_name,separator)
+        
+        self.requires_entry._set_full_name(self._full_name,separator)
         for r in self.provides:
             r._set_full_name(self._full_name,separator)
 
@@ -264,7 +262,7 @@ class State(object):
         """ 
         :rtype: Requires 
         """
-        return cls.requires
+        return cls.requires_entry
 
     @classmethod
     def get_provides(cls):

@@ -26,9 +26,9 @@ class Configured(State):
     def entry(self):
         """set value in wp-config.php"""
         logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,self.requires))
-        self.conf=configuration.Wordpress(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
-        print self.requires.get('Mysql.addDatabase').variables
-        tmp=self.requires.get('Mysql.addDatabase').variables[0]
+        self.conf=configuration.Wordpress(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
+        print self.requires_entry.get('Mysql.addDatabase').variables
+        tmp=self.requires_entry.get('Mysql.addDatabase').variables[0]
         self.conf.configure(tmp.database.value, tmp.user.value, tmp.password.value, tmp.host.value)
         logger.event({"lifecycle":self.lf_name,"event":"binding","target":tmp.host.value})
     def leave(self):
@@ -45,7 +45,7 @@ class Active(State):
     @Require.specify(RequireLocal("Httpd","start"))
     def entry(self):
         logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,self.requires))
-        self.httpdDocumentRoot=self.requires.get('Httpd.get_documentRoot').variables[0].httpdDocumentRoot.value
+        self.httpdDocumentRoot=self.requires_entry.get('Httpd.get_documentRoot').variables[0].httpdDocumentRoot.value
         logger.info("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s"%(self.lf_name,self.name,self.httpdDocumentRoot))
     def leave(self):
         logger.info("you should call 'apache.leaveActiveState(%s)'"%self.httpdDocumentRoot)

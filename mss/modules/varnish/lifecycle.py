@@ -1,5 +1,5 @@
 from mss.lifecycle import State, Transition, Lifecycle
-from mss.require import Require, RequireExternal
+from mss.require import Require, RequireExternal, Requires
 from mss.variable import Port, Hostname, VList
 import mss.state
 
@@ -9,25 +9,23 @@ logger=logging.getLogger(__name__)
 
 class NotInstalled(State):pass
 class Configured(mss.state.RunScript):
-    requires=[
-        RequireExternal("Wordpress", "get_site"),
-        Require([Port("port",default=80, required=True)])
-        ]
+    requires_entry=Requires('entry',[
+            RequireExternal("Wordpress", "get_site"),
+            Require([Port("port",default=80, required=True)])
+            ])
     script_name="setup.sh"
 
     def require_to_script_args(self):
-        hosts=[v.host.value for v in self.requires.get('Wordpress.get_site').variables]
+        hosts=[v.host.value for v in self.requires_entry.get('Wordpress.get_site').variables]
         return [",".join(hosts), 
-                str(self.requires.this.variables.port.value)]
+                str(self.requires_entry.this.variables.port.value)]
 
     def entry(self):
         super(mss.state.RunScript,self).entry()
-        for v in self.requires.get('Wordpress.get_site').variables:
+        for v in self.requires_entry.get('Wordpress.get_site').variables:
             logger.event({"lifecycle":self.lf_name,"event":"binding","target":v.host.value})
-        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires.this.variables.port.value})
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.this.variables.port.value})
         
-
-
 
 class Active(mss.state.ActiveWithSystemd):
     services=["varnish"]

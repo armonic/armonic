@@ -11,13 +11,13 @@ logger=logging.getLogger(__name__)
 class NotInstalled(State):pass
 class Configured(State):
     """Configure listen and vhost port"""
-    requires=[Require([Port("port",default=8080)],name='port'),
-              Require([VString("root",default="/")],name="augeas")]
+    requires_entry=Requires('entry',[Require([Port("port",default=8080)],name='port'),
+                                     Require([VString("root",default="/")],name="augeas")])
     def entry(self):
         """Set listen and vhost port"""
         logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires))
-        port = self.requires.get('port').variables.port.value
-        augeas = self.requires.get('augeas').variables.root.value
+        port = self.requires_entry.get('port').variables.port.value
+        augeas = self.requires_entry.get('augeas').variables.root.value
 
         self.conf=configuration.Apache(autoload=True,augeas_root=augeas)
         self.conf.setPort(str(port))
