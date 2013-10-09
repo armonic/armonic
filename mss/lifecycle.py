@@ -157,7 +157,7 @@ class State(object):
      :py:meth:`State.cross`
     """
     require_state = None
-#    requires = None
+    requires = []
 #    requires_entry = None
     """ """
 #    provides = []
@@ -179,7 +179,12 @@ class State(object):
             
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                if hasattr(f,'_requires'):
+                # If no requires are specified for entry method, we
+                # use state.requires 
+                # This should be fixed (remove state.requires and use state.requires_entry)
+                if f.__name__ == 'entry' and not hasattr(f,'_requires'):
+                    cls.requires_entry = Requires('entry', cls.requires)
+                elif hasattr(f,'_requires'):
                     args = inspect.getargspec(f)
                     if f.__name__ == 'entry':
                         r = Requires(f.__name__, f._requires, args.args[1:], args.defaults)
