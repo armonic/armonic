@@ -49,6 +49,10 @@ class Active(State):
     def leave(self):
         logger.info("you should call 'apache.leaveActiveState(%s)'"%self.httpdDocumentRoot)
 
+    @Require.specify()
+    def get_site(self,requires):
+        return 
+
         #@provide()
     def get_network_port(self):
         """Return the httpd listening port for this wordpress installation"""
