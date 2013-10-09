@@ -29,13 +29,13 @@ class Configured(State):
     def entry(self):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
-        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
-        self.config.port.set(str(self.requires.get('port').variables.port.value))
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
+        self.config.port.set(str(self.requires_entry.get('port').variables.port.value))
         try:
             self.config.skipNetworking.rm()
         except XpathNotInFile : pass
         self.config.save()
-        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires.get('port').variables.port.value})
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.get('port').variables.port.value})
 
 
     # @provide(requires=Requires([Require([Port("port")])]),
@@ -54,9 +54,17 @@ class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
     @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
     def entry(self):
-        pwd = self.requires.get('root_pwd').variables.get('password').value #password.value
+        pwd = self.requires_entry.get('root_pwd').variables.get('password').value #password.value
 
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
+        thread_mysqld = ProcessThread("mysql", None, "test",
+                                      ["/usr/bin/mysql", "-u", "root", "--password=%s"%pwd, "-e", "quit"],
+                                      None,None,None,None)
+        thread_mysqld.start()
+        thread_mysqld.join()
+        if thread_mysqld.code == 0:
+            logger.info("%s.%s mysql root password already set to 'root'",self.lf_name,self.name)
+            return
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
                                       ["/usr/bin/mysqladmin","password",pwd],
                                       None,None,None,None)
@@ -83,9 +91,9 @@ class ResetRootPassword(mss.lifecycle.State):
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
                                                                      "-u","root",
-                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires.get("root_pwd").variables.pwd.value
+                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("root_pwd").variables.pwd.value
                                                                      ],None,None,None,None)
             thread_mysql.start()
             thread_mysql.join()
@@ -96,7 +104,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
+            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.pwd.value)
         else:
             logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -116,8 +124,8 @@ class Active(mss.lifecycle.MetaState):
 
     @Require.specify(Require([VString('user'),VString('password')]))
     def getDatabases(self,requires):
-        user = requires.get('this').variables.get('user').value
-        password = requires.get('this').variables.get('password').value
+        user = requires_entry.get('this').variables.get('user').value
+        password = requires_entry.get('this').variables.get('password').value
 
         con = MySQLdb.connect('localhost', user,
                               password);
@@ -132,10 +140,10 @@ class Active(mss.lifecycle.MetaState):
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
-        database = requires.get('this').variables.get('database').value
-        user = requires.get('this').variables.get('user').value
-        password = requires.get('this').variables.get('password').value
-        mysql_root_pwd = requires.get('mysqlRoot').variables.get('root_password').value
+        database = requires_entry.get('this').variables.get('database').value
+        user = requires_entry.get('this').variables.get('user').value
+        password = requires_entry.get('this').variables.get('password').value
+        mysql_root_pwd = requires_entry.get('mysqlRoot').variables.get('root_password').value
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
@@ -170,9 +178,9 @@ class Active(mss.lifecycle.MetaState):
 
 class ConfiguredSlave(State):
     """Can be used to configure Mysql as a slave"""
-    requires=Requires([RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
-                       RequireExternal("Mysql","get_dump",[VString("dbName")])
-                       ])
+#    requires=Requires([RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
+#                       RequireExternal("Mysql","get_dump",[VString("dbName")])
+#                       ])
 
 class Dump(State):
 #    @provide()
