@@ -22,14 +22,14 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
-#    @mss.lifecycle.provide()
-    def get_documentRoot(self):
+    @Require.specify(Require([VString("httpdDocumentRoot",default='/var/www/wordpress')]))
+    def get_documentRoot(self,requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
     @Require.specify(Require([Port("port")]))
     #flags={'restart':True})
-    def set_port(self,port):
+    def set_port(self,requires):
         """Set listen and vhost port"""
         self.conf.setPort(port)
 
