@@ -1,3 +1,8 @@
+modules/mysql/
+
+modules/mysql/
+
+
 Dependencies
 ============
 * python-augeas
@@ -14,10 +19,20 @@ Client
 * python-prettytable
 * pip install argcomplete
 
-Install All dependencies
-------------------------
+Install All dependencies on Debian
+----------------------------------
 apt-get install python-augeas python-sphinx python-prettytable python-mysqldb python-netifaces python-ipy
 pip install argcomplete
+
+
+Install All dependencies on MBS
+-------------------------------
+urpmi git python-sphinx python-netifaces python-pip mysql python-mysql lib64selinux-devel
+pip install augeas
+pip install prettytable
+git clone https://github.com/giraldeau/python-augeas.git
+cd python-augeas/
+python setup.py install
 
 
 Test Lifecycle and Augeas
