@@ -42,6 +42,8 @@ EVENT_LEVELV_NUM = 25
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 def event(self, dct, *args, **kws):
     # This level is used in mss to log an event. 
+#    jdct = json.dumps(dct.update({'ip':ethernet_ifs()[0][1]}))
+    dct.update({'ip':ethernet_ifs()[0][1]})
     jdct = json.dumps(dct)
     self._log(EVENT_LEVELV_NUM, jdct, args, **kws)
 logging.Logger.event = event

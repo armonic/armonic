@@ -20,6 +20,14 @@ class Configured(mss.state.RunScript):
         return [",".join(hosts), 
                 str(self.requires.this.variables.port.value)]
 
+    def entry(self):
+        super(mss.state.RunScript,self).entry()
+        for v in self.requires.get('Wordpress.get_site').variables:
+            logger.event({"lifecycle":self.lf_name,"event":"binding","target":v.host.value})
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires.this.variables.port.value})
+        
+
+
 
 class Active(mss.state.ActiveWithSystemd):
     services=["varnish"]

@@ -16,8 +16,12 @@ class Configured(State):
     def entry(self):
         """Set listen and vhost port"""
         logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires))
-        self.conf=configuration.Apache(autoload=True,augeas_root=self.requires.get('augeas').variables.root.value)
-        self.conf.setPort(str(self.requires.get('port').variables.port.value))
+        port = self.requires.get('port').variables.port.value
+        augeas = self.requires.get('augeas').variables.root.value
+
+        self.conf=configuration.Apache(autoload=True,augeas_root=augeas)
+        self.conf.setPort(str(port))
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":port})
     def leave(self):
         """ set wordpress.php """
         logger.info("do nothing...")

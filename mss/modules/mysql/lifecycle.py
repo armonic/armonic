@@ -35,6 +35,8 @@ class Configured(State):
             self.config.skipNetworking.rm()
         except XpathNotInFile : pass
         self.config.save()
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires.get('port').variables.port.value})
+
 
     # @provide(requires=Requires([Require([Port("port")])]),
     #          flags={'restart':True})
@@ -61,11 +63,11 @@ class SetRootPassword(mss.lifecycle.State):
         thread_mysqld.start()
         thread_mysqld.join()
         if thread_mysqld.code == 0:
-            logger.event("%s.%s mysql root password is '%s'",
+            logger.info("%s.%s mysql root password is '%s'",
                          self.lf_name,self.name,pwd)
             self.root_password=pwd
         else:
-            logger.event("%s.%s mysql root password setting failed",self.lf_name,self.name)
+            logger.info("%s.%s mysql root password setting failed",self.lf_name,self.name)
 
 
 class ResetRootPassword(mss.lifecycle.State):
@@ -93,9 +95,9 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.event("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
+            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires.get("root_pwd").variables.pwd.value)
         else:
-            logger.event("%s.%s mysql root password changing fail",self.lf_name,self.name)
+            logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
 
 class ActiveOnDebian(mss.state.ActiveWithSystemV):

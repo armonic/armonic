@@ -30,6 +30,7 @@ class Configured(State):
         print self.requires.get('Mysql.addDatabase').variables
         tmp=self.requires.get('Mysql.addDatabase').variables[0]
         self.conf.configure(tmp.database.value, tmp.user.value, tmp.password.value, tmp.host.value)
+        logger.event({"lifecycle":self.lf_name,"event":"binding","target":tmp.host.value})
     def leave(self):
         """ set wordpress.php """
         logger.info("undo php wordpress configuration file modifications...")

@@ -21,7 +21,7 @@ class CopyTemplate(mss.lifecycle.State):
     src=""
     dst=""
     def entry(self):
-        logger.event("%s.%s copy template file from '%s' to '%s' ...", self.lf_name, self.name, self.src, self.dst)
+        logger.info("%s.%s copy template file from '%s' to '%s' ...", self.lf_name, self.name, self.src, self.dst)
         copyfile(self.src,self.dst)
 
 class RunScript(mss.lifecycle.State):
@@ -39,7 +39,7 @@ class RunScript(mss.lifecycle.State):
         script_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), self.script_name)
         script_dir = os.path.dirname(script_path)
         script_args = self.require_to_script_args()
-        logger.event("%s.%s run script %s %s ...", self.lf_name,
+        logger.info("%s.%s run script %s %s ...", self.lf_name,
                      self.name, self.script_name, script_args)
         thread = process.ProcessThread("/bin/bash", None, "test",
                                        ["/bin/bash", script_path] + script_args,
@@ -47,9 +47,9 @@ class RunScript(mss.lifecycle.State):
         thread.start()
         thread.join()
         if thread.code == 0:
-            logger.event("%s.%s run script %s done.", self.lf_name, self.name, script_path)
+            logger.info("%s.%s run script %s done.", self.lf_name, self.name, script_path)
         else:
-            logger.event("%s.%s run script %s failed.", self.lf_name, self.name, script_path)
+            logger.info("%s.%s run script %s failed.", self.lf_name, self.name, script_path)
             logger.debug("%s",thread.output)
 
 class PackageInstallationError(Exception):
@@ -62,7 +62,7 @@ class InstallPackagesUrpm(mss.lifecycle.State):
 
     def entry(self):
         pkgs = " ".join(self.packages)
-        logger.event("%s.%s urpmi %s ...", self.lf_name, self.name, pkgs)
+        logger.info("%s.%s urpmi %s ...", self.lf_name, self.name, pkgs)
         for p in self.packages:
             thread = process.ProcessThread("/bin/rpm", None, "test",
                                            ["/bin/rpm", "-q", "%s" % p],
@@ -79,9 +79,9 @@ class InstallPackagesUrpm(mss.lifecycle.State):
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.event("%s.%s urpmi %s done." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s urpmi %s done." % (self.lf_name, self.name, p))
                 else:
-                    logger.event("%s.%s urpmi %s failed." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s urpmi %s failed." % (self.lf_name, self.name, p))
                     raise UrpmiError()
 
     def leave(self):
@@ -95,7 +95,7 @@ class InstallPackagesApt(mss.lifecycle.State):
 
     def entry(self, requires={}):
         pkgs = " ".join(self.packages)
-        logger.event("%s.%s apt-get install %s ...", self.lf_name, self.name, pkgs)
+        logger.info("%s.%s apt-get install %s ...", self.lf_name, self.name, pkgs)
         for p in self.packages:
             thread = process.ProcessThread("/usr/bin/dpkg", None, "test",
                                            ["/usr/bin/dpkg", "--status", "%s" % p],
@@ -112,9 +112,9 @@ class InstallPackagesApt(mss.lifecycle.State):
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.event("%s.%s apt-get install %s done." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s apt-get install %s done." % (self.lf_name, self.name, p))
                 else:
-                    logger.event("%s.%s apt-get install %s failed." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s apt-get install %s failed." % (self.lf_name, self.name, p))
                     raise AptGetInstallError()
 
     def leave(self):
@@ -134,16 +134,16 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
     def __systemctl(self, action):
         for service in self.services:
-            logger.event("%s.%s systemctl %s %s.service ..." % (self.lf_name, self.name, action, service))
+            logger.info("%s.%s systemctl %s %s.service ..." % (self.lf_name, self.name, action, service))
             thread = process.ProcessThread("systemctl %s %s.service" % (action, service), None, "test",
                                            ["/bin/systemctl", action, "%s.service" % service],
                                            None, None, None, None)
             thread.start()
             thread.join()
             if thread.code == 0:
-                logger.event("%s.%s systemctl %s %s.service done" % (self.lf_name, self.name, action, service))
+                logger.info("%s.%s systemctl %s %s.service done" % (self.lf_name, self.name, action, service))
             else:
-                logger.event("%s.%s systemctl %s %s.service failed" % (self.lf_name, self.name, action, service))
+                logger.info("%s.%s systemctl %s %s.service failed" % (self.lf_name, self.name, action, service))
                 thread = process.ProcessThread("systemctl status %s.service" % service, None, "test",
                                                ["/bin/systemctl", "status", "%s.service" % service],
                                                None, None, None, None)
@@ -153,6 +153,8 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
     def entry(self):
         self.__systemctl("start")
+        logger.event({"lifecycle":self.lf_name,"is_active":True})
+
 
     def leave(self):
         self.__systemctl("stop")
@@ -180,14 +182,14 @@ class ActiveWithSystemV(mss.lifecycle.State):
             thread.start()
             thread.join()
             if thread.code != 0:
-                logger.event("%s.%s /etc/init.d/%s start ..." % (self.lf_name, self.name, service))
+                logger.info("%s.%s /etc/init.d/%s start ..." % (self.lf_name, self.name, service))
                 thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
                                                ["/etc/init.d/%s" % service, "start"],
                                                None, None, None, None)
                 thread.start()
                 thread.join()
             else:
-                logger.event("%s.%s service %s is already started ..." % (self.lf_name, self.name, service))
+                logger.info("%s.%s service %s is already started ..." % (self.lf_name, self.name, service))
             logger.event("%s.%s /etc/init.d/%s start done" % (self.lf_name, self.name, service))
 
     def leave(self):
