@@ -68,6 +68,7 @@ class SetRootPassword(mss.lifecycle.State):
             self.root_password=pwd
         else:
             logger.info("%s.%s mysql root password setting failed",self.lf_name,self.name)
+            raise Exception("SetRootPassword failed with pwd %s" % pwd)
 
 
 class ResetRootPassword(mss.lifecycle.State):
