@@ -171,8 +171,6 @@ class State(object):
         if not cls._instance:
             cls._instance = super(State, cls).__new__(
                 cls, *args, **kwargs)
- #           _requires = cls._instance.requires
- #           _provides = cls._instance.provides
 
             cls.requires_entry = None
             cls.provides = []
@@ -185,14 +183,13 @@ class State(object):
                 if f.__name__ == 'entry' and not hasattr(f,'_requires'):
                     cls.requires_entry = Requires('entry', cls.requires)
                 elif hasattr(f,'_requires'):
-                    args = inspect.getargspec(f)
                     if f.__name__ == 'entry':
-                        r = Requires(f.__name__, f._requires, args.args[1:], args.defaults)
+                        r = Requires(f.__name__, f._requires)
                         cls.requires_entry=r
                         logger.debug("Create requires with require %s for %s.entry"%([t.name for t in r],cls.__name__))
                     else:
                         flags = f._flags if hasattr(f,'_flags') else {}
-                        r = Requires(f.__name__, f._requires, args.args[1:], args.defaults, flags)
+                        r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
 
                     r._set_full_name(cls.__name__,separator=".")

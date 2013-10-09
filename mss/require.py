@@ -41,13 +41,9 @@ class MissingRequire(Exception):
 
 class Requires(IterContainer):
     """Basically, this describes a list of :py:class:`Require`."""
-    def __init__(self,name, require_list=[], func_args=[], func_default_args=None, flags=None):
+    def __init__(self,name, require_list=[], flags=None):
         self.name = name
         IterContainer.__init__(self,require_list)
-#        print require_list
-#        self._validate_binding_requires_args(func_args)
-        self.func_args = func_args
-        self.func_default_args = func_default_args
         self._full_name = None
         self.flags = flags # Should not be in Requires ...
 
@@ -62,28 +58,6 @@ class Requires(IterContainer):
 
         for r in self:
             r._set_full_name(self._full_name,separator)
-        
-
-    def _validate_binding_requires_args(self, args):
-        """Validate if all arguments name in args correspond to
-        variable name in all requires. If an arguments is not in a
-        require, it is added to a generetad Require.
-        
-        :param requires: Requires object
-        :param args: A list of argument name
-        """
-        variables=[]
-        for a in args:
-            if not self.has_variable(a):
-                logger.debug("Create variable for argument %s" % a)
-                variables.append(VString(a))
-        if variables != []:
-            logger.info("Add generated requires for arguments %s" % variables)
-        
-        newRequire=Require(variables,"generate_for_missing_args")
-        if variables != []:
-            self.append(newRequire)
-
 
     def build_args_from_primitive(self,primitive):
         self.build_from_primitive(primitive)
