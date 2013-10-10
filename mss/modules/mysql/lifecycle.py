@@ -58,14 +58,15 @@ class SetRootPassword(mss.lifecycle.State):
 
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysql", None, "test",
-                                      ["/usr/bin/mysql", "-u", "root", "--password=%s"%pwd, "-e", "quit"],
-                                      None,None,None,None)
+                                      ["/usr/bin/mysql", "-u", "root", 
+                                       "--password=%s"%pwd, "-e", "quit"])
+        
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password already set to 'root'",self.lf_name,self.name)
             return
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
-                                      ["/usr/bin/mysqladmin","password",pwd],
-                                      None,None,None,None)
+                                      ["/usr/bin/mysqladmin","password",pwd])
+                  
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password is '%s'",
                          self.lf_name,self.name,pwd)
@@ -79,7 +80,7 @@ class ResetRootPassword(mss.lifecycle.State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
-    @Require.specify(Require([VString("pwd",default="root")],name="root_pwd"))
+    @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
@@ -87,10 +88,11 @@ class ResetRootPassword(mss.lifecycle.State):
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
-                                                                     "-u","root",
-                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("root_pwd").variables.pwd.value
-                                                                     ],None,None,None,None)
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("root_pwd").variables.password.value, None, "test",
+                                         ["/usr/bin/mysql",
+                                          "-u","root",
+                                          "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("root_pwd").variables.password.value
+                                          ])
             thread_mysql.start()
             thread_mysql.join()
             if thread_mysql.code == 0:
@@ -100,7 +102,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.pwd.value)
+            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.password.value)
         else:
             logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -113,6 +115,24 @@ class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
     supported_os_type=[OsTypeMBS1()]
+
+class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
+    services=["mysqld"]
+    supported_os_type=[OsTypeMBS1()]
+    
+    def entry(self):
+        mss.state.ActiveWithSystemd.leave(self)
+
+    def leave(self):
+        pass
+    def cross(self):
+        pass
+
+class ActiveOnMBS(mss.state.ActiveWithSystemd):
+    """Permit to activate the service"""
+    services=["mysqld"]
+    supported_os_type=[OsTypeMBS1()]
+
 
 class Active(mss.lifecycle.MetaState):
     """Launch mysql server and provide some actions on databases."""
@@ -218,15 +238,15 @@ class Mysql(Lifecycle):
     """
     transitions=[
         Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()    ,SetRootPassword()),
-        Transition(SetRootPassword()    ,Configured()),
-        Transition(Configured()      ,ResetRootPassword()),
-        Transition(Configured()      ,Active()),
-        Transition(Configured()      ,ConfiguredSlave()),
-        Transition(Configured()      ,ActiveAsMaster()),
+        Transition(Installed()    ,Configured()),
+        Transition(Configured(), EnsureMysqlIsStopped()),
+        Transition(EnsureMysqlIsStopped(), ResetRootPassword()),
+        Transition(ResetRootPassword()      ,Active()),
+        Transition(ResetRootPassword()      ,ConfiguredSlave()),
+        Transition(ResetRootPassword()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),
         Transition(ConfiguredSlave() ,Dump()),
-        Transition(Configured() ,Dump())
+        Transition(ResetRootPassword() ,Dump())
         ]
 
     def __init__(self):
