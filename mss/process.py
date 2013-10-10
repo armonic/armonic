@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class ProcessThread(threading.Thread):
     """ Base class for running tasks """
 
-    def __init__(self, type, status, module, command, cwd, callback, shell, env):
+    def __init__(self, type, status, module, command, cwd=None, callback=None, shell=None, env=None):
         self.process = None
         self._code = 2000
         self._output = ""
@@ -47,6 +47,13 @@ class ProcessThread(threading.Thread):
         if env:
             self.env.update(env)
         threading.Thread.__init__(self)
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit(self):
+        self.stop()
 
     def __repr__(self):
         return "<%s(%s, %s)>" % (self.__class__.__name__, self.module, self.command)
