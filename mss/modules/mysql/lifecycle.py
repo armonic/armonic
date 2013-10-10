@@ -55,17 +55,23 @@ class SetRootPassword(mss.lifecycle.State):
     @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
     def entry(self):
         pwd = self.requires_entry.get('root_pwd').variables.get('password').value #password.value
+        thread_mysqld = ProcessThread("mysql", None, "test",
+                                      ["/bin/systemctl", "start", "mysqld.service"])
+        if not thread_mysqld.launch():
+            logger.info("Error at systemctl start mysqld.service (launch for mysqladmin)")
+            raise Exception("Error at mysqld launching for mysqladmin")
 
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysql", None, "test",
-                                      ["/usr/bin/mysql", "-u", "root", "--password=%s"%pwd, "-e", "quit"],
-                                      None,None,None,None)
+                                      ["/usr/bin/mysql", "-u", "root", 
+                                       "--password=%s"%pwd, "-e", "quit"])
+        
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password already set to 'root'",self.lf_name,self.name)
             return
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
-                                      ["/usr/bin/mysqladmin","password",pwd],
-                                      None,None,None,None)
+                                      ["/usr/bin/mysqladmin","password",pwd])
+                  
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password is '%s'",
                          self.lf_name,self.name,pwd)
@@ -74,12 +80,19 @@ class SetRootPassword(mss.lifecycle.State):
             logger.info("%s.%s mysql root password setting failed",self.lf_name,self.name)
             raise Exception("SetRootPassword failed with pwd %s" % pwd)
 
+        thread_mysqld = ProcessThread("mysql", None, "test",
+                                      ["/bin/systemctl", "stop", "mysqld.service"])
+        if not thread_mysqld.launch():
+            logger.info("Error at systemctl stop mysqld.service (launch for mysqladmin)")
+            raise Exception("Error at mysqld launching for mysqladmin")
+
+
 
 class ResetRootPassword(mss.lifecycle.State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
-    @Require.specify(Require([VString("pwd",default="root")],name="root_pwd"))
+    @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
@@ -87,10 +100,11 @@ class ResetRootPassword(mss.lifecycle.State):
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("root_pwd").variables.pwd.value, None, "test",["/usr/bin/mysql",
-                                                                     "-u","root",
-                                                                     "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("root_pwd").variables.pwd.value
-                                                                     ],None,None,None,None)
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("root_pwd").variables.password.value, None, "test",
+                                         ["/usr/bin/mysql",
+                                          "-u","root",
+                                          "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("root_pwd").variables.password.value
+                                          ])
             thread_mysql.start()
             thread_mysql.join()
             if thread_mysql.code == 0:
@@ -100,7 +114,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.pwd.value)
+            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.password.value)
         else:
             logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -114,14 +128,32 @@ class ActiveOnMBS(mss.state.ActiveWithSystemd):
     services=["mysqld"]
     supported_os_type=[OsTypeMBS1()]
 
+class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
+    services=["mysqld"]
+    supported_os_type=[OsTypeMBS1()]
+    
+    def entry(self):
+        mss.state.ActiveWithSystemd.leave(self)
+
+    def leave(self):
+        pass
+    def cross(self):
+        pass
+
+class ActiveOnMBS(mss.state.ActiveWithSystemd):
+    """Permit to activate the service"""
+    services=["mysqld"]
+    supported_os_type=[OsTypeMBS1()]
+
+
 class Active(mss.lifecycle.MetaState):
     """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require.specify(Require([VString('user'),VString('password')]))
     def getDatabases(self,requires):
-        user = requires_entry.get('this').variables.get('user').value
-        password = requires_entry.get('this').variables.get('password').value
+        user = requires.get('this').variables.get('user').value
+        password = requires.get('this').variables.get('password').value
 
         con = MySQLdb.connect('localhost', user,
                               password);
@@ -136,10 +168,10 @@ class Active(mss.lifecycle.MetaState):
     @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
-        database = requires_entry.get('this').variables.get('database').value
-        user = requires_entry.get('this').variables.get('user').value
-        password = requires_entry.get('this').variables.get('password').value
-        mysql_root_pwd = requires_entry.get('mysqlRoot').variables.get('root_password').value
+        database = requires.get('this').variables.get('database').value
+        user = requires.get('this').variables.get('user').value
+        password = requires.get('this').variables.get('password').value
+        mysql_root_pwd = requires.get('mysqlRoot').variables.get('root_password').value
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
@@ -163,12 +195,19 @@ class Active(mss.lifecycle.MetaState):
         return True
 
 
-    @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
+    #@Require.specify(Require([VString('user'), VString('password'), VString('database')]))
     def addUser(self,user,password,newUser,userPassword):
         con = MySQLdb.connect('localhost', user,
                               password);
+
         cur = con.cursor()
-        cur.execute("GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword))
+        cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword)
+        logger.debug("$mysql> %s" % cmd)
+        cur.execute(cmd)
+        cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'localhost' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword)
+        logger.debug("$mysql> %s" % cmd)
+        cur.execute(cmd)
+        logger.info("mysql user '%s' with password '%s' has been created." % (newUser,userPassword))
         return True
 
 
@@ -219,14 +258,15 @@ class Mysql(Lifecycle):
     transitions=[
         Transition(NotInstalled()    ,Installed()),
         Transition(Installed()    ,SetRootPassword()),
-        Transition(SetRootPassword()    ,Configured()),
-        Transition(Configured()      ,ResetRootPassword()),
+        Transition(SetRootPassword(),Configured()),
+#        Transition(Configured(), EnsureMysqlIsStopped()),
+#        Transition(EnsureMysqlIsStopped(), ResetRootPassword()),
         Transition(Configured()      ,Active()),
         Transition(Configured()      ,ConfiguredSlave()),
         Transition(Configured()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),
         Transition(ConfiguredSlave() ,Dump()),
-        Transition(Configured() ,Dump())
+        Transition(ResetRootPassword() ,Dump())
         ]
 
     def __init__(self):

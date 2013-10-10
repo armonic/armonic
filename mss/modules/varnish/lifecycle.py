@@ -21,7 +21,7 @@ class Configured(mss.state.RunScript):
                 str(self.requires_entry.this.variables.port.value)]
 
     def entry(self):
-        super(mss.state.RunScript,self).entry()
+        mss.state.RunScript.entry(self)
         for v in self.requires_entry.get('Wordpress.get_site').variables:
             logger.event({"lifecycle":self.lf_name,"event":"binding","target":v.host.value})
         logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.this.variables.port.value})

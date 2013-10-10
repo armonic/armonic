@@ -796,6 +796,8 @@ class LifecycleManager(object):
         :type state_name: str
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
+        logger.debug("state-goto %s %s %s" % (
+                lf_name, state_name, requires)) 
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
@@ -863,6 +865,8 @@ class LifecycleManager(object):
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
+        logger.debug("provide-call %s %s %s %s" % (
+                lf_name, provide_name, requires, provide_args)) 
         return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
 
     @expose

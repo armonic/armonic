@@ -40,5 +40,8 @@ echo 'sub vcl_recv {  set req.backend = default_director;}' >> ${varnish_conf_fi
 echo "Generate" "/etc/varnish/secret" "file"
 echo "1111111111" > /etc/varnish/secret
 
+echo "Load varnish shared lib"
+ldconfig  /usr/lib64/varnish/
+
 echo "Set port in" ${varnish_general_conf_file}
 sed -i "s/VARNISH_LISTEN_PORT=.*/VARNISH_LISTEN_PORT=${port}/" ${varnish_general_conf_file}
