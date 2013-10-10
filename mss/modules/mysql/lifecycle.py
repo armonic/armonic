@@ -60,17 +60,13 @@ class SetRootPassword(mss.lifecycle.State):
         thread_mysqld = ProcessThread("mysql", None, "test",
                                       ["/usr/bin/mysql", "-u", "root", "--password=%s"%pwd, "-e", "quit"],
                                       None,None,None,None)
-        thread_mysqld.start()
-        thread_mysqld.join()
-        if thread_mysqld.code == 0:
+        if thread_mysqld.launch():
             logger.info("%s.%s mysql root password already set to 'root'",self.lf_name,self.name)
             return
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
                                       ["/usr/bin/mysqladmin","password",pwd],
                                       None,None,None,None)
-        thread_mysqld.start()
-        thread_mysqld.join()
-        if thread_mysqld.code == 0:
+        if thread_mysqld.launch():
             logger.info("%s.%s mysql root password is '%s'",
                          self.lf_name,self.name,pwd)
             self.root_password=pwd

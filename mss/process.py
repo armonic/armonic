@@ -51,6 +51,15 @@ class ProcessThread(threading.Thread):
     def __repr__(self):
         return "<%s(%s, %s)>" % (self.__class__.__name__, self.module, self.command)
 
+    def launch(self):
+        """Thread is started and joined. This is a blocking method.
+
+        :rtype: True if process execution success
+        """
+        self.start()
+        self.join()
+        return self.code == 0
+
     @property
     def output(self):
         try:
