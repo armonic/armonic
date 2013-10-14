@@ -153,7 +153,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
     def entry(self):
         self.__systemctl("start")
-        logger.event({"lifecycle":self.lf_name,"is_active":True})
+        logger.event({"lifecycle":self.lf_name,"is_active":"true"})
 
 
     def leave(self):
