@@ -636,7 +636,7 @@ class Lifecycle(object):
             acc += 'shape = "record"\n'
             requires = ""
             requires = list_to_table([r.to_primitive() for r in s.get_requires()])
-            provides = list_to_table([(p.name, p.args, p.flags) for p in s.get_provides()])
+            provides = list_to_table([(p.name, p.flags) for p in s.get_provides()])
             label = 'label = "{State name: %s  | Method entry: %s | Method leave : %s | {Method cross: | {Doc: %s | Flags: %s}} | { Requires: | {%s} } | { Provides: | {%s}}}"\n' % (
                 s.name,
                 dotify(s.entry.__doc__),
