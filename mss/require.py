@@ -64,7 +64,7 @@ class Requires(IterContainer):
         args={}
         for a in self.func_args:
             for r in self:
-                try : 
+                try :
                     args.update({a:r.variables.get(a).value})
                 except DoesNotExist:
                     pass
@@ -94,7 +94,7 @@ class Requires(IterContainer):
     def has_variable(self, variable_name):
         """Return True if variable_name is specified by this requires."""
         for r in self:
-            try : 
+            try :
                 r.variables.get(variable_name)
                 return True
             except DoesNotExist:
@@ -147,24 +147,30 @@ class Require(object):
         for v in self.variables:
             v._set_full_name(self._full_name,separator)
 
-    @staticmethod
-    def specify(require=None):
-        """This is a decorator to specify a method that can be used as a provide in a state.
-        Requires are checked in order to know if all function arguments are specified by it.
-
-        Be careful, without flags, this decorator should be used as
-        following @provide()
+    @classmethod
+    def add(cls, *args, **kwargs):
         """
-        def wrapper(func):
-            if hasattr(func,'_requires'):
-                func._requires.append(require)
-            elif require != None:
-                func._requires=[require]
-            else:
-                func._requires=[]
-            return func
-        return wrapper
+        Used as a method decorator to define Require on :py:class:`State` methods
+        """
+        cls_args = args
+        cls_kwargs = kwargs
 
+        def wrapper(func):
+            has_requires = hasattr(func, '_requires')
+            require = None
+            if cls_args or cls_kwargs:
+                require = cls(*cls_args, **cls_kwargs)
+
+            if require and has_requires:
+                func._requires.append(require)
+            elif require and not has_requires:
+                func._requires = [require]
+            elif not has_requires:
+                func._requires = []
+
+            return func
+
+        return wrapper
 
     def _fill(self, iterContainer, primitive):
         """Fill an iterContainer with value found in primitive.
@@ -179,7 +185,7 @@ class Require(object):
                 logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
                 pass
         return True
-        
+
 
     def fill(self, primitive={}):
         """Fill variable values from a dict.

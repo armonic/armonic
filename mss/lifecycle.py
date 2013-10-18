@@ -136,7 +136,7 @@ def flags(flags):
         func._flags = flags
         return func
     return wrapper
-    
+
 class RequireHasNotFuncArgs(Exception):pass
 
 class StateNotApply(Exception):
@@ -174,7 +174,7 @@ class State(object):
 
 #            cls.requires_entry = None
             cls.provides = []
-            
+
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
                 if hasattr(f,'_requires'):
@@ -186,8 +186,8 @@ class State(object):
                         r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
                     logger.debug("Create a Requires for %s.%s with Require %s"%(cls.__name__, f.__name__, [t.name for t in r]))
-
                     r._set_full_name(cls.__name__,separator=".")
+
             # If 'entry' method has no requires specified via
             # decorator of class variable, we create it.
             if not hasattr(cls,'requires_entry'):
@@ -204,7 +204,7 @@ class State(object):
         """Build a full name and requires full names by joining
         prefix, separator and name."""
         self._full_name = prefix + separator + self.name
-        
+
         self.requires_entry._set_full_name(self._full_name,separator)
         for r in self.provides:
             r._set_full_name(self._full_name,separator)
@@ -259,20 +259,20 @@ class State(object):
 
     @classmethod
     def get_requires(cls):
-        """ 
-        :rtype: Requires 
+        """
+        :rtype: Requires
         """
         return cls.requires_entry
 
     @classmethod
     def get_provides(cls):
-        """ 
+        """
         :rtype: [Requires]
         """
         return cls.provides
     @classmethod
     def _get_provide_by_name(cls, provide_name):
-        """ 
+        """
         :rtype: Requires
         """
         for p in cls.get_provides():
@@ -285,7 +285,7 @@ class State(object):
         return cls._get_provide_by_name(provide_name)
 
     def get_provide_by_name(self, provide_name):
-        """ 
+        """
         :rtype: Requires
         """
         return self.__class__._get_provide_by_name(provide_name)
@@ -342,7 +342,7 @@ class Lifecycle(object):
                 for t in transitions:
                     update_transitions = []
                     # And for each state implementations
-                    for d in created_states: 
+                    for d in created_states:
                         # We create transition to this implementation
                         update_transitions+=[(t[0],d())]
                         # And from this implementation to metastate
@@ -376,7 +376,7 @@ class Lifecycle(object):
             if s not in acc: acc += [s]
             if d not in acc: acc += [d]
         return acc
-        
+
     def state_list(self,reachable=False):
         """To get all available states.
 
@@ -499,7 +499,7 @@ class Lifecycle(object):
         """To know if state_name is a state of self."""
         self._get_state_class(state)
         return True
-    
+
 
     def state_goto_path(self, state, fct=None, go_back=True):
         """From the current state, return the path to goto the state.
@@ -797,7 +797,7 @@ class LifecycleManager(object):
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
         logger.debug("state-goto %s %s %s" % (
-                lf_name, state_name, requires)) 
+                lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
@@ -866,7 +866,7 @@ class LifecycleManager(object):
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
         logger.debug("provide-call %s %s %s %s" % (
-                lf_name, provide_name, requires, provide_args)) 
+                lf_name, provide_name, requires, provide_args))
         return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
 
     @expose

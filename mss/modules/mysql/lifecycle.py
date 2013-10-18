@@ -24,8 +24,8 @@ class Configured(State):
     """Configure mysql.
     - set port
     - disable skipnetworking"""
-    @Require.specify(Require([Port("port",default=3306)],name="port"))
-    @Require.specify(Require([VString("root",default="/")],name="augeas"))
+    @Require.add([Port("port",default=3306)], name="port")
+    @Require.add([VString("root",default="/")], name="augeas")
     def entry(self):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
@@ -52,7 +52,8 @@ class Configured(State):
 
 class SetRootPassword(mss.lifecycle.State):
     """Set initial Mysql root password"""
-    @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
+
+    @Require.add([VString("password",default="root")], name="root_pwd")
     def entry(self):
         pwd = self.requires_entry.get('root_pwd').variables.get('password').value #password.value
         thread_mysqld = ProcessThread("mysql", None, "test",
@@ -63,15 +64,15 @@ class SetRootPassword(mss.lifecycle.State):
 
         logger.debug("%s.%s set mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysql", None, "test",
-                                      ["/usr/bin/mysql", "-u", "root", 
+                                      ["/usr/bin/mysql", "-u", "root",
                                        "--password=%s"%pwd, "-e", "quit"])
-        
+
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password already set to 'root'",self.lf_name,self.name)
             return
         thread_mysqld = ProcessThread("mysqldadmin", None, "test",
                                       ["/usr/bin/mysqladmin","password",pwd])
-                  
+
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password is '%s'",
                          self.lf_name,self.name,pwd)
@@ -92,7 +93,8 @@ class ResetRootPassword(mss.lifecycle.State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
-    @Require.specify(Require([VString("password",default="root")],name="root_pwd"))
+
+    @Require.add([VString("password",default="root")], name="root_pwd")
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
         thread_mysqld = ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
@@ -131,7 +133,7 @@ class ActiveOnMBS(mss.state.ActiveWithSystemd):
 class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
     services=["mysqld"]
     supported_os_type=[OsTypeMBS1()]
-    
+
     def entry(self):
         mss.state.ActiveWithSystemd.leave(self)
 
@@ -150,7 +152,7 @@ class Active(mss.lifecycle.MetaState):
     """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
-    @Require.specify(Require([VString('user'),VString('password')]))
+    @Require.add([VString('user'), VString('password')])
     def getDatabases(self,requires):
         user = requires.get('this').variables.get('user').value
         password = requires.get('this').variables.get('password').value
@@ -162,10 +164,10 @@ class Active(mss.lifecycle.MetaState):
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
-    @Require.specify(RequireUser(name='mysqlRoot',
-                                 provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
-                                 variables=[Password('root_password')]))
-    @Require.specify(Require([VString('user'), VString('password'), VString('database')]))
+    @RequireUser.add(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    @Require.add([VString('user'), VString('password'), VString('database')])
     def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
         database = requires.get('this').variables.get('database').value
@@ -183,10 +185,10 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
 
-    @Require.specify(RequireUser(name='mysql_root',
-                                 provided_by='SetRootPassword.entry',
-                                 variables=[Password('user'),Password('password')]))
-    @Require.specify(Require([VString('database')]))
+    @RequireUser.add(name='mysql_root',
+                     provided_by='SetRootPassword.entry',
+                     variables=[Password('user'),Password('password')])
+    @Require.add([VString('database')])
     def rmDatabase(self,user,password,database):
         con = MySQLdb.connect('localhost', user,
                               password);
@@ -195,7 +197,7 @@ class Active(mss.lifecycle.MetaState):
         return True
 
 
-    #@Require.specify(Require([VString('user'), VString('password'), VString('database')]))
+    #@Require.add([VString('user'), VString('password'), VString('database')])
     def addUser(self,user,password,newUser,userPassword):
         con = MySQLdb.connect('localhost', user,
                               password);

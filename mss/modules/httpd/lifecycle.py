@@ -1,5 +1,5 @@
 from mss.lifecycle import State, Transition, Lifecycle
-from mss.require import Require, Requires
+from mss.require import Require
 from mss.variable import VString, Port
 import mss.state
 import configuration
@@ -11,8 +11,9 @@ logger=logging.getLogger(__name__)
 class NotInstalled(State):pass
 class Configured(State):
     """Configure listen and vhost port"""
-    requires_entry=Requires('entry',[Require([Port("port",default=8080)],name='port'),
-                                     Require([VString("root",default="/")],name="augeas")])
+
+    @Require.add([Port("port", default=8080)], name='port')
+    @Require.add([VString("root",default="/")], name="augeas")
     def entry(self):
         """Set listen and vhost port"""
         logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires))
@@ -26,16 +27,16 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
-    @Require.specify(Require([VString("httpdDocumentRoot",default='/var/www/wordpress')]))
-    def get_documentRoot(self,requires):
+    @Require.add([VString("httpdDocumentRoot", default='/var/www/wordpress')])
+    def get_documentRoot(self, requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @Require.specify(Require([Port("port")]))
+    @Require.add([Port("port")])
     #flags={'restart':True})
-    def set_port(self,requires):
+    def set_port(self, requires):
         """Set listen and vhost port"""
-        self.conf.setPort(port)
+        self.conf.setPort(requires.this.port.value)
 
 class Active(mss.state.ActiveWithSystemd):
     services=["httpd"]
