@@ -206,7 +206,7 @@ class Require(object):
         return self._validate(self.variables,values)
 
     def to_primitive(self):
-        return {"name": self.name, "args": [a.to_primitive() for a in self.args],
+        return {"name": self.name, "args": [a.to_primitive() for a in self.variables],
                 "type": "simple"}
 
     def generate_args(self, dct={}):

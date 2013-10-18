@@ -29,6 +29,9 @@ class Variable(object):
         """Build a full name by joining prefix, separator and name."""
         self._full_name = prefix + separator + self.name
 
+    def to_primitive(self):
+        return {'name':self.name, 'type':self.type}
+
     @property
     def value(self):
         return self._value
