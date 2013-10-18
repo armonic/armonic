@@ -8,7 +8,7 @@ from mss.variable import Hostname, VString, Port, Password
 from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
 import mss.state
-from mss.utils import OsTypeDebian, OsTypeMBS1
+from mss.utils import OsTypeDebian, OsTypeMBS
 
 import configuration
 
@@ -128,11 +128,11 @@ class ActiveOnDebian(mss.state.ActiveWithSystemV):
 class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
-    supported_os_type=[OsTypeMBS1()]
+    supported_os_type=[OsTypeMBS()]
 
 class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
     services=["mysqld"]
-    supported_os_type=[OsTypeMBS1()]
+    supported_os_type=[OsTypeMBS()]
 
     def entry(self):
         mss.state.ActiveWithSystemd.leave(self)
@@ -145,7 +145,7 @@ class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
 class ActiveOnMBS(mss.state.ActiveWithSystemd):
     """Permit to activate the service"""
     services=["mysqld"]
-    supported_os_type=[OsTypeMBS1()]
+    supported_os_type=[OsTypeMBS()]
 
 
 class Active(mss.lifecycle.MetaState):

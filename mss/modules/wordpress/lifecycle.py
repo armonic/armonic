@@ -11,12 +11,12 @@ logger=logging.getLogger(__name__)
 class NotInstalled(mss.state.InitialState):pass
 
 class Template(mss.state.CopyTemplate):
-    supported_os_type = [mss.utils.OsTypeMBS1()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
     src="/var/www/wordpress/wp-config-sample.php"
     dst="/var/www/wordpress/wp-config.php"
 
 class Configured(State):
-    supported_os_type = [mss.utils.OsTypeMBS1()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
 
     @Require.add([VString("root",default="/")], name='augeas')
     @RequireExternal.add("Mysql", "addDatabase",
@@ -38,7 +38,7 @@ class Configured(State):
 
 
 class Active(State):
-    supported_os_type = [mss.utils.OsTypeMBS1()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
 
     @RequireLocal.add("Httpd", "get_documentRoot",
                       provide_args=[VString("httpdDocumentRoot",

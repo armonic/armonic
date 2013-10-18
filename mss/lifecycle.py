@@ -165,7 +165,7 @@ class State(object):
     _instance = None
     _full_name = None
 
-    supported_os_type=[mss.utils.OsTypeAll()]
+    supported_os_type = [mss.utils.OsTypeAll()]
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
@@ -404,8 +404,8 @@ class Lifecycle(object):
 
     def _is_transition_allowed(self, s, d):
         """A transition is allowed if src and dst state support current os type."""
-        return (mss.utils.os_type in d.supported_os_type
-                and mss.utils.os_type in s.supported_os_type
+        return (mss.utils.OS_TYPE in d.supported_os_type
+                and mss.utils.OS_TYPE in s.supported_os_type
                 and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):
@@ -690,7 +690,7 @@ class LifecycleManager(object):
 
         :rtype: list of strings (lifecycle objects names)
         """
-        return {"os-type":mss.utils.os_type.name,"os-release":mss.utils.os_type.release}
+        return {"os-type": mss.utils.OS_TYPE.name, "os-release": mss.utils.OS_TYPE.release}
 
     @expose
     def lf_list(self):
@@ -747,9 +747,9 @@ class LifecycleManager(object):
         :type lf_name: str
         :type verbose: bool
         :rtype: list of strings (states names)"""
-        states=self._get_by_name(lf_name).state_list(reachable=reachable)
+        states = self._get_by_name(lf_name).state_list(reachable=reachable)
         if doc:
-            return [{'name':s.name,'doc':s.__doc__,'os-type':s.supported_os_type} for s in states]
+            return [{'name': s.name, 'doc': s.__doc__, 'os-type': s.supported_os_type} for s in states]
         else:
             return [s.name for s in states]
 

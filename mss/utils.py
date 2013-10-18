@@ -4,65 +4,70 @@ import platform
 import netifaces
 from IPy import IP
 
+
 class OsType(object):
-    """Represent an linux distribution type.  :py:meth:`__eq__` is
-    used to know if a state has the current linux distribution in his
+    """Represent an Linux distribution type. :py:meth:`__eq__` is
+    used to know if a state has the current linux distribution in its
     supported_os_type.
     """
-    def __init__(self,name,release=None):
+    def __init__(self, name, release=None):
         self.name = name
         self.release = release
 
-    def __eq__(self,other):
-        if isinstance(other,OsTypeAll):
+    def __eq__(self, other):
+        if isinstance(other, OsTypeAll):
             return True
         else:
             return (self.name == other.name and
-                    (self.release == None or 
-                     other.release == None or
+                    (self.release is None or
+                     other.release is None or
                      self.release == other.release))
 
     def __repr__(self):
-        if self.release == None:
-            return "%s - all" % (self.name)
-        else :
-            return "%s - %s" % (self.name,self.release)
+        if self.release is None:
+            return "<OsType(%s - all)>" % (self.name)
+        else:
+            return "<OsType(%s - %s)>" % (self.name, self.release)
+
 
 class OsTypeAll():
     """Use this class to specify that a state supports all os type. It
-    is equal to any OsType* object."""
+    is equal to any OsType* object.
+    """
     def __init__(self):
         self.name = "all"
         self.release = "all"
-    def __eq__(self,other):
-        if isinstance(other,OsType) or isinstance(other,OsTypeAll):
+
+    def __eq__(self, other):
+        if isinstance(other, OsType) or isinstance(other, OsTypeAll):
             return True
         return False
 
     def __repr__(self):
-        return "all"
+        return "<OsTypeAll>"
 
 
-class OsTypeMBS1(OsType):
+class OsTypeMBS(OsType):
     def __init__(self):
-        self.name = "Mandriva Business Server"
-        self.release = "1"
+        OsType.__init__(self, "Mandriva Business Server")
+
 
 class OsTypeDebian(OsType):
     def __init__(self):
-        OsType.__init__(self,"debian")
+        OsType.__init__(self, "debian")
+
 
 class OsTypeDebianWheezy(OsTypeDebian):
     def __init__(self):
         self.name = 'debian'
         self.release = 'wheezy/sid'
-        
+
 
 def find_distribution():
-    t=platform.linux_distribution()
-    return OsType(t[0],t[1])
+    t = platform.linux_distribution()
+    return OsType(t[0], t[1])
 
-os_type=find_distribution()
+OS_TYPE = find_distribution()
 
 
 def ethernet_ifs():

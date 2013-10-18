@@ -58,7 +58,7 @@ class UrpmiError(PackageInstallationError):
     pass
 class InstallPackagesUrpm(mss.lifecycle.State):
     packages = []
-    supported_os_type = [mss.utils.OsTypeMBS1()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
 
     def entry(self):
         pkgs = " ".join(self.packages)
@@ -130,7 +130,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
     """If systemctl returns a code != 0, systemctl status 'service' is
     called and exception ErrorSystemd is raised"""
     services = []
-    supported_os_type=[mss.utils.OsTypeMBS1()]
+    supported_os_type=[mss.utils.OsTypeMBS()]
 
     def __systemctl(self, action):
         for service in self.services:
