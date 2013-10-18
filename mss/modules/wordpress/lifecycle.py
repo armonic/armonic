@@ -25,7 +25,7 @@ class Configured(State):
                                        VString("database",default="wordpress_db")])
     def entry(self):
         """set value in wp-config.php"""
-        logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,self.requires))
+        logger.info("%s.%-10s: edit php wordpress configuration file with %s"%(self.lf_name,self.name,self.requires_entry))
         self.conf=configuration.Wordpress(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
         print self.requires_entry.get('Mysql.addDatabase').variables
         tmp=self.requires_entry.get('Mysql.addDatabase').variables[0]
@@ -45,7 +45,7 @@ class Active(State):
                                     default="/var/www/wordpress")])
     @RequireLocal.add("Httpd", "start")
     def entry(self):
-        logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,self.requires))
+        logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,self.requires_entry))
         self.httpdDocumentRoot=self.requires_entry.get('Httpd.get_documentRoot').variables[0].httpdDocumentRoot.value
         logger.info("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s"%(self.lf_name,self.name,self.httpdDocumentRoot))
 

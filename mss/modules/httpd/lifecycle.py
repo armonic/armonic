@@ -16,7 +16,7 @@ class Configured(State):
     @Require.add([VString("root",default="/")], name="augeas")
     def entry(self):
         """Set listen and vhost port"""
-        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires))
+        logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires_entry))
         port = self.requires_entry.get('port').variables.port.value
         augeas = self.requires_entry.get('augeas').variables.root.value
 

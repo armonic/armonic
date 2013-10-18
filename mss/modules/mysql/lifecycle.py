@@ -28,7 +28,7 @@ class Configured(State):
     @Require.add([VString("root",default="/")], name="augeas")
     def entry(self):
         """ set mysql port """
-        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires))
+        logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires_entry))
         self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
         self.config.port.set(str(self.requires_entry.get('port').variables.port.value))
         try:

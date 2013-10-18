@@ -112,6 +112,7 @@ from mss.variable import VString
 import mss.utils
 
 logger = logging.getLogger(__name__)
+STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
 
 
 class TransitionNotAllowed(Exception):
@@ -156,11 +157,6 @@ class State(object):
      :py:meth:`State.leave`
      :py:meth:`State.cross`
     """
-    require_state = None
-    requires = []
-#    requires_entry = None
-    """ """
-#    provides = []
     _lf_name = ""
     _instance = None
     _full_name = None
@@ -169,29 +165,26 @@ class State(object):
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(State, cls).__new__(
-                cls, *args, **kwargs)
+            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
 
-#            cls.requires_entry = None
+            # init requires
             cls.provides = []
+            for method in STATE_RESERVED_METHODS:
+                setattr(cls, "requires_%s" % method, Requires(method, []))
 
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                if hasattr(f,'_requires'):
-                    if f.__name__ == 'entry':
+                if hasattr(f, '_requires'):
+                    if f.__name__ in STATE_RESERVED_METHODS:
                         r = Requires(f.__name__, f._requires)
-                        cls.requires_entry=r
+                        setattr(cls, "requires_%s" % f.__name__, r)
                     else:
                         flags = f._flags if hasattr(f,'_flags') else {}
                         r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
-                    logger.debug("Create a Requires for %s.%s with Require %s"%(cls.__name__, f.__name__, [t.name for t in r]))
-                    r._set_full_name(cls.__name__,separator=".")
 
-            # If 'entry' method has no requires specified via
-            # decorator of class variable, we create it.
-            if not hasattr(cls,'requires_entry'):
-                cls.requires_entry = Requires('entry',[])
+                    logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
+                    r._set_full_name(cls.__name__)
 
         return cls._instance
 
@@ -200,15 +193,18 @@ class State(object):
     def full_name(self):
         return self._full_name if self._full_name != None else self.name
 
-    def _set_full_name(self,prefix,separator="."):
+    def _set_full_name(self, prefix, separator="."):
         """Build a full name and requires full names by joining
         prefix, separator and name."""
         self._full_name = prefix + separator + self.name
 
-        self.requires_entry._set_full_name(self._full_name,separator)
-        for r in self.provides:
-            r._set_full_name(self._full_name,separator)
+        for method in STATE_RESERVED_METHODS:
+            require = getattr(self, "requires_%s" % method)
+            if require is not None:
+                require._set_full_name(self._full_name, separator)
 
+        for require in self.provides:
+            require._set_full_name(self._full_name, separator)
 
     @property
     def name(self):
@@ -232,8 +228,7 @@ class State(object):
         :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
-        if self.requires_entry != None:
-            self.requires_entry.build_from_primitive(primitive)
+        self.requires_entry.build_from_primitive(primitive)
         return self.entry()
 
     def entry(self):
@@ -270,6 +265,7 @@ class State(object):
         :rtype: [Requires]
         """
         return cls.provides
+
     @classmethod
     def _get_provide_by_name(cls, provide_name):
         """
