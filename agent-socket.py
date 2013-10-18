@@ -13,6 +13,8 @@ Protocol:
 
 """
 
+import sys
+import traceback
 import os
 import logging
 import logging.handlers
@@ -88,10 +90,14 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         try:
             ret = lfm._dispatch(request['method'], *request['args'], **request['kwargs'])
         except Exception as e:
-            sendString(self.request,{'exception':e},True)
-            raise
+            # self._logger.exception doesn't go through the socket so we get
+            # the traceback and include it in an error log
+            t, v, tb = sys.exc_info()
+            self._logger.error("Error while processing %s:\n%s" % (request['method'],
+                                                                   "".join(traceback.format_tb(tb))))
+            sendString(self.request, {'exception': e}, True)
         else:
-            sendString(self.request,{'return':ret},True)
+            sendString(self.request, {'return': ret}, True)
 
 class MyTCPServer(SocketServer.TCPServer):
     allow_reuse_address=True

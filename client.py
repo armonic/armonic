@@ -11,7 +11,6 @@ import pprint
 from prettytable import PrettyTable
 import argcomplete
 
-from mss.client_socket import ClientSocket
 
 def read_string(string):
     try:
@@ -57,7 +56,7 @@ def require_to_table(requires):
                 x.add_row(["","",a.full_name,a.type,a.default,""])
         x.add_row(["" , "","","","",""])
     print x
-    
+
 
 def cmd_status(args):
     pass
@@ -144,7 +143,7 @@ def ProvideCompleter(prefix, parsed_args, **kwargs):
         client = ClientSocket(parsed_args.host, parsed_args.port)
     except Exception as e:
         argcomplete.warn("Connection error to mss agent %e" % e)
-    try : 
+    try :
         state = parsed_args.state
     except AttributeError:
         state = None
