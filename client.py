@@ -122,6 +122,10 @@ def cmd_provide_show(args):
 def cmd_provide_call(args):
     pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), parseArgs(args.args)))
 
+def cmd_plot(args):
+    print client.call('to_dot', args.module)
+
+
 def ModuleCompleter(prefix, parsed_args, **kwargs):
     try:
         client = ClientSocket(parsed_args.host, parsed_args.port)
@@ -221,6 +225,11 @@ parser_provide_call.add_argument('provide' , type=str, help='a provide').complet
 parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
 parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)
+
+parser_provide = subparsers.add_parser('plot', help='Plot a lifecycle')
+parser_provide.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
+parser_provide.set_defaults(func=cmd_plot)
+
 
 argcomplete.autocomplete(parser)
 args = parser.parse_args()
