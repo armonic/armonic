@@ -128,14 +128,14 @@ class IterContainer(list):
     Simple object container
 
     Is an iterator to loop over objects:
-        objects = IterContainer(objects)
+        objects = IterContainer(*objects)
         for object in objects:
             print object.name, object.value
 
     And provide easy way to retrieve objects
     that have a name attribute:
 
-        objects = IterContainer(objects)
+        objects = IterContainer(*objects)
         object = objects.object_name
         print object.name, object.value
         object = objects.get("object_name")

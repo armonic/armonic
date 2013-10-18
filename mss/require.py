@@ -41,9 +41,9 @@ class MissingRequire(Exception):
 
 class Requires(IterContainer):
     """Basically, this describes a list of :py:class:`Require`."""
-    def __init__(self,name, require_list=[], flags=None):
+    def __init__(self, name, require_list=[], flags=None):
         self.name = name
-        IterContainer.__init__(self,require_list)
+        IterContainer.__init__(self, *require_list)
         self._full_name = None
         self.flags = flags # Should not be in Requires ...
 
@@ -134,7 +134,7 @@ class Require(object):
         self.name = name if name else "this"
         self.type = "simple"
         self._validated = False
-        self.variables = IterContainer(variables)
+        self.variables = IterContainer(*variables)
         self._full_name = None
 
     @property
@@ -277,7 +277,7 @@ class RequireLocal(Require):
         # This will contain Variables. fill method will append
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
-        self.variables = [IterContainer(variables)]
+        self.variables = [IterContainer(*variables)]
 
     def _set_full_name(self,prefix,separator="."):
         """Build a full name by joining prefix, separator and name."""
@@ -298,10 +298,11 @@ class RequireLocal(Require):
             primitives=[primitives]
         if primitives != []:
             # To avoid vaiables append on multiple calls
-            self.variables = [IterContainer(self._variables_skel)]
+            self.variables = [IterContainer(*self._variables_skel)]
             self._fill(self.variables[0],primitives[0])
             for primitive in primitives[1:]:
-                tmp=IterContainer(copy.deepcopy(self._variables_skel))
+                tmp_vars = copy.deepcopy(self._variables_skel)
+                tmp = IterContainer(*tmp_vars)
                 self._fill(tmp,primitive)
                 self.variables.append(tmp)
         return True
