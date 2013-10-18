@@ -51,8 +51,12 @@ Interactive tests
 -----------------
 ./client.py --help
 
-To add client completion, run
+Howto use bash completion
+-------------------------
+pip install argcomplete --user
+Launch a new bash shell
 eval "$(~/.local/bin/register-python-argcomplete  client.py)"
+
 
 To get module documentation
 ---------------------------
