@@ -15,7 +15,10 @@ class NetworkFilter(logging.Filter):
 
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
-        record.ip = ethernet_ifs()[0][1]
+        try:
+            record.ip = ethernet_ifs()[0][1]
+        except IndexError:
+            record.ip = ""
         return True
 
 logger = logging.getLogger()
@@ -43,7 +46,12 @@ logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 def event(self, dct, *args, **kws):
     # This level is used in mss to log an event. 
 #    jdct = json.dumps(dct.update({'ip':ethernet_ifs()[0][1]}))
-    dct.update({'ip':ethernet_ifs()[0][1]})
+
+    try:
+        ip = ethernet_ifs()[0][1]
+    except IndexError:
+        ip = ""
+    dct.update({'ip': ip})
     jdct = json.dumps(dct)
     self._log(EVENT_LEVELV_NUM, jdct, args, **kws)
 logging.Logger.event = event
