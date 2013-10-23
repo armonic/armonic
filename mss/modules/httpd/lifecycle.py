@@ -12,8 +12,8 @@ class NotInstalled(State):pass
 class Configured(State):
     """Configure listen and vhost port"""
 
-    @Require.add([Port("port", default=8080)], name='port')
-    @Require.add([VString("root",default="/")], name="augeas")
+    @Require([Port("port", default=8080)], name='port')
+    @Require([VString("root",default="/")], name="augeas")
     def entry(self):
         """Set listen and vhost port"""
         logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires_entry))
@@ -27,12 +27,12 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
-    @Require.add([VString("httpdDocumentRoot", default='/var/www/wordpress')])
+    @Require([VString("httpdDocumentRoot", default='/var/www/wordpress')])
     def get_documentRoot(self, requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @Require.add([Port("port")])
+    @Require([Port("port")])
     #flags={'restart':True})
     def set_port(self, requires):
         """Set listen and vhost port"""

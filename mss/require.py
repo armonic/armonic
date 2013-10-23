@@ -147,30 +147,19 @@ class Require(object):
         for v in self.variables:
             v._set_full_name(self._full_name, separator)
 
-    @classmethod
-    def add(cls, *args, **kwargs):
+    def __call__(self, func):
         """
         Used as a method decorator to define Require on :py:class:`State` methods
+        Permit to directly use Require constructor as a decorator.
         """
-        cls_args = args
-        cls_kwargs = kwargs
+        has_requires = hasattr(func, '_requires')
+        require = self
 
-        def wrapper(func):
-            has_requires = hasattr(func, '_requires')
-            require = None
-            if cls_args or cls_kwargs:
-                require = cls(*cls_args, **cls_kwargs)
-
-            if require and has_requires:
-                func._requires.append(require)
-            elif require and not has_requires:
-                func._requires = [require]
-            elif not has_requires:
-                func._requires = []
-
-            return func
-
-        return wrapper
+        if has_requires:
+            func._requires.append(require)
+        else:
+            func._requires = [require]
+        return func
 
     def _fill(self, iterContainer, primitive):
         """Fill an iterContainer with value found in primitive.

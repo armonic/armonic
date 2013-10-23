@@ -16,8 +16,8 @@ class Configured(mss.state.RunScript):
         return [",".join(hosts),
                 str(self.requires_entry.this.variables.port.value)]
 
-    @Require.add([Port("port", default=80)])
-    @RequireExternal.add("Wordpress", "get_site")
+    @Require([Port("port", default=80)])
+    @RequireExternal("Wordpress", "get_site")
     def entry(self):
         mss.state.RunScript.entry(self)
         for v in self.requires_entry.get('Wordpress.get_site').variables:

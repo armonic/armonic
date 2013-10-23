@@ -163,7 +163,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
         if restart:
             self.__systemctl("reload")
 
-    @Require.add()
+    @mss.lifecycle.provide()
     def start(self,requires):
         logger.info("%s.%-10s: call start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))

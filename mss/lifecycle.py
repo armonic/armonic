@@ -130,13 +130,22 @@ class ProvideNotInStack(Exception):
 class ProvideAmbigous(Exception):
     pass
 
+
 def flags(flags):
     """Decorator to add flags to a function."""
     def wrapper(func):
         args = inspect.getargspec(func)
+        if not hasattr(func,"_requires"):
+            setattr(func,"_requires",[])
         func._flags = flags
         return func
     return wrapper
+def provide():
+    """Decorator to say that a method is a provide"""
+    # Should be improved: Each provide method should have a
+    # _is_provide attr, a optionnal _flags attr and an optionnal
+    # _requires attr
+    return flags({})
 
 class RequireHasNotFuncArgs(Exception):pass
 
