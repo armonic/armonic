@@ -122,7 +122,13 @@ def cmd_provide_call(args):
     pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), parseArgs(args.args)))
 
 def cmd_plot(args):
-    print client.call('to_dot', args.module)
+    if args.T == 'dot':
+        print client.call('to_dot', args.module)
+    elif args.T == 'json':
+#        states = client.call('', args.module)
+        raise NotImplementedError
+    elif args.T == 'automaton':
+        raise NotImplementedError
 
 
 def ModuleCompleter(prefix, parsed_args, **kwargs):
@@ -225,9 +231,10 @@ parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", act
 parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
-parser_provide = subparsers.add_parser('plot', help='Plot a lifecycle')
-parser_provide.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_provide.set_defaults(func=cmd_plot)
+parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
+parser_plot.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
+parser_plot.add_argument('-T', choices=['dot','json','automaton'],help="print path to call this provide")
+parser_plot.set_defaults(func=cmd_plot)
 
 
 argcomplete.autocomplete(parser)
