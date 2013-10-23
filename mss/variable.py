@@ -8,15 +8,13 @@ class Variable(object):
     type = 'variable'
     _value = None
 
-    def __init__(self, name, default=None, label=None, help=None, required=True):
+    def __init__(self, name, default=None, required=True):
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
         self.name = name
-        self.label = label if label else name
-        self.help = help
         self.required = required
-        self.default=default
+        self.default = default
         if default is not None:
             self.value = default
         self._full_name = None
@@ -71,18 +69,25 @@ class Variable(object):
 
 
 class VList(Variable):
+    """
+    :class:`VList` provide a list container for :class:`Variable` instances.
+
+    Running the validation on :class:`VList` will recursively run the validation
+    for all contained instances.
+    """
+
     type = 'list'
     _inner_class = None
     _inner_inner_class = None
 
-    def __init__(self, name, inner, default=None, label=None, help=None, required=True):
+    def __init__(self, name, inner, default=None, required=True):
         if inspect.isclass(inner):
             self._inner_class = inner
         else:
             self._inner_class = inner.__class__
         if self._inner_class == VList:
             self._inner_inner_class = inner._inner_class
-        Variable.__init__(self, name, default, label, help, required)
+        Variable.__init__(self, name, default, required)
 
     @property
     def value(self):

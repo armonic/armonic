@@ -44,7 +44,7 @@ def log_disable_stdout():
 EVENT_LEVELV_NUM = 25
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 def event(self, dct, *args, **kws):
-    # This level is used in mss to log an event. 
+    # This level is used in mss to log an event.
 #    jdct = json.dumps(dct.update({'ip':ethernet_ifs()[0][1]}))
 
     try:
@@ -117,6 +117,7 @@ class DoesNotExist(Exception):
 class ValidationError(Exception):
     pass
 
+
 class ProvideError(Exception):
     def __init__(self, lf_name, state_name, provide_name, msg):
         self.lf_name=lf_name
@@ -127,41 +128,35 @@ class ProvideError(Exception):
 
     def __reduce__(self):
         """We need to override it to support pickle. Must be FIXED."""
-        return (ProvideError, (self.lf_name, self.state_name, self.provide_name, self.msg, )) 
+        return (ProvideError, (self.lf_name, self.state_name, self.provide_name, self.msg, ))
 
-class IterContainer(object):
+
+class IterContainer(list):
     """
     Simple object container
 
     Is an iterator to loop over objects:
-        objects = IterContainer(objects)
+        objects = IterContainer(*objects)
         for object in objects:
             print object.name, object.value
 
-    And provide easy object retrieve:
-        objects = IterContainer(objects)
+    And provide easy way to retrieve objects
+    that have a name attribute:
+
+        objects = IterContainer(*objects)
         object = objects.object_name
         print object.name, object.value
+        object = objects.get("object_name")
+        print object.name, object.value
 
-    Objects MUST have a name attribute
     """
-    _objects = []
+    def __init__(self, *args):
+        super(IterContainer, self).__init__([arg for arg in args])
+        for arg in args:
+            if hasattr(arg, 'name'):
+                self.__setattr__(arg.name, arg)
 
-    def __init__(self, objects):
-        self._objects = objects
-        for object in objects:
-            self.__setattr__(object.name, object)
-
-    def append(self, object):
-        self._objects.append(object)
-
-    def get(self, attr, *args, **kwargs):
+    def get(self, attr):
         if hasattr(self, attr):
             return getattr(self, attr)
         raise DoesNotExist("%s does not exist" % attr)
-
-    def __iter__(self):
-        return iter(self._objects)
-
-    def __repr__(self):
-        return "IterContainer(%s)" % self._objects

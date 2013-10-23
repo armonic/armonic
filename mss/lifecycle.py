@@ -112,6 +112,7 @@ from mss.variable import VString
 import mss.utils
 
 logger = logging.getLogger(__name__)
+STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
 
 
 class TransitionNotAllowed(Exception):
@@ -136,7 +137,7 @@ def flags(flags):
         func._flags = flags
         return func
     return wrapper
-    
+
 class RequireHasNotFuncArgs(Exception):pass
 
 class StateNotApply(Exception):
@@ -156,42 +157,34 @@ class State(object):
      :py:meth:`State.leave`
      :py:meth:`State.cross`
     """
-    require_state = None
-    requires = []
-#    requires_entry = None
-    """ """
-#    provides = []
     _lf_name = ""
     _instance = None
     _full_name = None
 
-    supported_os_type=[mss.utils.OsTypeAll()]
+    supported_os_type = [mss.utils.OsTypeAll()]
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(State, cls).__new__(
-                cls, *args, **kwargs)
+            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
 
-#            cls.requires_entry = None
+            # init requires
             cls.provides = []
-            
+            for method in STATE_RESERVED_METHODS:
+                setattr(cls, "requires_%s" % method, Requires(method, []))
+
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                if hasattr(f,'_requires'):
-                    if f.__name__ == 'entry':
+                if hasattr(f, '_requires'):
+                    if f.__name__ in STATE_RESERVED_METHODS:
                         r = Requires(f.__name__, f._requires)
-                        cls.requires_entry=r
+                        setattr(cls, "requires_%s" % f.__name__, r)
                     else:
                         flags = f._flags if hasattr(f,'_flags') else {}
                         r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
-                    logger.debug("Create a Requires for %s.%s with Require %s"%(cls.__name__, f.__name__, [t.name for t in r]))
 
-                    r._set_full_name(cls.__name__,separator=".")
-            # If 'entry' method has no requires specified via
-            # decorator of class variable, we create it.
-            if not hasattr(cls,'requires_entry'):
-                cls.requires_entry = Requires('entry',[])
+                    logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
+                    r._set_full_name(cls.__name__)
 
         return cls._instance
 
@@ -200,15 +193,18 @@ class State(object):
     def full_name(self):
         return self._full_name if self._full_name != None else self.name
 
-    def _set_full_name(self,prefix,separator="."):
+    def _set_full_name(self, prefix, separator="."):
         """Build a full name and requires full names by joining
         prefix, separator and name."""
         self._full_name = prefix + separator + self.name
-        
-        self.requires_entry._set_full_name(self._full_name,separator)
-        for r in self.provides:
-            r._set_full_name(self._full_name,separator)
 
+        for method in STATE_RESERVED_METHODS:
+            require = getattr(self, "requires_%s" % method)
+            if require is not None:
+                require._set_full_name(self._full_name, separator)
+
+        for require in self.provides:
+            require._set_full_name(self._full_name, separator)
 
     @property
     def name(self):
@@ -232,8 +228,7 @@ class State(object):
         :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
         """
-        if self.requires_entry != None:
-            self.requires_entry.build_from_primitive(primitive)
+        self.requires_entry.build_from_primitive(primitive)
         return self.entry()
 
     def entry(self):
@@ -259,20 +254,21 @@ class State(object):
 
     @classmethod
     def get_requires(cls):
-        """ 
-        :rtype: Requires 
+        """
+        :rtype: Requires
         """
         return cls.requires_entry
 
     @classmethod
     def get_provides(cls):
-        """ 
+        """
         :rtype: [Requires]
         """
         return cls.provides
+
     @classmethod
     def _get_provide_by_name(cls, provide_name):
-        """ 
+        """
         :rtype: Requires
         """
         for p in cls.get_provides():
@@ -285,7 +281,7 @@ class State(object):
         return cls._get_provide_by_name(provide_name)
 
     def get_provide_by_name(self, provide_name):
-        """ 
+        """
         :rtype: Requires
         """
         return self.__class__._get_provide_by_name(provide_name)
@@ -342,7 +338,7 @@ class Lifecycle(object):
                 for t in transitions:
                     update_transitions = []
                     # And for each state implementations
-                    for d in created_states: 
+                    for d in created_states:
                         # We create transition to this implementation
                         update_transitions+=[(t[0],d())]
                         # And from this implementation to metastate
@@ -376,7 +372,7 @@ class Lifecycle(object):
             if s not in acc: acc += [s]
             if d not in acc: acc += [d]
         return acc
-        
+
     def state_list(self,reachable=False):
         """To get all available states.
 
@@ -404,8 +400,8 @@ class Lifecycle(object):
 
     def _is_transition_allowed(self, s, d):
         """A transition is allowed if src and dst state support current os type."""
-        return (mss.utils.os_type in d.supported_os_type
-                and mss.utils.os_type in s.supported_os_type
+        return (mss.utils.OS_TYPE in d.supported_os_type
+                and mss.utils.OS_TYPE in s.supported_os_type
                 and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):
@@ -499,7 +495,7 @@ class Lifecycle(object):
         """To know if state_name is a state of self."""
         self._get_state_class(state)
         return True
-    
+
 
     def state_goto_path(self, state, fct=None, go_back=True):
         """From the current state, return the path to goto the state.
@@ -690,7 +686,7 @@ class LifecycleManager(object):
 
         :rtype: list of strings (lifecycle objects names)
         """
-        return {"os-type":mss.utils.os_type.name,"os-release":mss.utils.os_type.release}
+        return {"os-type": mss.utils.OS_TYPE.name, "os-release": mss.utils.OS_TYPE.release}
 
     @expose
     def lf_list(self):
@@ -747,9 +743,9 @@ class LifecycleManager(object):
         :type lf_name: str
         :type verbose: bool
         :rtype: list of strings (states names)"""
-        states=self._get_by_name(lf_name).state_list(reachable=reachable)
+        states = self._get_by_name(lf_name).state_list(reachable=reachable)
         if doc:
-            return [{'name':s.name,'doc':s.__doc__,'os-type':s.supported_os_type} for s in states]
+            return [{'name': s.name, 'doc': s.__doc__, 'os-type': s.supported_os_type} for s in states]
         else:
             return [s.name for s in states]
 
@@ -797,7 +793,7 @@ class LifecycleManager(object):
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
         logger.debug("state-goto %s %s %s" % (
-                lf_name, state_name, requires)) 
+                lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
@@ -866,7 +862,7 @@ class LifecycleManager(object):
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
         logger.debug("provide-call %s %s %s %s" % (
-                lf_name, provide_name, requires, provide_args)) 
+                lf_name, provide_name, requires, provide_args))
         return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
 
     @expose
