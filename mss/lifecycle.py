@@ -649,7 +649,7 @@ class Lifecycle(object):
             acc += label
             acc += "];\n"
         for (s, d) in self.transitions:
-            acc += "%s -> %s;\n" % (s.name, d.name)
+            acc += '"%s" -> "%s";\n' % (s.name, d.name)
         acc += "}\n"
         return acc
 
