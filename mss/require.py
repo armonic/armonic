@@ -109,7 +109,7 @@ class Requires(IterContainer):
         return acc
 
     def to_primitive(self):
-        return {"name": self.full_name, "args": self.func_args, "flags": self.flags}
+        return {"name": self.full_name, "require_list":[r.to_primitive() for r in self] , "flags": self.flags}
 
     def __repr__(self):
         return "<Requires:%s(%s,%s)>" % (self.name, IterContainer.__repr__(self) , self.flags)

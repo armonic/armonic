@@ -125,8 +125,7 @@ def cmd_plot(args):
     if args.T == 'dot':
         print client.call('to_dot', args.module)
     elif args.T == 'json':
-#        states = client.call('', args.module)
-        raise NotImplementedError
+        pprint.pprint(client.call('to_primitive', args.module))
     elif args.T == 'automaton':
         raise NotImplementedError
 

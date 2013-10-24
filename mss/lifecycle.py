@@ -297,6 +297,9 @@ class State(object):
 
     def __repr__(self):
         return "<State:%s>" % self.name
+    
+    def to_primitive(self):
+        return {"name":self.name, "Provides":[r.to_primitive() for r in self.__class__.get_provides()]}
 
 class MetaState(State):
     """Set by state.__new__ to add implementation of this metastate."""
@@ -661,6 +664,12 @@ class Lifecycle(object):
     def __repr__(self):
         return "<Lifecycle:%s>" % self.name
 
+                
+    def to_primitive(self):
+        return {'name':self.name,
+                'states':[s.to_primitive() for s in self.state_list()],
+                "transitions": [(s.name,d.name) for (s,d) in self.transitions]}
+
 
 class LifecycleNotExist(Exception):
     pass
@@ -882,3 +891,12 @@ class LifecycleManager(object):
         :type lf_name: str
         :rtype: dot file string"""
         return self._get_by_name(lf_name).to_dot()
+
+    @expose
+    def to_primitive(self, lf_name):
+        """Return the dot string of a lifecyle object
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :rtype: dot file string"""
+        return self._get_by_name(lf_name).to_primitive()
