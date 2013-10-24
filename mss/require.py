@@ -109,7 +109,9 @@ class Requires(IterContainer):
         return acc
 
     def to_primitive(self):
-        return {"name": self.full_name, "require_list":[r.to_primitive() for r in self] , "flags": self.flags}
+        return {"name": self.name, "full_name": self.full_name, 
+                "require_list":[r.to_primitive() for r in self] , 
+                "flags": self.flags}
 
     def __repr__(self):
         return "<Requires:%s(%s,%s)>" % (self.name, IterContainer.__repr__(self) , self.flags)
@@ -201,7 +203,9 @@ class Require(object):
         return self._validate(self.variables,values)
 
     def to_primitive(self):
-        return {"name": self.name, "args": [a.to_primitive() for a in self.variables],
+        return {"name": self.name, 
+                "full_name": self.full_name,
+                "variables": [a.to_primitive() for a in self.variables],
                 "type": "simple"}
 
     def generate_args(self, dct={}):
@@ -236,6 +240,12 @@ class RequireUser(Require):
     def __repr__(self):
         return "<RequireUser(name=%s, variables=%s)>" % (self.name, self.variables)
 
+    def to_primitive(self):
+        return {"name": self.name, 
+                "full_name": self.full_name,
+                "variables": [a.to_primitive() for a in self.variables],
+                "type": "user",
+                "provided_by": self.provided_by}
 
 
 class RequireLocal(Require):
@@ -307,10 +317,12 @@ class RequireLocal(Require):
 
     def to_primitive(self):
         return {"name": self.name,
+                "full_name": self.full_name,
                 "type": self.type,
                 "lf_name": self.lf_name,
                 "provide_name": self.provide_name,
-                "provide_args": [v.to_primitive() for v in self.provide_args]}
+                "provide_args": [v.to_primitive() for v in self.provide_args],
+                "provide_ret": [v.to_primitive() for v in self.provide_ret]}
 
     def __repr__(self):
         return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \

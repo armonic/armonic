@@ -10,7 +10,7 @@ import argparse
 import pprint
 from prettytable import PrettyTable
 import argcomplete
-
+import json
 
 def read_string(string):
     try:
@@ -125,7 +125,9 @@ def cmd_plot(args):
     if args.T == 'dot':
         print client.call('to_dot', args.module)
     elif args.T == 'json':
-        pprint.pprint(client.call('to_primitive', args.module))
+            print json.dumps(client.call('to_primitive', args.module))
+    elif args.T == 'json-human':
+            pprint.pprint(client.call('to_primitive', args.module))
     elif args.T == 'automaton':
         raise NotImplementedError
 
@@ -232,7 +234,7 @@ parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
 parser_plot.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_plot.add_argument('-T', choices=['dot','json','automaton'],help="print path to call this provide")
+parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton'],help="print path to call this provide")
 parser_plot.set_defaults(func=cmd_plot)
 
 

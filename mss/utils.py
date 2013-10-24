@@ -29,8 +29,11 @@ class OsType(object):
         else:
             return "<OsType(%s - %s)>" % (self.name, self.release)
 
+    def to_primitive(self):
+        return {'name': self.name, 'release': self.release}
 
-class OsTypeAll():
+
+class OsTypeAll(OsType):
     """Use this class to specify that a state supports all os type. It
     is equal to any OsType* object.
     """

@@ -28,7 +28,8 @@ class Variable(object):
         self._full_name = prefix + separator + self.name
 
     def to_primitive(self):
-        return {'name':self.name, 'type':self.type}
+        return {'name':self.name, 'full_name':self.full_name, 
+                'type':self.type, 'default': self.default}
 
     @property
     def value(self):

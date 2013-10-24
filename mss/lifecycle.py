@@ -299,7 +299,11 @@ class State(object):
         return "<State:%s>" % self.name
     
     def to_primitive(self):
-        return {"name":self.name, "Provides":[r.to_primitive() for r in self.__class__.get_provides()]}
+        return {"name":self.name,
+                "full_name":self.full_name,
+                "supported_os_type":[t.to_primitive() for t in self.supported_os_type],
+                "provides":[r.to_primitive() for r in self.__class__.get_provides()],
+                "requires_entry":self.requires_entry.to_primitive()}
 
 class MetaState(State):
     """Set by state.__new__ to add implementation of this metastate."""
