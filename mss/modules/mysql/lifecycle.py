@@ -93,10 +93,18 @@ class ResetRootPassword(mss.lifecycle.State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
+    supported_os_type=[OsTypeMBS()]
 
     @Require([VString("password",default="root")], name="root_pwd")
     def entry(self):
         logger.debug("%s.%s changing mysql root password ...",self.lf_name,self.name)
+        logger.debug("%s.%s ensuring that mysqld is stopped ...",self.lf_name,self.name)
+        thread = ProcessThread("mysql", None, "test",
+                                      ["/bin/systemctl", "stop", "mysqld.service"])
+        if not thread.launch():
+            logger.info("Error at systemctl stop mysqld.service (launch for mysqladmin)")
+            raise Exception("Error at mysqld launching for mysqladmin")
+
         thread_mysqld = ProcessThread("mysqld --skip-grant-tables --skip-networking", None, "test",["/usr/sbin/mysqld","--skip-grant-tables","--skip-networking"],None,None,None,None)
         thread_mysqld.start()
         pwd_change=False
@@ -116,7 +124,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.info("%s.%s mysql root password is not '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.password.value)
+            logger.info("%s.%s mysql root password is now '%s'",self.lf_name,self.name,self.requires_entry.get("root_pwd").variables.password.value)
         else:
             logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -261,14 +269,14 @@ class Mysql(Lifecycle):
         Transition(NotInstalled()    ,Installed()),
         Transition(Installed()    ,SetRootPassword()),
         Transition(SetRootPassword(),Configured()),
+        Transition(Installed(), ResetRootPassword()),
 #        Transition(Configured(), EnsureMysqlIsStopped()),
 #        Transition(EnsureMysqlIsStopped(), ResetRootPassword()),
         Transition(Configured()      ,Active()),
         Transition(Configured()      ,ConfiguredSlave()),
         Transition(Configured()      ,ActiveAsMaster()),
         Transition(ConfiguredSlave() ,ActiveAsSlave()),
-        Transition(ConfiguredSlave() ,Dump()),
-        Transition(ResetRootPassword() ,Dump())
+        Transition(ConfiguredSlave() ,Dump())
         ]
 
     def __init__(self):
