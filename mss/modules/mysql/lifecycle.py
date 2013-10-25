@@ -2,9 +2,9 @@ import logging
 import time
 import MySQLdb
 
-from mss.lifecycle import State, Transition, Lifecycle
-from mss.require import Requires, Require, RequireExternal, RequireUser
-from mss.variable import Hostname, VString, Port, Password
+from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.require import Requires, Require, RequireExternal, RequireUser, RequireLocal
+from mss.variable import Hostname, VString, Port, Password, VInt
 from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
 import mss.state
@@ -31,6 +31,7 @@ class Configured(State):
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires_entry))
         self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
         self.config.port.set(str(self.requires_entry.get('port').variables.port.value))
+#        self.config.server_id.set("1")
         try:
             self.config.skipNetworking.rm()
         except XpathNotInFile : pass
@@ -221,29 +222,160 @@ class Active(mss.lifecycle.MetaState):
         return True
 
 
-class ConfiguredSlave(State):
-    """Can be used to configure Mysql as a slave"""
-#    requires=Requires([RequireExternal("Mysql","get_auth",[VString("dbName"),VString("dbUser"),Hostname("slave_host")]),
-#                       RequireExternal("Mysql","get_dump",[VString("dbName")])
-#                       ])
-
-class Dump(State):
-#    @provide()
-    def get_dump(self,dbName):
-        return "iop"
-
+class ConfiguredAsSlave(State):
+    """Configure Mysql as a slave"""
+    @Require([VInt('server_id',default=2)])
+    @Require([VString("root",default="/")], name="augeas")
+    def entry(self):
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
+        self.config.server_id.set(str(self.requires_entry.get('this').variables.server_id.value))
+        self.config.log_bin.set("mysql-bin")
+        self.config.save()
 
 class ActiveAsSlave(mss.lifecycle.MetaState):
+    """Take a filepath of a dump and apply this dump.
+    To obtain the dump, you can call the provide Mysql.get_dump.
+    The dump file is removed after its application.
+    """
+    # This implementation is not clean. We should be able to automate
+    # the transfert of the dump file...
+    #
+    # An idea is that Mysql.get_dump returns a special Variable such
+    # as VFileMSS3. This would be an url such as
+    # http://ip_master/dump.file or anything else.  Then, in VFileMSS3
+    # would have a get_file_in_local method to proceed to downloading. 
     implementations = [ActiveOnDebian, ActiveOnMBS]
-#    @provide(flags={'restart':False})
-    def get_db(self,dbName,user):
-        return "iop"
-    def cross(self,restart=False):pass
+
+    @RequireUser(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    @RequireExternal(lf_name='Mysql',provide_name='get_dump',
+                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPosition')])
+    @RequireExternal(lf_name='Mysql',provide_name='add_slave_auth',
+                     provide_args=[VString('user',default='replication'),
+                                   VString('password',default='repl_pwd')])
+    def entry(self):
+        root_user = "root"
+        root_password = self.requires_entry.get('mysqlRoot').variables.get('root_password').value
+        filePath = self.requires_entry.get('Mysql.get_dump').variables[0].filePath.value
+        logFile = self.requires_entry.get('Mysql.get_dump').variables[0].logFile.value
+        logPosition = self.requires_entry.get('Mysql.get_dump').variables[0].logPosition.value
+        slave_user = self.requires_entry.get('Mysql.add_slave_auth').variables[0].get('user').value
+        slave_password = self.requires_entry.get('Mysql.add_slave_auth').variables[0].get('password').value
+        master_host = self.requires_entry.get('Mysql.add_slave_auth').variables[0].get('host').value
+        
+        logger.debug("%s %s %s" , filePath, logFile, logPosition)
+        thread = ProcessThread("mysql", None, "test",
+                               ["/usr/bin/mysql", 
+                                "-u", "root", 
+                                "--password=%s"%root_password,
+                                "-e","stop slave ; source %s ; start slave;" % filePath])
+        if not thread.launch():
+            logger.info("Error during mysql source dumpfile")
+            raise Exception("Error during mysql source dumpfile")
+        
+
+        con = MySQLdb.connect('localhost', root_user, root_password);
+        cur = con.cursor()
+        cur.execute("slave stop;")
+        cur.execute("CHANGE MASTER TO MASTER_HOST='%s', MASTER_USER='%s', MASTER_PASSWORD='%s', MASTER_LOG_FILE='%s', MASTER_LOG_POS=%s;" % (
+                master_host,
+                slave_user,
+                slave_password,
+                logFile,
+                logPosition))
+        cur.execute("slave start;")
+
+    @RequireUser(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    def slave_status(self,requires):
+        root_user = "root"
+        root_password = requires.get('mysqlRoot').variables.get('root_password').value
+
+        con = MySQLdb.connect('localhost', root_user, root_password);
+        cur = con.cursor()
+        cur.execute("SHOW SLAVE STATUS;")
+        rows = cur.fetchall()
+        return rows
+
+class ConfiguredAsMaster(State):
+    """Expose all databases to slave except mysql and informationshema."""
+    @Require([VInt('server_id',default=1)])
+    @Require([VString("root",default="/")], name="augeas")
+    def entry(self):
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
+        self.config.server_id.set(str(self.requires_entry.get('this').variables.server_id.value))
+        self.config.log_bin.set("mysql-bin")
+
+        # Management of bin_log_ignore directive.
+        # First we remove all of them
+        for i in range(len(self.config.binlog_ignore_dbs)-1,-1,-1):
+            self.config.binlog_ignore_dbs[i].rm()
+        # Second, we add mysql and informationschema
+        tmp = configuration.BinLogIgnoreDb()
+        tmp.value = "mysql"
+        self.config.binlog_ignore_dbs.append(tmp)
+        tmp = configuration.BinLogIgnoreDb()
+        tmp.value = "informationschema"
+        self.config.binlog_ignore_dbs.append(tmp)
+
+        self.config.save()
 
 class ActiveAsMaster(State):
-#    @provide()
-    def get_auth(self,dbName,user,slave_host):
-        return "iop"
+    @Require([VString('user',default='replication'),
+              VString('password',default='password')],
+             name='slave_id')
+    @RequireUser(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    def add_slave_auth(self,requires):
+        root_user = "root"
+        root_password = requires.get('mysqlRoot').variables.get('root_password').value
+        slave_user = requires.get('slave_id').variables.get('user').value
+        slave_password = requires.get('slave_id').variables.get('password').value
+
+        con = MySQLdb.connect('localhost', root_user, root_password);
+        cur = con.cursor()
+        cur.execute("GRANT REPLICATION SLAVE ON *.* TO '%s'@'%%' IDENTIFIED BY '%s';"% (slave_user, slave_password))
+        cur.execute("FLUSH PRIVILEGES;")
+        
+    @RequireUser(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    def get_dump(self,requires):
+        """Dump datas to file and return in a dict its filePath, the
+        logPosition and the logFile"""
+        root_user = "root"
+        root_password = requires.get('mysqlRoot').variables.get('root_password').value
+        con = MySQLdb.connect('localhost', root_user, root_password);
+        cur = con.cursor()
+        # First, we lock all tables
+        cur.execute("FLUSH TABLES WITH READ LOCK;")
+        # Second, we get log postion and log file
+        cur.execute("SHOW MASTER STATUS;")
+        rows = cur.fetchall()
+        
+        # Thirst, we dump datas
+        filePath = "/tmp/dbdump.db"
+        thread = ProcessThread("mysqldump", None, "test",
+                               ["/usr/bin/mysqldump", 
+                                "-u", "root", 
+                                "--password=%s"%root_password,
+                                "--all-databases", "--master-data",
+                                "--result-file", filePath])
+        if not thread.launch():
+            logger.info("Error during mysqldump")
+            raise Exception("Error during mysqldump")
+        # mysqldump -u root -p --all-databases --master-data > /root/dbdump.db
+        # Finally, we unlock tables
+        cur.execute("UNLOCK TABLES;")
+        
+        return {'filePath': filePath, 'logFile': rows[0][0], 'logPostion': rows[0][1]}
+#                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPostion')])
+#        return "/tmp/dump_db.sql"
+    
+
     def cross(self,restart=False):pass
 
 class InstalledOnMBS(mss.state.InstallPackagesUrpm):
@@ -270,13 +402,13 @@ class Mysql(Lifecycle):
         Transition(Installed()    ,SetRootPassword()),
         Transition(SetRootPassword(),Configured()),
         Transition(Installed(), ResetRootPassword()),
-#        Transition(Configured(), EnsureMysqlIsStopped()),
-#        Transition(EnsureMysqlIsStopped(), ResetRootPassword()),
         Transition(Configured()      ,Active()),
-        Transition(Configured()      ,ConfiguredSlave()),
-        Transition(Configured()      ,ActiveAsMaster()),
-        Transition(ConfiguredSlave() ,ActiveAsSlave()),
-        Transition(ConfiguredSlave() ,Dump())
+        #Slave Branch
+        Transition(Configured()      ,ConfiguredAsSlave()),
+        Transition(ConfiguredAsSlave(),ActiveAsSlave()),
+        #Master Branch
+        Transition(Configured()      ,ConfiguredAsMaster()),
+        Transition(ConfiguredAsMaster(),ActiveAsMaster()),
         ]
 
     def __init__(self):

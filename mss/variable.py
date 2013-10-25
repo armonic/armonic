@@ -202,3 +202,8 @@ class Port(VInt):
 
 class Password(VString):
     pass
+
+
+class VFile(Variable):
+    def get_local_path(self):
+        print "GET_LOCAL_PATH" , self.value
