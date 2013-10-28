@@ -11,11 +11,13 @@ logger=logging.getLogger(__name__)
 class NotInstalled(mss.state.InitialState):pass
 
 class Template(mss.state.CopyTemplate):
+    """Copy wp-config-sample.php to wp-config.php"""
     supported_os_type = [mss.utils.OsTypeMBS()]
     src="/var/www/wordpress/wp-config-sample.php"
     dst="/var/www/wordpress/wp-config.php"
 
 class Configured(State):
+    """Set database informations"""
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     @Require([VString("root",default="/")], name='augeas')
