@@ -12,6 +12,8 @@ from prettytable import PrettyTable
 import argcomplete
 import json
 
+from mss.client_socket import ClientSocket
+
 def read_string(string):
     try:
         return int(string)
