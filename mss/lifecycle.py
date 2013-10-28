@@ -819,6 +819,19 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
+    def state_show(self, lf_name, state_name):
+        """From the current state go to state.
+
+        :param lf_name: The name of the lifecycle object
+        :type lf_name: str
+        :param state_name: The name of the state to go to
+        :type state_name: str"""
+        logger.debug("state-show %s %s" % (
+                lf_name, state_name))
+        return self._get_by_name(lf_name)._get_state_class(state_name).to_primitive()
+
+
+    @expose
     def provide_list(self, lf_name, in_stack=False, state_name=None):
         """If in_stack is True, just returns provides available in
         stack. Otherwise, returns all provides of this lf_name.

@@ -85,7 +85,8 @@ def cmd_state(args):
 def cmd_state_current(args):
     print client.call('state_current', args.module)
 def cmd_state_show(args):
-    pass
+    print client.call('state_show', args.module, args.state)
+
 def cmd_state_goto(args):
     if args.list_requires:
         ret=client.call('state_goto_requires', args.module, args.state)
