@@ -626,8 +626,9 @@ class Lifecycle(object):
 
         def dotify(string): # To remove illegal character
             if string != None:
-                # FIXME. We should not remove "\n".
-                return string.replace("{","").replace("}","").replace(":","").replace("\n","")
+                tmp = string.replace("{","").replace("}","").replace(":","").replace("\n","\\n")
+                tmp += '\l'
+                return tmp
             else : return string
 
         def list_to_table(l):
@@ -647,10 +648,11 @@ class Lifecycle(object):
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
             requires = ""
-            requires = list_to_table([r.to_primitive() for r in s.get_requires()])
+            requires = list_to_table([r.name for r in s.get_requires()])
             provides = list_to_table([(p.name, p.flags) for p in s.get_provides()])
-            label = 'label = "{State name: %s  | Method entry: %s | Method leave : %s | {Method cross: | {Doc: %s | Flags: %s}} | { Requires: | {%s} } | { Provides: | {%s}}}"\n' % (
+            label = 'label = "{%s | %s | Entry: %s | Leave : %s | {Cross: | {Doc: %s | Flags: %s}} | { Entry Requires: | {%s} } | { Provides: | {%s}}}"\n' % (
                 s.name,
+                dotify(s.__doc__),
                 dotify(s.entry.__doc__),
                 dotify(s.leave.__doc__),
                 dotify(s.cross.__doc__),
