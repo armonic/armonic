@@ -59,6 +59,15 @@ def require_to_table(requires):
         x.add_row(["" , "","","","",""])
     print x
 
+def state_to_table(state):
+    x = PrettyTable(["Property","Value"])
+    x.align = "l"
+    x.add_row(["Name",state['name']])
+    x.add_row(["Full name",state['full_name']])
+    x.add_row(["Supported OS","\n".join(map(str,state['supported_os_type']))])
+    x.add_row(["Provides","\n".join([p['name'] for p in state['provides']])])
+    x.add_row(["Entry Requires","\n".join([p['name'] for p in state['requires_entry']['require_list']])])
+    print x
 
 def cmd_status(args):
     pass
@@ -85,7 +94,8 @@ def cmd_state(args):
 def cmd_state_current(args):
     print client.call('state_current', args.module)
 def cmd_state_show(args):
-    print client.call('state_show', args.module, args.state)
+    state = client.call('state_show', args.module, args.state)
+    state_to_table(state)
 
 def cmd_state_goto(args):
     if args.list_requires:
