@@ -27,12 +27,16 @@ pip install argcomplete
 
 Install All dependencies on MBS
 -------------------------------
-urpmi git python-sphinx python-netifaces python-pip mysql python-mysql lib64selinux-devel
-pip install augeas
-pip install prettytable
-git clone https://github.com/giraldeau/python-augeas.git
-cd python-augeas/
-python setup.py install
+1) Agent dependencies
+   urpmi python-IPy python-netifaces python-pip python-mysql
+
+2) Client dependencies
+   urpmi git python-sphinx python-netifaces python-pip mysql python-mysql lib64selinux-devel
+   pip install augeas
+   pip install prettytable
+   git clone https://github.com/giraldeau/python-augeas.git
+   cd python-augeas/
+   python setup.py install
 
 
 Test Lifecycle and Augeas
