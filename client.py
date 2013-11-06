@@ -130,6 +130,8 @@ def cmd_provide_show(args):
     else:
         ret=client.call('provide_call_args', args.module, args.provide)
         require_to_table(ret)
+        ret=client.call('provide_call_requires', args.module, args.provide)
+        require_to_table(ret)
 
 def cmd_provide_call(args):
     pprint.pprint(client.call('provide_call', args.module, args.provide, parseArgs(args.require), parseArgs(args.args)))
