@@ -1,5 +1,5 @@
 from mss.common import ValidationError, IterContainer
-
+import copy
 import inspect
 import re
 
@@ -18,6 +18,15 @@ class Variable(object):
         if default is not None:
             self.value = default
         self._full_name = None
+        self._url = None
+
+    @property
+    def url(self):
+        return self._url
+
+    def _set_url(self,parent_url):
+        self._url = copy.copy(parent_url)
+        self._url.variable = self.name
 
     @property
     def full_name(self):

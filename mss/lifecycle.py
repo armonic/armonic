@@ -106,10 +106,11 @@ method of Httpd active state.
 import inspect
 import logging
 
-from mss.common import is_exposed, expose, IterContainer, DoesNotExist
+from mss.common import is_exposed, expose, IterContainer, DoesNotExist, Url
 from mss.require import Requires, Require
 from mss.variable import VString
 import mss.utils
+import copy
 
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
@@ -201,6 +202,23 @@ class State(object):
     @property
     def full_name(self):
         return self._full_name if self._full_name != None else self.name
+
+    @property
+    def url(self):
+        return self._url
+    
+    def _set_url(self, parent_url):
+        self._url = copy.copy(parent_url)
+        self._url.state = self.name
+
+        for method in STATE_RESERVED_METHODS:
+            require = getattr(self, "requires_%s" % method)
+            if require is not None:
+                require._set_url(self.url)
+
+        for require in self.provides:
+            require._set_url(self.url)
+        
 
     def _set_full_name(self, prefix, separator="."):
         """Build a full name and requires full names by joining
@@ -333,7 +351,7 @@ class Lifecycle(object):
 
     """
     _initialized = False
-
+    _url = None
 
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
@@ -365,8 +383,9 @@ class Lifecycle(object):
                         instance.transitions += update_transitions
 
         # We set full name for state, requires, require and variable
-        for ms in instance._state_list():
-            ms._set_full_name(instance.name,separator=".")
+        for s in instance._state_list():
+            s._set_full_name(instance.name,separator=".")
+            s._set_url(instance.url)
 
         return instance
 
@@ -380,6 +399,16 @@ class Lifecycle(object):
     @property
     def name(self):
         return self.__class__.__name__
+
+    @property
+    def url(self):
+        if self._url == None :
+            self._set_url()
+        return self._url
+    
+    
+    def _set_url(self):
+        self._url = Url(lifecycle = self.name)
 
     @classmethod
     def _state_list(cls):

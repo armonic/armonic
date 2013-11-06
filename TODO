@@ -1,3 +1,9 @@
+FIX: 
+	self.variables in require. It is a list of Itercontainter in
+	requireLocal and requireExternal and an IterContainer in
+	requireUser and requireSimple.
+
+
 Requires:
 	Add mulitplicity parameters
 	Add variable type checking

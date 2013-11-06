@@ -20,12 +20,11 @@ types to fill values of a require.
 
 import logging
 
-from mss.common import IterContainer, DoesNotExist
+from mss.common import IterContainer, DoesNotExist, Url
 from mss.variable import VString
 import copy
 
 logger = logging.getLogger(__name__)
-
 
 class MissingRequire(Exception):
     def __init__(self, variable="", state=None):
@@ -45,7 +44,19 @@ class Requires(IterContainer):
         self.name = name
         IterContainer.__init__(self, *require_list)
         self._full_name = None
+        self._url = None
         self.flags = flags # Should not be in Requires ...
+
+    @property
+    def url(self):
+        return self._url
+    #self._full_name if self._full_name != None else self.name
+
+    def _set_url(self,parent_url):
+        self._url = copy.copy(parent_url)
+        self._url.method = self.name
+        for r in self:
+            r._set_url(self.url)
 
     @property
     def full_name(self):
@@ -138,6 +149,17 @@ class Require(object):
         self._validated = False
         self.variables = IterContainer(*variables)
         self._full_name = None
+        self._url = None
+
+    @property
+    def url(self):
+        return self._url
+
+    def _set_url(self,parent_url):
+        self._url = copy.copy(parent_url)
+        self._url.require = self.name
+        for r in self.variables:
+            r._set_url(self.url)
 
     @property
     def full_name(self):
@@ -277,6 +299,15 @@ class RequireLocal(Require):
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
         self.variables = [IterContainer(*variables)]
+
+    def _set_url(self,parent_url):
+        """Build a full name by joining prefix, separator and name."""
+        self._url = copy.copy(parent_url)
+        self._url.require = self.name
+        for i in self.variables:
+            for v in i:
+                v._set_url(self._url)
+
 
     def _set_full_name(self,prefix,separator="."):
         """Build a full name by joining prefix, separator and name."""

@@ -160,3 +160,25 @@ class IterContainer(list):
         if hasattr(self, attr):
             return getattr(self, attr)
         raise DoesNotExist("%s does not exist" % attr)
+
+
+class Url():
+    def __init__(self, host=None, lifecycle=None, state=None, method=None, require=None, variable=None):
+        self.host=host
+        self.lifecycle=lifecycle
+        self.state=state
+        self.method=method
+        self.require=require
+        self.variable=variable
+
+
+    def __repr__(self):
+        return ("url://" + 
+                (self.host if self.host != None else "") + "." +
+                (self.lifecycle if self.lifecycle != None else "") + "." +
+                (self.state if self.state != None else "") + "." +
+                (self.method if self.method != None else "") + "." +
+                (self.require if self.require != None else "") + "." +
+                (self.variable if self.variable != None else ""))
+                
+            
