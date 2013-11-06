@@ -1,21 +1,16 @@
-modules/mysql/
-
-modules/mysql/
-
-
 Dependencies
 ============
 * python-augeas
 * python-sphinx
 * python-netifaces, python-ipy (to log ip address)
 
-Modules
--------
+Dependencies for modules
+------------------------
 * Mysql
   apt-get install python-mysqldb
 
-Client
-------
+Depedencies for client
+----------------------
 * python-prettytable
 * pip install argcomplete
 
@@ -39,23 +34,15 @@ Install All dependencies on MBS
    python setup.py install
 
 
-Test Lifecycle and Augeas
-=========================
-cd mss/agent/classes/mss3
-export PYTHONPATH=$PWD
-mkdir /tmp/etc
-cp -r /etc/mysql /tmp/etc/
-
-
-Non interactive test
----------------------
-python tests/tests_lifecycle.py
-
-Interactive tests
------------------
+How to use it
+=============
+First, launch the agent on a host called 'my_host'.
+Then, you can use the client to interact with it.
 ./client.py --help
+./client.py -H my_host module
 
-Howto use bash completion
+
+Howto get bash completion
 -------------------------
 pip install argcomplete --user
 Launch a new bash shell
@@ -64,15 +51,14 @@ eval "$(~/.local/bin/register-python-argcomplete  client.py)"
 
 To get module documentation
 ---------------------------
-python client-xmlrpc.py load Mysql
-python client-xmlrpc.py dot Mysql > mysql.dot
+python client plot dot Mysql > mysql.dot
 dotty mysql.dot
 
 
 To get full documentation
 -------------------------
 cd doc/
-make html
+make html (optionnal)
 firefox build/html/index.html
 
 
