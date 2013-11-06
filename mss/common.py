@@ -115,7 +115,9 @@ class DoesNotExist(Exception):
 
 
 class ValidationError(Exception):
-    pass
+    def __init__(self,variable_name,msg):
+        Exception.__init__(self,msg)
+        self.variable_name = variable_name
 
 
 class ProvideError(Exception):

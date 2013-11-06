@@ -66,7 +66,7 @@ class Variable(object):
 
     def _validate(self):
         if not self._value and self.required:
-            raise ValidationError("%s is required" % self.name)
+            raise ValidationError(variable_name=self.name , msg="%s is required" % self.name)
 
     def validate(self):
         """Override for custom validation.
@@ -173,7 +173,7 @@ class VString(Variable):
     def _validate(self):
         Variable._validate(self)
         if self.pattern and not re.match(self.pattern, self.value):
-            raise ValidationError(self.pattern_error)
+            raise ValidationError(variable_name=self.name , msg=self.pattern_error)
         return self.validate()
 
     def _validate_type(self, value):
@@ -191,9 +191,9 @@ class VInt(Variable):
     def _validate(self):
         Variable._validate(self)
         if self.min_val and self.value < self.min_val:
-            raise ValidationError("%s value must be greater than %s" % (self.name, self.min_val))
+            raise ValidationError(variable_name=self.name , msg="%s value must be greater than %s" % (self.name, self.min_val))
         if self.max_val and self.value > self.max_val:
-            raise ValidationError("%s value must be lower than %s" % (self.name, self.max_val))
+            raise ValidationError(variable_name=self.name , msg="%s value must be lower than %s" % (self.name, self.max_val))
         return self.validate()
 
     def _validate_type(self, value):
