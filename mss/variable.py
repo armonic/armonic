@@ -3,8 +3,14 @@ import copy
 import inspect
 import re
 
+class VariableNotSet(Exception):pass
 
 class Variable(object):
+    """
+    The type of a variable is validate (with _validate_type method)
+    when the value is set. The value of a variable can be validate by
+    hand with validate method. """ 
+
     type = 'variable'
     _value = None
 
@@ -53,7 +59,7 @@ class Variable(object):
 
     def _validate_type(self, value):
         if value == None:
-            raise TypeError("value can't be None")
+            raise VariableNotSet("value can't be None")
 #        if not type(value) == int and len(value) == 0:
 #            raise TypeError("value can't be empty")
         return value

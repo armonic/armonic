@@ -21,10 +21,22 @@ types to fill values of a require.
 import logging
 
 from mss.common import IterContainer, DoesNotExist, Url
-from mss.variable import VString
+from mss.variable import VariableNotSet , VString
 import copy
 
 logger = logging.getLogger(__name__)
+
+class RequireNotFilled(Exception):
+    """Raise if the value of variable is None."""
+    def __init__(self,require_name, variable_name):
+        self.variable_name = variable_name
+        self.require_name = require_name
+        
+    def __repr__(self):
+        return "Variable %s in require %s is not filled" % (self.variable_name, self.require_name)
+
+    def __str__(self):
+        return self.__repr__()
 
 class MissingRequire(Exception):
     def __init__(self, variable="", state=None):
@@ -197,6 +209,8 @@ class Require(object):
             except DoesNotExist:
                 logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
                 pass
+            except VariableNotSet:
+                raise RequireNotFilled(self.name, variable_name)
         return True
 
 
@@ -215,6 +229,7 @@ class Require(object):
         :rtype: boolean"""
         for variable in iterContainer:
             variable._validate()
+                
         self._validated = True
         return self._validated
 
