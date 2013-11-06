@@ -556,7 +556,10 @@ class Lifecycle(object):
         return r
 
     def state_goto_requires(self, state, go_back=True):
-        """Return all requires needed to go from current state to state."""
+        """Return all requires needed to go from current state to state.
+
+        :rtype: [Require]
+        """
         acc = []
         for s in self.state_goto_path(state, go_back=go_back):
             if s[1] == "entry":
