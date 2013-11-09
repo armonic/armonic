@@ -81,7 +81,7 @@ class Variable(object):
         return str(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s)" % (self.__class__.__name__, self.name, self.value)
+        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__, self.name, self.value, self.default)
 
 
 class VList(Variable):
@@ -142,7 +142,7 @@ class VList(Variable):
         return iter(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s)" % (self.__class__.__name__, self.name, self.value)
+        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__, self.name, self.value, self.default)
 
 
 #class VDict(Variable):

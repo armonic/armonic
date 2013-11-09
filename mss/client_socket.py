@@ -38,7 +38,12 @@ class ClientSocket(object):
     def _receive_string(self):
         packer = struct.Struct("!I?")
         p = self._socket.recv(packer.size)
-        size = packer.unpack(p)[0]
+        try:
+            size = packer.unpack(p)[0]
+        except struct.error:
+            print "Struct error with packet:"
+            print p
+            raise
         last = packer.unpack(p)[1]
         ret = self._socket.recv(size)
         recv_size=len(ret)

@@ -59,6 +59,19 @@ class Requires(IterContainer):
         self._url = None
         self.flags = flags # Should not be in Requires ...
 
+
+    def get_values(self):
+        acc={}
+        for r in self:
+            acc.update({r.name:r.get_values()})
+        return acc
+
+    def get_default_values(self):
+        acc={}
+        for r in self:
+            acc.update({r.name:r.get_default_values()})
+        return acc
+
     @property
     def url(self):
         return self._url
@@ -245,6 +258,15 @@ class Require(object):
                 "variables": [a.to_primitive() for a in self.variables],
                 "type": "simple"}
 
+    
+    def get_values(self):
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.variables, {})
+
+    def get_default_values(self):
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.variables, {})
+            
+
+
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
         argName:value where value is the default value. Second is a
@@ -393,6 +415,12 @@ class RequireLocal(Require):
 
     def generate_provide_args(self, dct={}):
         return self.generate_args(dct)
+
+    def get_values(self):
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.provide_args, {})
+
+    def get_default_values(self):
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.provide_args, {})
 
 
 class RequireVhost(VString):
