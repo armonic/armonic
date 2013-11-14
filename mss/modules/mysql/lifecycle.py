@@ -322,7 +322,9 @@ class ConfiguredAsMaster(State):
 
         self.config.save()
 
-class ActiveAsMaster(State):
+class ActiveAsMaster(mss.lifecycle.MetaState):
+    implementations = [ActiveOnDebian, ActiveOnMBS]
+
     @Require([VString('user',default='replication'),
               VString('password',default='password')],
              name='slave_id')
