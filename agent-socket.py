@@ -30,8 +30,9 @@ def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
     packet=pickle.dumps(string)
     p=packer.pack(len(packet),last)
-    socket.send(p)
-    socket.send(packet)
+    send_size = len(p)
+    size = socket.sendall(p)
+    socket.sendall(packet)
 
 class SocketIO(object):
     def __init__(self,socket):
