@@ -3,39 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to mss3's documentation!
-================================
+MSS3 documentation
+==================
 
 .. toctree::
    :maxdepth: 2
    
+   client.rst
+   core.rst
    modules.rst
-
-
-Module Lifecycle: To manage lifecycle of a service
-==================================================
-
-.. automodule:: mss.lifecycle
-   :members: 
-
-.. automodule:: mss.require
-    :members: 
-
-.. automodule:: mss.state
-    :members: 
-
-
-Augeas Configuration
-====================
-.. automodule:: mss.configuration_augeas
-    :members: 
-
-
-Modules Documentations
-======================
-
-
-
 
 Indices and tables
 ==================
