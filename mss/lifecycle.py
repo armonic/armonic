@@ -352,7 +352,6 @@ class Lifecycle(object):
     """
     _initialized = False
     _url = None
-
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
             cls)
@@ -368,6 +367,8 @@ class Lifecycle(object):
                 # has same implementation, we need to create special
                 # implementations for each metastate.
                 created_states = [type('%s.%s'%(ms.__class__.__name__,s.__name__),(s,),{}) for s in ms.implementations]
+                for s in created_states:
+                    logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name)) 
                 # For each transtion to MetaState ms
                 for t in transitions:
                     update_transitions = []
