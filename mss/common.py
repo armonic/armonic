@@ -175,8 +175,7 @@ class Url():
 
 
     def __repr__(self):
-        return ("url://" + 
-                (self.host if self.host != None else "") + "." +
+        return ((self.host if self.host != None else "") + "." +
                 (self.lifecycle if self.lifecycle != None else "") + "." +
                 (self.state if self.state != None else "") + "." +
                 (self.method if self.method != None else "") + "." +
