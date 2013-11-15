@@ -1,4 +1,4 @@
-from mss.lifecycle import State, Transition, Lifecycle
+from mss.lifecycle import State, Transition, Lifecycle, provide
 from mss.require import Require
 from mss.variable import VString, Port
 import mss.state
@@ -37,6 +37,12 @@ class Configured(State):
     def set_port(self, requires):
         """Set listen and vhost port"""
         self.conf.setPort(requires.this.port.value)
+
+    @provide()
+    def get_port(self, requires):
+        """Set listen and vhost port"""
+        return {"port" : self.conf.port.value}
+
 
 class Active(mss.state.ActiveWithSystemd):
     services=["httpd"]
