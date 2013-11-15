@@ -40,7 +40,6 @@ def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
     packet=pickle.dumps(string)
     p=packer.pack(len(packet),last)
-    print "Packer size: %d" % len(p)
     my_send(socket, p)
     my_send(socket, packet)
 
