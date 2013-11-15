@@ -52,7 +52,8 @@ class Variable(object):
 
     @value.setter
     def value(self, value):
-        self._value = self._validate_type(value)
+        self._value = value
+        #self._value = self._validate_type(value)
 
     def fill(self, value):
         self.value = value
@@ -219,6 +220,14 @@ class Password(VString):
     pass
 
 
-class VFile(Variable):
-    def get_local_path(self):
-        print "GET_LOCAL_PATH" , self.value
+import urllib2
+import tempfile
+class VUrl(VString):
+    def get_file(self):
+        """
+        :rtype: A local file name which contain url object datas."""
+        u = urllib2.urlopen(self.value)
+        localFile = tempfile.NamedTemporaryFile(dir="/tmp", delete=False)
+        localFile.write(u.read())
+        localFile.close()
+        return localFile.name
