@@ -417,10 +417,10 @@ class RequireLocal(Require):
         return self.generate_args(dct)
 
     def get_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.provide_args, {})
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.variables[0], {})
 
     def get_default_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.provide_args, {})
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.variables[0], {})
 
 
 class RequireVhost(VString):
