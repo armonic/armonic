@@ -12,7 +12,7 @@ class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
     def build_values(self):
         needed = self.get_values()
         suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
-        ret = update_empty(needed,suggested)
+        ret = update_empty(suggested,needed)
         return ret
 
     def build_save_to(self, variable):
@@ -23,6 +23,12 @@ class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
+
+    def on_validation_error(self,err_variable,values):
+        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
+        values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
+        return values
+
 
 
 class RequireUser(mss.require.RequireUser, mss.client.smart.Require, ShowAble):
@@ -38,8 +44,9 @@ class RequireUser(mss.require.RequireUser, mss.client.smart.Require, ShowAble):
         Variables.append((variable.url,variable.value))
 
     def on_validation_error(self,err_variable,values):
-        print "Variable '%s' in values %s has not been validated!" % (err_variable, values)
-        exit(1)
+        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
+        values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
+        return values
 
 class RequireWithProvide(mss.client.smart.RequireWithProvide):
     def build_provide_class(self):
@@ -47,7 +54,13 @@ class RequireWithProvide(mss.client.smart.RequireWithProvide):
 
     def build_values(self):
         # Here we generate require value
+#        print "PROVIDE RET" , self.provide.provide_ret
+#        print "GET VALUE" , self.get_values()
+#        print "PROVIDE ARGS" , self.provide_args
+        
+#        print "REQUIRE" , self.variables
         ret = update_empty(self.get_values(), self.provide.provide_ret)
+#        print "RET VALUE" , ret
         return ret
 
     def build_save_to(self, variable):
@@ -63,7 +76,7 @@ class RequireLocal(mss.require.RequireLocal, RequireWithProvide, ShowAble):
     def on_validation_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
             err_variable, self.name, self.provide_name,
-            err_variable, ret[err_variable])
+            err_variable, values[err_variable])
         values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg))
 
 class RequireExternal(mss.require.RequireExternal, RequireWithProvide, ShowAble):
@@ -73,11 +86,19 @@ class RequireExternal(mss.require.RequireExternal, RequireWithProvide, ShowAble)
         return values
 
     def on_validation_error(self,err_variable,values):
+        try :
+            value = values[err_variable]
+        except KeyError :
+            value = None
+        if err_variable == 'host':
+            prefill = self.provide.host
+        else:
+            prefill = ""
         msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
             err_variable, self.name, self.provide_name,
-            err_variable, ret[err_variable])
-        values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg))
-
+            err_variable, value)
+        values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg, prefill = prefill))
+        return values
 
 
 

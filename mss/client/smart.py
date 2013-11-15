@@ -164,12 +164,16 @@ class Provide(ShowAble):
                         self.provide_name,
                         provide_requires_primitive,
                         provide_args_primitive))
-                return self.lf_manager.call("provide_call",
+                self.provide_ret = self.lf_manager.call("provide_call",
                                             self.lf_name,
                                             self.provide_name,
                                             provide_requires_primitive,
                                             provide_args_primitive)
-        return {}
+                # Because provide return type is currently not strict.
+                # This must be FIXED because useless.
+                if self.provide_ret == None:
+                    self.provide_ret = {}
+        return self.provide_ret
 
     def _generate_requires_primitive(self,require_list):
         """From a require list, generate suitable require dict to be
@@ -262,7 +266,7 @@ class Require(object):
         :param values: The dict of current values
         :rtype: A updated dict of 'values' variable name and values
         """
-        raise NotImplementedError
+        raise NotImplementedError("You must implement %s.on_validation_error" % self.__class__.__name__)
 
     def build_save_to(self, variable):
         """Redefine it we want to make actions (show, print, save...) on validated variables.
@@ -289,9 +293,9 @@ class Require(object):
                     values = {}
                 self.fill(values)
                 self.validate()
-            except RequireNotFilled as e:
-                values = self.on_require_not_filled_error(e.variable_name,values)
-                continue
+            # except RequireNotFilled as e:
+            #     values = self.on_require_not_filled_error(e.variable_name,values)
+            #     continue
             except ValidationError as e:
                 values = self.on_validation_error(e.variable_name,values)
                 continue
