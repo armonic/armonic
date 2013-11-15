@@ -4,7 +4,7 @@ import MySQLdb
 
 from mss.lifecycle import State, Transition, Lifecycle, provide
 from mss.require import Requires, Require, RequireExternal, RequireUser, RequireLocal
-from mss.variable import Hostname, VString, Port, Password, VInt
+from mss.variable import Hostname, VString, Port, Password, VInt, VUrl
 from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
 import mss.state
@@ -250,14 +250,15 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
                      provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
                      variables=[Password('root_password')])
     @RequireExternal(lf_name='Mysql',provide_name='get_dump',
-                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPosition')])
+                     provide_ret=[VUrl('fileUrl'),VString('logFile'), VInt('logPosition')])
     @RequireExternal(lf_name='Mysql',provide_name='add_slave_auth',
                      provide_args=[VString('user',default='replication'),
                                    VString('password',default='repl_pwd')])
     def entry(self):
         root_user = "root"
         root_password = self.requires_entry.get('mysqlRoot').variables.get('root_password').value
-        filePath = self.requires_entry.get('Mysql.get_dump').variables[0].filePath.value
+        # We are using VUrl object retrieve the dump.
+        filePath = self.requires_entry.get('Mysql.get_dump').variables[0].fileUrl.get_file()
         logFile = self.requires_entry.get('Mysql.get_dump').variables[0].logFile.value
         logPosition = self.requires_entry.get('Mysql.get_dump').variables[0].logPosition.value
         slave_user = self.requires_entry.get('Mysql.add_slave_auth').variables[0].get('user').value
@@ -269,7 +270,7 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
                                ["/usr/bin/mysql", 
                                 "-u", "root", 
                                 "--password=%s"%root_password,
-                                "-e","stop slave ; source %s ; start slave;" % filePath])
+                                "-e","stop slave ; source %s;" % filePath])
         if not thread.launch():
             logger.info("Error during mysql source dumpfile")
             raise Exception("Error during mysql source dumpfile")
@@ -345,6 +346,8 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
     @RequireUser(name='mysqlRoot',
                      provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
                      variables=[Password('root_password')])
+    @RequireLocal("Sharing", "get_file_access",
+                  provide_ret=[VString("filePath"), VString("fileUrl")])
     def get_dump(self,requires):
         """Dump datas to file and return in a dict its filePath, the
         logPosition and the logFile"""
@@ -360,12 +363,17 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
         
         # Thirst, we dump datas
         filePath = "/tmp/dbdump.db"
+        filePath = requires.get("Sharing.get_file_access").variables[0].get('filePath').value
+        fileUrl = requires.get("Sharing.get_file_access").variables[0].get('fileUrl').value
+        logger.debug("Dump will be saved in %s" % filePath)
+        logger.debug("Dump can be accessed at %s" % fileUrl)
         thread = ProcessThread("mysqldump", None, "test",
                                ["/usr/bin/mysqldump", 
                                 "-u", "root", 
                                 "--password=%s"%root_password,
                                 "--all-databases", "--master-data",
                                 "--result-file", filePath])
+        logger.info("Dump has been generated in %s" % filePath)
         if not thread.launch():
             logger.info("Error during mysqldump")
             raise Exception("Error during mysqldump")
@@ -373,9 +381,48 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
         # Finally, we unlock tables
         cur.execute("UNLOCK TABLES;")
         
-        return {'filePath': filePath, 'logFile': rows[0][0], 'logPostion': rows[0][1]}
+        return {'fileUrl': fileUrl, 
+                'logFile': rows[0][0], 
+                'logPosition': int(rows[0][1])}
 #                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPostion')])
 #        return "/tmp/dump_db.sql"
+
+
+
+    @RequireUser(name='mysqlRoot',
+                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     variables=[Password('root_password')])
+    @Require([VString('user'), VString('password'), VString('database')])
+    def addDatabaseMaster(self,requires):
+        """Add a user and a database. User have permissions on all databases."""
+        database = requires.get('this').variables.get('database').value
+        user = requires.get('this').variables.get('user').value
+        password = requires.get('this').variables.get('password').value
+        mysql_root_pwd = requires.get('mysqlRoot').variables.get('root_password').value
+
+        if database in ['database']:
+            raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
+        self.addUser('root', mysql_root_pwd, user, password)
+        con = MySQLdb.connect('localhost', user, password);
+        cur = con.cursor()
+        cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
+        rows = cur.fetchall()
+        return [d[0] for d in rows]
+
+
+    def addUser(self,user,password,newUser,userPassword):
+        con = MySQLdb.connect('localhost', user,
+                              password);
+
+        cur = con.cursor()
+        cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword)
+        logger.debug("$mysql> %s" % cmd)
+        cur.execute(cmd)
+        cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'localhost' IDENTIFIED BY '%s' WITH GRANT OPTION;"%(newUser,userPassword)
+        logger.debug("$mysql> %s" % cmd)
+        cur.execute(cmd)
+        logger.info("mysql user '%s' with password '%s' has been created." % (newUser,userPassword))
+        return True
     
 
     def cross(self,restart=False):pass
