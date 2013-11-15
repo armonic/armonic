@@ -3,6 +3,7 @@ import pickle
 import struct
 import logging
 
+PACKET_INFO_SIZE = 5
 
 class AgentException(Exception):
     pass
@@ -37,7 +38,11 @@ class ClientSocket(object):
 
     def _receive_string(self):
         packer = struct.Struct("!I?")
-        p = self._socket.recv(packer.size)
+        recv_size = 0
+        p = ""
+        while recv_size < packer.size:
+            p += self._socket.recv(packer.size - recv_size)
+            recv_size = len(p)
         try:
             size = packer.unpack(p)[0]
         except struct.error:
@@ -47,7 +52,7 @@ class ClientSocket(object):
         last = packer.unpack(p)[1]
         ret = self._socket.recv(size)
         recv_size=len(ret)
-        while recv_size != size:
+        while recv_size < size:
             ret += self._socket.recv(size-recv_size)
             recv_size=len(ret)
         ret = pickle.loads(ret)

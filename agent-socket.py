@@ -26,13 +26,23 @@ import argparse
 import mss.lifecycle
 import mss.common
 
+PACKET_INFO_SIZE = 5
+
+def my_send(socket,string):
+    send_size = len(string)
+    sent_size = socket.send(string)
+    if sent_size < send_size:
+        logger.warning("Packet has not been sent entirely: %d bytes instead of %d bytes." % (sent_size, send_size))
+        
+    
+
 def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
     packet=pickle.dumps(string)
     p=packer.pack(len(packet),last)
-    send_size = len(p)
-    size = socket.sendall(p)
-    socket.sendall(packet)
+    print "Packer size: %d" % len(p)
+    my_send(socket, p)
+    my_send(socket, packet)
 
 class SocketIO(object):
     def __init__(self,socket):
