@@ -11,13 +11,16 @@ Variables=[]
 class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
     def build_values(self):
         needed = self.get_values()
-        suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
+        if self in self.provide_caller.provide_requires:
+            suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
+        else :
+            suggested = {}
         ret = update_empty(suggested,needed)
         return ret
 
     def build_save_to(self, variable):
-        variable.url.host = self.provide_caller.host
-        Variables.append((variable.url,variable.value))
+        variable.uri.host = self.provide_caller.host
+        Variables.append((variable.uri,variable.value))
 
     def on_require_not_filled_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
@@ -34,14 +37,15 @@ class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
 class RequireUser(mss.require.RequireUser, mss.client.smart.Require, ShowAble):
     def build_values(self):
         # Here we generate require value
-        for (url,value) in Variables:
-            if ("%s.%s" % (self.provide_caller.host,self.provided_by)) == str(url):
-                print url , value
+        for (uri,value) in Variables:
+            if ("%s.%s" % (self.provide_caller.host,self.provided_by)) == str(uri):
+                print uri , value
                 return {self.variables[0].name : value}
+        self.show("Variable %s not found is already set variables!" % self.provided_by)
 
     def build_save_to(self, variable):
-        variable.url.host = self.provide_caller.host
-        Variables.append((variable.url,variable.value))
+        variable.uri.host = self.provide_caller.host
+        Variables.append((variable.uri,variable.value))
 
     def on_validation_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
@@ -64,8 +68,8 @@ class RequireWithProvide(mss.client.smart.RequireWithProvide):
         return ret
 
     def build_save_to(self, variable):
-        variable.url.host = self.provide_caller.host
-        Variables.append((variable.url,variable.value))
+        variable.uri.host = self.provide_caller.host
+        Variables.append((variable.uri,variable.value))
 
 class RequireLocal(mss.require.RequireLocal, RequireWithProvide, ShowAble):
     def on_require_not_filled_error(self,err_variable,values):

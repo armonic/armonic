@@ -148,16 +148,16 @@ class Provide(ShowAble):
             self.lf_name,
             self.provide_name))
         self.lf_manager = ClientSocket(host=self.host)
-        self.provide_call_requires = self.lf_manager.call("provide_call_requires",self.lf_name, self.provide_name)
+        self.provide_goto_requires = self.lf_manager.call("provide_call_requires",self.lf_name, self.provide_name)
         self.provide_requires = self.lf_manager.call("provide_call_args",self.lf_name, self.provide_name)
-        self.requires = self.provide_call_requires + self.provide_requires
+        self.requires = self.provide_goto_requires + self.provide_requires
 
     def call(self):
         if self.handle_call():
             self._build_requires()
             
             if self.confirm_call():
-                provide_requires_primitive = self._generate_requires_primitive(self.provide_call_requires)
+                provide_requires_primitive = self._generate_requires_primitive(self.provide_goto_requires)
                 provide_args_primitive = self._generate_requires_primitive(self.provide_requires)
                 logger.debug("mss.call(%s, %s, %s, %s)" % (
                         self.lf_name,
