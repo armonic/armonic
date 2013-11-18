@@ -37,11 +37,12 @@ class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
 class RequireUser(mss.require.RequireUser, mss.client.smart.Require, ShowAble):
     def build_values(self):
         # Here we generate require value
+        self.provided_by.host = self.provide_caller.host
         for (uri,value) in Variables:
-            if ("%s.%s" % (self.provide_caller.host,self.provided_by)) == str(uri):
-                print uri , value
+            if str(self.provided_by) == str(uri):
                 return {self.variables[0].name : value}
         self.show("Variable %s not found is already set variables!" % self.provided_by)
+        return {}
 
     def build_save_to(self, variable):
         variable.uri.host = self.provide_caller.host
