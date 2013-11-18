@@ -654,12 +654,12 @@ class Lifecycle(object):
             i.cross(**(p.flags))
         return ret
 
-    def to_dot(self):
+    def to_dot(self,cross=False, enter_doc=False, leave_doc=False):
         """Return a dot string of lifecycle."""
 
         def dotify(string): # To remove illegal character
             if string != None:
-                tmp = string.replace("{","").replace("}","").replace(":","").replace("\n","\\n")
+                tmp = string.replace("{","").replace("}","").replace(":","").replace("\n","\l")
                 tmp += '\l'
                 return tmp
             else : return string
@@ -674,6 +674,14 @@ class Lifecycle(object):
                         acc += "| %s" % dotify(str(a))
             return acc
 
+        def dot_provide(provide):
+            if provide != []:
+                return "%s | {%s}" % (
+                    dotify(provide.name) , list_to_table([r.name for r in provide]))
+            else : 
+                return ""
+            
+
         acc = ""
         acc += "digraph finite_state_machine {\n"
         acc += "node [shape = ellipse];\n"
@@ -681,19 +689,28 @@ class Lifecycle(object):
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
             requires = ""
-            requires = list_to_table([r.name for r in s.get_requires()])
             provides = list_to_table([(p.name, p.flags) for p in s.get_provides()])
-            label = 'label = "{%s | %s | Entry: %s | Leave : %s | {Cross: | {Doc: %s | Flags: %s}} | { Entry Requires: | {%s} } | { Provides: | {%s}}}"\n' % (
+            # Begin of label
+            acc += 'label = "{%s | %s ' %(
                 s.name,
                 dotify(s.__doc__),
-                dotify(s.entry.__doc__),
-                dotify(s.leave.__doc__),
-                dotify(s.cross.__doc__),
-                inspect.getargspec(s.cross).args[1:],
-                requires,
-                provides
             )
-            acc += label
+            # Enter doc
+            if enter_doc:
+                acc += " | Entry: %s" % (dotify(s.entry.__doc__))
+            if leave_doc:
+                acc += " | Leave: %s" % (dotify(s.leave.__doc__))
+            # Cross method
+            if cross:
+                acc += "| {Cross: | {Doc: %s | Flags: %s}}" % (
+                    dotify(s.cross.__doc__),
+                    inspect.getargspec(s.cross).args[1:])
+            # Enter Requires
+            acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in s.get_requires()])
+            for p in s.get_provides():
+                acc +=" | { %s }" % dot_provide(p)
+            # End of label
+            acc += '}"\n'
             acc += "];\n"
         for (s, d) in self.transitions:
             acc += '"%s" -> "%s";\n' % (s.name, d.name)
