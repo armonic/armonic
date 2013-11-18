@@ -165,22 +165,22 @@ class IterContainer(list):
 
 
 class Uri():
-    def __init__(self, host=None, lifecycle=None, state=None, method=None, require=None, variable=None):
-        self.host=host
+    def __init__(self, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
         self.lifecycle=lifecycle
         self.state=state
         self.method=method
         self.require=require
         self.variable=variable
-
+        self.host=host
 
     def __repr__(self):
-        return ("mss:" +
-                (self.host if self.host != None else "") +
+        return ((self.host if self.host != None else "") +
                 ("/" + self.lifecycle if self.lifecycle != None else "") + 
                 ("/" + self.state if self.state != None else "") +
                 ("/" + self.method if self.method != None else "") +
                 ("/" + self.require if self.require != None else "") +
                 ("/" + self.variable if self.variable != None else ""))
-                
+
+    def to_primitive(self):
+        return self.__repr__()
             

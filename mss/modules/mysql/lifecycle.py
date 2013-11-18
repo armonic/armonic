@@ -9,6 +9,7 @@ from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
 import mss.state
 from mss.utils import OsTypeDebian, OsTypeMBS
+from mss.common import Uri
 
 import configuration
 
@@ -174,7 +175,7 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     @Require([VString('user'), VString('password'), VString('database')])
     def addDatabase(self,requires):
@@ -195,7 +196,7 @@ class Active(mss.lifecycle.MetaState):
 
 
     @RequireUser(name='mysql_root',
-                     provided_by='SetRootPassword.entry',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('user'),Password('password')])
     @Require([VString('database')])
     def rmDatabase(self,user,password,database):
@@ -247,7 +248,7 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     @RequireExternal(lf_name='Mysql',provide_name='get_dump',
                      provide_ret=[VUrl('fileUrl'),VString('logFile'), VInt('logPosition')])
@@ -288,7 +289,7 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
         cur.execute("slave start;")
 
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     def slave_status(self,requires):
         root_user = "root"
@@ -330,7 +331,7 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
               VString('password',default='password')],
              name='slave_id')
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     def add_slave_auth(self,requires):
         root_user = "root"
@@ -344,7 +345,7 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
         cur.execute("FLUSH PRIVILEGES;")
         
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     @RequireLocal("Sharing", "get_file_access",
                   provide_ret=[VString("filePath"), VString("fileUrl")])
@@ -390,7 +391,7 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
 
 
     @RequireUser(name='mysqlRoot',
-                     provided_by='Mysql.SetRootPassword.entry.root_pwd.password',
+                     provided_by=Uri("Mysql","SetRootPassword","entry","root_pwd","password"),
                      variables=[Password('root_password')])
     @Require([VString('user'), VString('password'), VString('database')])
     def addDatabaseMaster(self,requires):
