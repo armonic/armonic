@@ -106,7 +106,7 @@ method of Httpd active state.
 import inspect
 import logging
 
-from mss.common import is_exposed, expose, IterContainer, DoesNotExist, Url
+from mss.common import is_exposed, expose, IterContainer, DoesNotExist, Uri
 from mss.require import Requires, Require
 from mss.variable import VString
 import mss.utils
@@ -204,20 +204,20 @@ class State(object):
         return self._full_name if self._full_name != None else self.name
 
     @property
-    def url(self):
-        return self._url
+    def uri(self):
+        return self._uri
     
-    def _set_url(self, parent_url):
-        self._url = copy.copy(parent_url)
-        self._url.state = self.name
+    def _set_uri(self, parent_uri):
+        self._uri = copy.copy(parent_uri)
+        self._uri.state = self.name
 
         for method in STATE_RESERVED_METHODS:
             require = getattr(self, "requires_%s" % method)
             if require is not None:
-                require._set_url(self.url)
+                require._set_uri(self.uri)
 
         for require in self.provides:
-            require._set_url(self.url)
+            require._set_uri(self.uri)
         
 
     def _set_full_name(self, prefix, separator="."):
@@ -318,7 +318,7 @@ class State(object):
     
     def to_primitive(self):
         return {"name":self.name,
-                "full_name":self.full_name,
+                "uri":self.uri,
                 "supported_os_type":[t.to_primitive() for t in self.supported_os_type],
                 "provides":[r.to_primitive() for r in self.__class__.get_provides()],
                 "requires_entry":self.requires_entry.to_primitive()}
@@ -351,7 +351,7 @@ class Lifecycle(object):
 
     """
     _initialized = False
-    _url = None
+    _uri = None
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
             cls)
@@ -386,7 +386,7 @@ class Lifecycle(object):
         # We set full name for state, requires, require and variable
         for s in instance._state_list():
             s._set_full_name(instance.name,separator=".")
-            s._set_url(instance.url)
+            s._set_uri(instance.uri)
 
         return instance
 
@@ -402,14 +402,14 @@ class Lifecycle(object):
         return self.__class__.__name__
 
     @property
-    def url(self):
-        if self._url == None :
-            self._set_url()
-        return self._url
+    def uri(self):
+        if self._uri == None :
+            self._set_uri()
+        return self._uri
     
     
-    def _set_url(self):
-        self._url = Url(lifecycle = self.name)
+    def _set_uri(self):
+        self._uri = Uri(lifecycle = self.name)
 
     @classmethod
     def _state_list(cls):
@@ -680,7 +680,6 @@ class Lifecycle(object):
                     dotify(provide.name) , list_to_table([r.name for r in provide]))
             else : 
                 return ""
-            
 
         acc = ""
         acc += "digraph finite_state_machine {\n"
@@ -722,7 +721,8 @@ class Lifecycle(object):
 
                 
     def to_primitive(self):
-        return {'name':self.name,
+        return {'name': self.name,
+                'uri' : self.uri,
                 'states':[s.to_primitive() for s in self.state_list()],
                 "transitions": [(s.name,d.name) for (s,d) in self.transitions]}
 

@@ -164,7 +164,7 @@ class IterContainer(list):
         raise DoesNotExist("%s does not exist" % attr)
 
 
-class Url():
+class Uri():
     def __init__(self, host=None, lifecycle=None, state=None, method=None, require=None, variable=None):
         self.host=host
         self.lifecycle=lifecycle
@@ -175,11 +175,12 @@ class Url():
 
 
     def __repr__(self):
-        return ((self.host if self.host != None else "") + "." +
-                (self.lifecycle if self.lifecycle != None else "") + "." +
-                (self.state if self.state != None else "") + "." +
-                (self.method if self.method != None else "") + "." +
-                (self.require if self.require != None else "") + "." +
-                (self.variable if self.variable != None else ""))
+        return ("mss:" +
+                (self.host if self.host != None else "") +
+                ("/" + self.lifecycle if self.lifecycle != None else "") + 
+                ("/" + self.state if self.state != None else "") +
+                ("/" + self.method if self.method != None else "") +
+                ("/" + self.require if self.require != None else "") +
+                ("/" + self.variable if self.variable != None else ""))
                 
             

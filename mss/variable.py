@@ -24,15 +24,15 @@ class Variable(object):
         if default is not None:
             self.value = default
         self._full_name = None
-        self._url = None
+        self._uri = None
 
     @property
-    def url(self):
-        return self._url
+    def uri(self):
+        return self._uri
 
-    def _set_url(self,parent_url):
-        self._url = copy.copy(parent_url)
-        self._url.variable = self.name
+    def _set_uri(self,parent_uri):
+        self._uri = copy.copy(parent_uri)
+        self._uri.variable = self.name
 
     @property
     def full_name(self):
@@ -225,8 +225,8 @@ import tempfile
 class VUrl(VString):
     def get_file(self):
         """
-        :rtype: A local file name which contain url object datas."""
-        u = urllib2.urlopen(self.value)
+        :rtype: A local file name which contain uri object datas."""
+        u = urilib2.urlopen(self.value)
         localFile = tempfile.NamedTemporaryFile(dir="/tmp", delete=False)
         localFile.write(u.read())
         localFile.close()

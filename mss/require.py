@@ -20,7 +20,7 @@ types to fill values of a require.
 
 import logging
 
-from mss.common import IterContainer, DoesNotExist, Url
+from mss.common import IterContainer, DoesNotExist, Uri
 from mss.variable import VariableNotSet , VString
 import copy
 
@@ -56,7 +56,7 @@ class Requires(IterContainer):
         self.name = name
         IterContainer.__init__(self, *require_list)
         self._full_name = None
-        self._url = None
+        self._uri = None
         self.flags = flags # Should not be in Requires ...
 
 
@@ -73,15 +73,15 @@ class Requires(IterContainer):
         return acc
 
     @property
-    def url(self):
-        return self._url
+    def uri(self):
+        return self._uri
     #self._full_name if self._full_name != None else self.name
 
-    def _set_url(self,parent_url):
-        self._url = copy.copy(parent_url)
-        self._url.method = self.name
+    def _set_uri(self,parent_uri):
+        self._uri = copy.copy(parent_uri)
+        self._uri.method = self.name
         for r in self:
-            r._set_url(self.url)
+            r._set_uri(self.uri)
 
     @property
     def full_name(self):
@@ -145,7 +145,8 @@ class Requires(IterContainer):
         return acc
 
     def to_primitive(self):
-        return {"name": self.name, "full_name": self.full_name, 
+        return {"name": self.name, 
+                "uri": self.uri, 
                 "require_list":[r.to_primitive() for r in self] , 
                 "flags": self.flags}
 
@@ -174,17 +175,17 @@ class Require(object):
         self._validated = False
         self.variables = IterContainer(*variables)
         self._full_name = None
-        self._url = None
+        self._uri = None
 
     @property
-    def url(self):
-        return self._url
+    def uri(self):
+        return self._uri
 
-    def _set_url(self,parent_url):
-        self._url = copy.copy(parent_url)
-        self._url.require = self.name
+    def _set_uri(self,parent_uri):
+        self._uri = copy.copy(parent_uri)
+        self._uri.require = self.name
         for r in self.variables:
-            r._set_url(self.url)
+            r._set_uri(self.uri)
 
     @property
     def full_name(self):
@@ -254,7 +255,7 @@ class Require(object):
 
     def to_primitive(self):
         return {"name": self.name, 
-                "full_name": self.full_name,
+                "uri": self.uri,
                 "variables": [a.to_primitive() for a in self.variables],
                 "type": "simple"}
 
@@ -301,7 +302,7 @@ class RequireUser(Require):
 
     def to_primitive(self):
         return {"name": self.name, 
-                "full_name": self.full_name,
+                "uri": self.uri,
                 "variables": [a.to_primitive() for a in self.variables],
                 "type": "user",
                 "provided_by": self.provided_by}
@@ -337,13 +338,13 @@ class RequireLocal(Require):
         # order to manage default values.
         self.variables = [IterContainer(*variables)]
 
-    def _set_url(self,parent_url):
+    def _set_uri(self,parent_uri):
         """Build a full name by joining prefix, separator and name."""
-        self._url = copy.copy(parent_url)
-        self._url.require = self.name
+        self._uri = copy.copy(parent_uri)
+        self._uri.require = self.name
         for i in self.variables:
             for v in i:
-                v._set_url(self._url)
+                v._set_uri(self._uri)
 
 
     def _set_full_name(self,prefix,separator="."):
@@ -385,7 +386,7 @@ class RequireLocal(Require):
 
     def to_primitive(self):
         return {"name": self.name,
-                "full_name": self.full_name,
+                "uri": self.uri,
                 "type": self.type,
                 "lf_name": self.lf_name,
                 "provide_name": self.provide_name,
