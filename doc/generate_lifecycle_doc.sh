@@ -25,6 +25,18 @@ for path in $modules
 do 
     module=$(basename ${path})
     lifecycle=$(echo $module | sed '1s/^\s*./\U&\E/g')
+
+    echo "Generating json file for module"${lifecycle}.dot
+    json_file_path=${image_path}/${module}.json
+    python -c "import mss.modules.${module}  ; import pprint ; pprint.pprint(mss.modules.${module}.lifecycle.${lifecycle}().to_primitive())" 2>/dev/null 1>${json_file_path}
+    if [ $? -eq 0 ]
+    then
+	echo "  json file for ${module} has been created"
+    else
+	echo "  json file for ${module} cannot be genereted"
+	rm $json_file_path
+    fi
+	
     
 
     echo "Generating svg file for module "${lifecycle}.dot
@@ -55,6 +67,7 @@ do
 
     else
 	echo "  dot file for ${module} cannot be genereted"
+	rm $dot_file_path
     fi
 done
 
