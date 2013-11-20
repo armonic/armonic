@@ -31,7 +31,7 @@ class Variable(object):
         return self._uri
 
     def _set_uri(self,parent_uri):
-        self._uri = parent_uri.from_uri(variable = self.name)
+        self._uri = parent_uri.from_uri(variable = self.name, register = True)
 
     @property
     def full_name(self):

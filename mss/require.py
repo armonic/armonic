@@ -181,7 +181,7 @@ class Require(object):
         return self._uri
 
     def _set_uri(self,parent_uri):
-        self._uri = parent_uri.from_uri(require = self.name)
+        self._uri = parent_uri.from_uri(require = self.name, register = True)
         for r in self.variables:
             r._set_uri(self.uri)
 

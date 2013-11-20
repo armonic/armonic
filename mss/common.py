@@ -170,7 +170,7 @@ class Uri():
 
 
     """
-    __uri = []
+    _uri = []
 
     def __init__(self, lifecycle=None, state=None, method=None, require=None, variable=None, host=None, register = False):
         self.lifecycle=lifecycle
@@ -179,10 +179,11 @@ class Uri():
         self.require=require
         self.variable=variable
         self.host=host
+
         if register:
-            Uri.__register(self)
+            Uri._register(self)
         
-    def from_uri(uri, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
+    def from_uri(uri, lifecycle=None, state=None, method=None, require=None, variable=None, host=None, register = False):
         """From an existing URI, returns a new created uri with some
         new attributes filled.  If a filled attribute a existing uri
         is specified in arguments, exception AttributeError is raised.
@@ -204,15 +205,17 @@ class Uri():
                    method = method or uri.method,
                    require = require or uri.require,
                    variable = variable or uri.variable,
-                   host = host or uri.host)
+                   host = host or uri.host,
+                   register = register)
 
     @classmethod
-    def __register(cls, uri):
-        cls.__uri.append(uri)
+    def _register(cls, uri):
+        print uri
+        cls._uri.append(uri)
 
     @classmethod
     def get_all(cls):
-        return cls.__uri
+        return cls._uri
 
     def __repr__(self):
         return ((self.host if self.host != None else "") +
@@ -224,4 +227,3 @@ class Uri():
 
     def to_primitive(self):
         return self.__repr__()
-            

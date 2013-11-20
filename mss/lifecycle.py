@@ -388,6 +388,8 @@ class Lifecycle(object):
             s._set_full_name(instance.name,separator=".")
             s._set_uri(instance.uri)
 
+#        self._set_uri()
+
         return instance
 
     def init(self, state, requires={}):
@@ -409,7 +411,7 @@ class Lifecycle(object):
     
     
     def _set_uri(self):
-        self._uri = Uri(lifecycle = self.name)
+        self._uri = Uri(lifecycle = self.name, register = True)
 
     @classmethod
     def _state_list(cls):
@@ -970,3 +972,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :rtype: dot file string"""
         return self._get_by_name(lf_name).to_primitive()
+
+    @expose
+    def uri(self, uri = None):
+        return Uri.get_all()
