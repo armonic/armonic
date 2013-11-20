@@ -78,8 +78,7 @@ class Requires(IterContainer):
     #self._full_name if self._full_name != None else self.name
 
     def _set_uri(self,parent_uri):
-        self._uri = copy.copy(parent_uri)
-        self._uri.method = self.name
+        self._uri = parent_uri.from_uri(method = self.name)
         for r in self:
             r._set_uri(self.uri)
 
@@ -182,8 +181,7 @@ class Require(object):
         return self._uri
 
     def _set_uri(self,parent_uri):
-        self._uri = copy.copy(parent_uri)
-        self._uri.require = self.name
+        self._uri = parent_uri.from_uri(require = self.name)
         for r in self.variables:
             r._set_uri(self.uri)
 
@@ -340,8 +338,7 @@ class RequireLocal(Require):
 
     def _set_uri(self,parent_uri):
         """Build a full name by joining prefix, separator and name."""
-        self._uri = copy.copy(parent_uri)
-        self._uri.require = self.name
+        self._uri = parent_uri.from_uri(require = self.name)
         for i in self.variables:
             for v in i:
                 v._set_uri(self._uri)

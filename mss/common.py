@@ -173,6 +173,31 @@ class Uri():
         self.variable=variable
         self.host=host
 
+    def from_uri(uri, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
+        """From an existing URI, returns a new created uri with some
+        new attributes filled.  If a filled attribute a existing uri
+        is specified in arguments, exception AttributeError is raised.
+        """
+        if lifecycle != None and uri.lifecycle != None:
+            raise AttributeError("Uri attribute 'lifecycle' is already set.")
+        if state != None and uri.state != None:
+            raise AttributeError("Uri attribute 'state' is already set.")
+        if method != None and uri.method != None:
+            raise AttributeError("Uri attribute 'method' is already set.")
+        if require != None and uri.require != None:
+            raise AttributeError("Uri attribute 'require' is already set.")
+        if variable != None and uri.variable != None:
+            raise AttributeError("Uri attribute 'variable' is already set.")
+        if host != None and uri.host != None:
+            raise AttributeError("Uri attribute 'host' is already set.")
+        return Uri(lifecycle = lifecycle or uri.lifecycle,
+                   state = state or uri.state,
+                   method = method or uri.method,
+                   require = require or uri.require,
+                   variable = variable or uri.variable,
+                   host = host or uri.host)
+
+
     def __repr__(self):
         return ((self.host if self.host != None else "") +
                 ("/" + self.lifecycle if self.lifecycle != None else "") + 
