@@ -74,6 +74,10 @@ def cmd_status(args):
 def cmd_module(args):
     print client.call('lf_list')
 
+def cmd_uri(args):
+    pprint.pprint(client.call('uri', args.uri))
+
+
 def cmd_module_show(args):
     print client.call('lf_info',args.module)
 
@@ -203,6 +207,10 @@ parser_module.set_defaults(func=cmd_module)
 parser_module_show = subparsers.add_parser('module-show', help='Show a module.')
 parser_module_show.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_module_show.set_defaults(func=cmd_module_show)
+
+parser_uri = subparsers.add_parser('uri', help='Get uri')
+parser_uri.add_argument('uri' , type=str, help='an uri')
+parser_uri.set_defaults(func=cmd_uri)
 
 
 parser_state = subparsers.add_parser('state', help='List available states of a module')
