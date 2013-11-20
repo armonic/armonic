@@ -165,13 +165,26 @@ class IterContainer(list):
 
 
 class Uri():
-    def __init__(self, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
+    """
+    :param register: If True, this URI added to MSS3 URI. This is used by MSS3 components to globally register them.
+
+
+    """
+    __uri = []
+
+    def __init__(self, lifecycle=None, state=None, method=None, require=None, variable=None, host=None, register = False):
         self.lifecycle=lifecycle
         self.state=state
         self.method=method
         self.require=require
         self.variable=variable
         self.host=host
+        if register:
+            Uri.__register(self)
+        
+    @classmethod
+    def __register(cls, uri):
+        cls.__uri.append(uri)
 
     def from_uri(uri, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
         """From an existing URI, returns a new created uri with some
@@ -197,6 +210,9 @@ class Uri():
                    variable = variable or uri.variable,
                    host = host or uri.host)
 
+    @classmethod
+    def get_all(cls):
+        return cls.__uri
 
     def __repr__(self):
         return ((self.host if self.host != None else "") +
