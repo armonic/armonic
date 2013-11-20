@@ -182,10 +182,6 @@ class Uri():
         if register:
             Uri.__register(self)
         
-    @classmethod
-    def __register(cls, uri):
-        cls.__uri.append(uri)
-
     def from_uri(uri, lifecycle=None, state=None, method=None, require=None, variable=None, host=None):
         """From an existing URI, returns a new created uri with some
         new attributes filled.  If a filled attribute a existing uri
@@ -209,6 +205,10 @@ class Uri():
                    require = require or uri.require,
                    variable = variable or uri.variable,
                    host = host or uri.host)
+
+    @classmethod
+    def __register(cls, uri):
+        cls.__uri.append(uri)
 
     @classmethod
     def get_all(cls):
