@@ -64,6 +64,16 @@ class Active(State):
         return "Call Httpd.getPortByDocumentRoot('%s')"%self.httpdDocumentRoot
 
 
+class ActiveWithNfs(State):
+    """Get wp-content from a NFS share."""
+    @RequireLocal("Nfs_client", "get_dir", provide_args = [VString("path", default = "/var/www/wordpress/wp-content")])
+    def entry(self):
+        pass
+    
+    @provide()
+    def get_site():
+        pass
+
 class Installed(mss.state.InstallPackagesUrpm):
     packages=["wordpress"]
 
@@ -79,6 +89,7 @@ class Wordpress(Lifecycle):
         Transition(InstalledOnDebian()    ,Template()),
         Transition(Template()    ,Configured()),
         Transition(Configured()      ,Active()),
+        Transition(Active()      ,ActiveWithNfs()),
         ]
 
     def __init__(self):
