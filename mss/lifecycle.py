@@ -744,6 +744,7 @@ class LifecycleManager(object):
         self.lf = {}
         for lf in Lifecycle.__subclasses__():
             self.lf.update({lf.__name__: lf})
+            self.load(lf.__name__)
 
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager` methods.
