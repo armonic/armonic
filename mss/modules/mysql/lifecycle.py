@@ -192,7 +192,8 @@ class Active(mss.lifecycle.MetaState):
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;"%database)
         rows = cur.fetchall()
-        return [d[0] for d in rows]
+        #return [d[0] for d in rows]
+        return {}
 
 
     @RequireUser(name='auth',
