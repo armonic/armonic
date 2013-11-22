@@ -63,7 +63,7 @@ def state_to_table(state):
     x = PrettyTable(["Property","Value"])
     x.align = "l"
     x.add_row(["Name",state['name']])
-    x.add_row(["Full name",state['full_name']])
+    x.add_row(["Uri",state['uri']])
     x.add_row(["Supported OS","\n".join(map(str,state['supported_os_type']))])
     x.add_row(["Provides","\n".join([p['name'] for p in state['provides']])])
     x.add_row(["Entry Requires","\n".join([p['name'] for p in state['requires_entry']['require_list']])])
@@ -87,18 +87,18 @@ def cmd_state(args):
         x.align["State name"] = "l"
         x.align["Documentation"] = "l"
         x.padding_width = 1 # One space between column edges and contents (default)
-        ret=client.call('state_list', args.module,doc=True,reachable=args.reachable)
+        ret=client.call('state_list', args.module,doc=True,reachable=args.reachable,xpath=args.xpath)
         for r in ret:
             x.add_row([r['name'],r['os-type'],r['doc']])
         print x
     else:
-        for s in client.call('state_list',args.module,reachable=args.reachable):
+        for s in client.call('state_list',args.module,reachable=args.reachable, xpath=args.xpath):
             print s
 
 def cmd_state_current(args):
     print client.call('state_current', args.module)
 def cmd_state_show(args):
-    state = client.call('state_show', args.module, args.state)
+    state = client.call('state_show', args.module, args.state, args.xpath)
     state_to_table(state)
 
 def cmd_state_goto(args):
@@ -130,11 +130,11 @@ def cmd_provide(args):
 
 def cmd_provide_show(args):
     if args.path:
-        pprint.pprint(client.call('provide_call_path', args.module, args.provide))
+        pprint.pprint(client.call('provide_call_path', args.module, args.provide, args.xpath))
     else:
-        ret=client.call('provide_call_args', args.module, args.provide)
+        ret=client.call('provide_call_args', args.module, args.provide, args.xpath)
         require_to_table(ret)
-        ret=client.call('provide_call_requires', args.module, args.provide)
+        ret=client.call('provide_call_requires', args.module, args.provide, args.xpath)
         require_to_table(ret)
 
 def cmd_provide_call(args):
@@ -216,7 +216,8 @@ parser_uri.set_defaults(func=cmd_uri)
 
 
 parser_state = subparsers.add_parser('state', help='List available states of a module')
-parser_state.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
+parser_state.add_argument('-m',"--module" , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
+parser_state.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_state.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_state.set_defaults(func=cmd_state)
@@ -226,8 +227,10 @@ parser_state_current.add_argument('module' , type=str, help='a module').complete
 parser_state_current.set_defaults(func=cmd_state_current)
 
 parser_state_show = subparsers.add_parser('state-show', help='Show a state of a module')
-parser_state_show.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_state_show.add_argument('state' , type=str, help='a state').completer = StateCompleter
+parser_state_show.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
+parser_state_show.add_argument('-s', '--state' , type=str, nargs='?', default=None, help='a state').completer = StateCompleter
+parser_state_show.add_argument('-x', '--xpath' , type=str, nargs='?', default=None, help='a xpath')
+
 parser_state_show.set_defaults(func=cmd_state_show)
 
 parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module')
@@ -240,14 +243,16 @@ parser_state_goto.set_defaults(func=cmd_state_goto)
 
 
 parser_provide = subparsers.add_parser('provide', help='List all provide of a module')
-parser_provide.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_provide.add_argument('state' , type=str, nargs='?', default=None, help='a state').completer = StateCompleter
+parser_provide.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
+parser_provide.add_argument('-s', '--state' , type=str, nargs='?', default=None, help='a state').completer= StateCompleter
+parser_provide.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_show = subparsers.add_parser('provide-show', help='Show arguments of a provide.')
-parser_provide_show.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_provide_show.add_argument('provide' , type=str, help='a provide').completer = ProvideCompleter
-parser_provide_show.add_argument('--path','-p',action='store_true',help="print path to call this provide")
+parser_provide_show.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
+parser_provide_show.add_argument('-p', '--provide' , type=str, nargs='?', default=None, help='a provide').completer = ProvideCompleter
+parser_provide_show.add_argument('--path','-P',action='store_true',help="print path to call this provide")
+parser_provide_show.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
 parser_provide_show.set_defaults(func=cmd_provide_show)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')

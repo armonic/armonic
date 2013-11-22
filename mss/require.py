@@ -81,7 +81,7 @@ class Requires(IterContainer, XmlRegister):
         return self
 
     def _xml_ressource_name(self):
-        return "method"
+        return "provide"
 
     @property
     def uri(self):
