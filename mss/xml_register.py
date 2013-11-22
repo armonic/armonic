@@ -1,6 +1,15 @@
 from lxml.etree import Element, SubElement, Comment, tostring, ElementTree
 from platform import uname
 
+RESSOURCE_ATTR="ressource"
+
+class XpathNotMatch(Exception):
+    pass
+class XpathMultipleMatch(Exception):
+    pass
+class XpathHaveNotRessource(Exception):
+    pass
+
 class XmlRegister(object):
     _xml_elt = None
     _xml_root = None
@@ -23,7 +32,7 @@ class XmlRegister(object):
             XmlRegister._xml_root = Element(uname()[1])
             XmlRegister._xml_root_tree = ElementTree(XmlRegister._xml_root)
 
-        attributes = {"ressource" : self._xml_ressource_name()}
+        attributes = {RESSOURCE_ATTR : self._xml_ressource_name()}
         attributes.update(self._xml_attributes())
         if parent == None:
             self._xml_elt = SubElement(XmlRegister._xml_root, 
@@ -48,3 +57,31 @@ class XmlRegister(object):
     def find_all_elts(cls, xpath):
         return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.findall(xpath)]
 
+    @classmethod
+    def _find_one(cls, xpath):
+        """Return the ressource uri. Raise exception if multiple match
+        or not match."""
+        ressource = cls._xml_root_tree.findall(xpath)
+        if len(ressource) == 0:
+            raise XpathNotMatch("%s matches nothing!" % xpath)
+        elif len(ressource) > 1:
+            raise XpathMultipleMatch("%s matches several ressource!" % xpath)
+        return ressource[0]
+
+    @classmethod
+    def is_ressource(cls, xpath, ressource_name):
+        """Return True if xpath element is a ressource_name."""
+        return cls._find_one(xpath).get(RESSOURCE_ATTR) == ressource_name
+
+    @classmethod
+    def get_ressource(cls, xpath, ressource_name):
+        """Return the name of ressource_name in xpath if exist."""
+        ressource = cls._find_one(xpath)
+        if ressource.get(RESSOURCE_ATTR) == ressource_name:
+            return ressource.tag
+        for e in ressource.iterancestors():
+            if e.get(RESSOURCE_ATTR) == ressource_name:
+                return e.tag
+        raise XpathHaveNotRessource("%s have not ressource %s!" % (xpath, ressource_name))
+
+    
