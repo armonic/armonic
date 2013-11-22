@@ -3,9 +3,11 @@ import copy
 import inspect
 import re
 
+from mss.xml_register import XmlRegister
+
 class VariableNotSet(Exception):pass
 
-class Variable(object):
+class Variable(XmlRegister):
     """
     The type of a variable is validate (with _validate_type method)
     when the value is set. The value of a variable can be validate by
@@ -25,6 +27,11 @@ class Variable(object):
             self.value = default
         self._full_name = None
         self._uri = None
+
+    def _xml_tag(self):
+        return self.name
+    def _xml_ressource_name(self):
+        return "variable"
 
     @property
     def uri(self):

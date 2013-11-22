@@ -24,6 +24,8 @@ from mss.common import IterContainer, DoesNotExist, Uri
 from mss.variable import VariableNotSet , VString
 import copy
 
+from mss.xml_register import XmlRegister
+
 logger = logging.getLogger(__name__)
 
 class RequireNotFilled(Exception):
@@ -50,7 +52,7 @@ class MissingRequire(Exception):
         return "Missing require %s" % self.variable
 
 
-class Requires(IterContainer):
+class Requires(IterContainer, XmlRegister):
     """Basically, this describes a list of :py:class:`Require`."""
     def __init__(self, name, require_list=[], flags=None):
         self.name = name
@@ -71,6 +73,15 @@ class Requires(IterContainer):
         for r in self:
             acc.update({r.name:r.get_default_values()})
         return acc
+
+    def _xml_tag(self):
+        return self.name
+
+    def _xml_children(self):
+        return self
+
+    def _xml_ressource_name(self):
+        return "method"
 
     @property
     def uri(self):
@@ -154,7 +165,7 @@ class Requires(IterContainer):
 
 
 
-class Require(object):
+class Require(XmlRegister):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and
     are used to specify, verify and store values needed to entry in
@@ -175,6 +186,16 @@ class Require(object):
         self.variables = IterContainer(*variables)
         self._full_name = None
         self._uri = None
+
+    def _xml_tag(self):
+        return self.name
+
+    def _xml_children(self):
+        return [v for v in self.variables]
+
+    def _xml_ressource_name(self):
+        return "require"
+
 
     @property
     def uri(self):
@@ -335,6 +356,12 @@ class RequireLocal(Require):
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
         self.variables = [IterContainer(*variables)]
+
+    def _xml_children(self):
+        acc = []
+        for vs in self.variables:
+            acc+=vs
+        return acc
 
     def _set_uri(self,parent_uri):
         """Build a full name by joining prefix, separator and name."""

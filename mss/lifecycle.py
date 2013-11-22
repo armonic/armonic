@@ -112,6 +112,8 @@ from mss.variable import VString
 import mss.utils
 import copy
 
+from xml_register import XmlRegister
+
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
 
@@ -156,7 +158,7 @@ class StateNotExist(Exception):
     pass
 
 
-class State(object):
+class State(XmlRegister):
     """A state describe a step during service :class:`Lifecycle`.
 
     It is possible to specify some requires. A require is a :class:`Require`
@@ -197,6 +199,16 @@ class State(object):
                     r._set_full_name(cls.__name__)
 
         return cls._instance
+
+
+    def _xml_tag(self):
+        return self.name
+
+    def _xml_children(self):
+        return self.provides
+
+    def _xml_ressource_name(self):
+        return "state"
 
 
     @property
@@ -328,7 +340,7 @@ class MetaState(State):
     implementations = []
 
 
-class Lifecycle(object):
+class Lifecycle(XmlRegister):
     """The lifecycle of a service is represented by transitions,
     specified by class attribute :py:meth:`Lyfecycle.transition`,
     between :class:`State` classes. Moreover, this class remember
@@ -389,6 +401,7 @@ class Lifecycle(object):
             s._set_uri(instance.uri)
 
 #        self._set_uri()
+        instance._xml_register()
 
         return instance
 
@@ -398,6 +411,16 @@ class Lifecycle(object):
         if not self._initialized:
             self._push_state(state, requires)
             self._initialized = True
+
+            
+    def _xml_tag(self):
+        return self.name
+    
+    def _xml_children(self):
+        return self.state_list()
+
+    def _xml_ressource_name(self):
+        return "lifecycle"
 
     @property
     def name(self):
