@@ -53,6 +53,14 @@ class XmlRegister(object):
     def get_uri(self):
         return XmlRegister._xml_root_tree.getpath(self._xml_elt)
 
+    def __getstate__(self):
+        dct = self.__dict__.copy()
+        try:
+            dct.pop("_xml_elt")
+        except KeyError:
+            pass
+        return dct
+
     @classmethod
     def find_all_elts(cls, xpath):
         return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.findall(xpath)]
@@ -84,4 +92,4 @@ class XmlRegister(object):
                 return e.tag
         raise XpathHaveNotRessource("%s have not ressource %s!" % (xpath, ressource_name))
 
-    
+
