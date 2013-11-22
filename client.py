@@ -75,7 +75,7 @@ def cmd_module(args):
     print client.call('lf_list')
 
 def cmd_uri(args):
-    pprint.pprint(client.call('uri', args.uri))
+    pprint.pprint(client.call('uri', args.xpath))
 
 
 def cmd_module_show(args):
@@ -149,6 +149,8 @@ def cmd_plot(args):
             pprint.pprint(client.call('to_primitive', args.module))
     elif args.T == 'automaton':
         raise NotImplementedError
+    elif args.T == 'xml':
+        print(client.call('to_xml'))
 
 
 def ModuleCompleter(prefix, parsed_args, **kwargs):
@@ -209,7 +211,7 @@ parser_module_show.add_argument('module' , type=str, help='a module').completer 
 parser_module_show.set_defaults(func=cmd_module_show)
 
 parser_uri = subparsers.add_parser('uri', help='Get uri')
-parser_uri.add_argument('uri' , type=str, help='an uri')
+parser_uri.add_argument('xpath' , type=str, help='an xpath')
 parser_uri.set_defaults(func=cmd_uri)
 
 
@@ -256,8 +258,8 @@ parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action=
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
-parser_plot.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton'],help="print path to call this provide")
+parser_plot.add_argument('module' , type=str, nargs='?', help='a module').completer = ModuleCompleter
+parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe mss stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
 parser_plot.set_defaults(func=cmd_plot)
 
 

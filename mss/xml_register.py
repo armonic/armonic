@@ -37,9 +37,8 @@ class XmlRegister(object):
         for c in self._xml_children():
             c._xml_register(self)
         
-
     @classmethod
-    def _xml_tostring(cls):
+    def to_string(cls):
         return tostring(cls._xml_root)
 
     def get_uri(self):

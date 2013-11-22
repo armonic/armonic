@@ -997,5 +997,15 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).to_primitive()
 
     @expose
-    def uri(self, uri = None):
-        return Uri.get_all()
+    def uri(self, xpath = "//"):
+        """Return the list of uri that match this xpath.
+
+        :param xpath: an xpath string
+        :type xpath: str
+        :rtype: [uri]"""
+        return mss.xml_register.XmlRegister.find_all_elts(xpath)
+
+    @expose
+    def to_xml(self):
+        """Return the xml representation of agent."""
+        return mss.xml_register.XmlRegister.to_string()
