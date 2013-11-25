@@ -115,10 +115,20 @@ class DoesNotExist(Exception):
 
 
 class ValidationError(Exception):
-    def __init__(self,variable_name,msg):
+    def __init__(self, msg, require_name=None, variable_name=None):
         Exception.__init__(self,msg)
         self.variable_name = variable_name
+        self.require_name = require_name
 
+    def __setstate__(self,dict):
+        self.variable_name = dict['variable_name']
+        self.require_name = dict['require_name']
+
+    def __repr__(self):
+        return "Variable '%s' of require '%s' is required!" % (self.variable_name, self.require_name)
+
+    def __str__(self):
+        return self.__repr__()
 
 class ProvideError(Exception):
     def __init__(self, lf_name, state_name, provide_name, msg):
