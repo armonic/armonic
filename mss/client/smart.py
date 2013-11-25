@@ -48,7 +48,6 @@ from mss.lifecycle import LifecycleManager
 from mss.common import load_lifecycles, ValidationError
 from mss.require import RequireNotFilled
 from mss.client_socket import ClientSocket
-import readline
 
 from itertools import repeat
 load_lifecycles("modules")
@@ -114,9 +113,14 @@ class Provide(ShowAble):
     _require_classes = {}
 
 
-    def __init__(self, lf_name, provide_name, host=None, caller_provide=None, suggested_args=[], depth=0):
-        self.lf_name=lf_name
-        self.provide_name=provide_name
+    def __init__(self, xpath, host=None, caller_provide=None, suggested_args=[], depth=0):
+        self.xpath = xpath
+        # This describes the xpath that will be really called.
+        # It can be set by the return value of handle_provide_xpath()
+        self.used_xpath = xpath
+
+        self.lf_name=None
+        self.provide_name = None
         self.requires=None
         self.suggested_args=suggested_args
         self.host = host
@@ -127,6 +131,15 @@ class Provide(ShowAble):
         # returned value by this provide.
         self.provide_ret = {}
 
+    def handle_provide_xpath(self,xpath, matches):
+        """This method is called when the xpath doesn't match a unique
+        provide. Redefine it to choose the good one.
+        
+        :param xpath: submitted xpath
+        :param matches: list of xpath that match the submitted xpath
+        :rtype: a xpath (str)
+        """ 
+        raise NotImplementedError("Method handle_provide_xpath must be implemented!")
 
     def handle_call(self):
         """Redefine it to validate that the inferred provide should be called.
@@ -143,13 +156,20 @@ class Provide(ShowAble):
         raise NotImplementedError
 
     def _get_requires(self):
-        logger.debug("%sRequires needed to call provide %s.%s:"  % (
+        logger.debug("%sRequires needed to call provide %s:"  % (
             self.sep(0),
-            self.lf_name,
-            self.provide_name))
+            self.used_xpath))
         self.lf_manager = ClientSocket(host=self.host)
-        self.provide_goto_requires = self.lf_manager.call("provide_call_requires",self.lf_name, self.provide_name)
-        self.provide_requires = self.lf_manager.call("provide_call_args",self.lf_name, self.provide_name)
+        self.used_xpath = self.xpath
+        while True:
+            try:
+                self.provide_goto_requires = self.lf_manager.call("provide_call_requires",xpath = self.used_xpath)
+                self.provide_requires = self.lf_manager.call("provide_call_args",xpath = self.used_xpath)
+            except mss.xml_register.XpathMultipleMatch:
+                matches = self.lf_manager.call("uri", xpath = self.used_xpath)
+                self.used_xpath = self.handle_provide_xpath(self.used_xpath, matches)
+                continue
+            break
         self.requires = self.provide_goto_requires + self.provide_requires
 
     def call(self):
@@ -159,16 +179,15 @@ class Provide(ShowAble):
             if self.confirm_call():
                 provide_requires_primitive = self._generate_requires_primitive(self.provide_goto_requires)
                 provide_args_primitive = self._generate_requires_primitive(self.provide_requires)
-                logger.debug("mss.call(%s, %s, %s, %s)" % (
-                        self.lf_name,
-                        self.provide_name,
+                logger.debug("mss.call(%s, %s, %s)" % (
+                        self.used_xpath,
                         provide_requires_primitive,
                         provide_args_primitive))
                 self.provide_ret = self.lf_manager.call("provide_call",
-                                            self.lf_name,
-                                            self.provide_name,
-                                            provide_requires_primitive,
-                                            provide_args_primitive)
+                                                        xpath = self.used_xpath,
+                                                        requires = provide_requires_primitive,
+                                                        provide_args = provide_args_primitive)
+    
                 # Because provide return type is currently not strict.
                 # This must be FIXED because useless.
                 if self.provide_ret == None:
@@ -326,11 +345,10 @@ class RequireWithProvide(Require):
         NotImplementedError
 
     def _provide_call(self):
-        self.provide = self.build_provide_class()(lf_name = self.lf_name,
-                               provide_name = self.provide_name,
-                               caller_provide = self.provide_caller,
-                               suggested_args = self.provide_args,
-                               depth = self.depth+1)
+        self.provide = self.build_provide_class()(xpath = self.xpath, 
+                                                  caller_provide = self.provide_caller,
+                                                  suggested_args = self.provide_args,
+                                                  depth = self.depth+1)
         # Maybe, we don't want to call the proposed require. Moreover,
         # we have to choose the provide host.
         self.provide.call()
@@ -361,28 +379,6 @@ class RequireWithProvide(Require):
 ################################################################################
 #                            HELPERS                                           #
 ################################################################################
-
-def user_input_confirm(msg, prefix=''):
-    """Ask the user if he confirm the msg question.
-
-    :rtype: True if user confirm, False if not"""
-    answer = raw_input("%s%s\n%s[Y]/n: " % (prefix, msg ,prefix))
-    if answer == 'n':
-        return False
-    return True
-
-def user_input_variable(variable_name, message, prefix="", prefill=""):
-    """
-    :param variable_name: The name of the variable that user must set
-    :param message: A help message
-    :rtype: {variable_name:value}
-    """
-    prompt = "%s%s\n%s%s = " % (prefix, message, prefix, variable_name)
-    readline.set_startup_hook(lambda: readline.insert_text(prefill))
-    try:
-        return {variable_name:raw_input(prompt)}
-    finally:
-        readline.set_startup_hook()
 
 def update_empty(origin,*dcts):
     """Take a origin dict with some values equal to None. Fill these
