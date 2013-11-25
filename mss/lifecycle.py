@@ -834,7 +834,7 @@ class LifecycleManager(object):
             raise LifecycleNotExist("%s is not loaded" % lf_name)
 
     @expose
-    def state_list(self, lf_name, doc=False, reachable=False):
+    def state_list(self, lf_name=None, doc=False, reachable=False, xpath=None):
         """Return all available states of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
@@ -843,6 +843,9 @@ class LifecycleManager(object):
         :type lf_name: str
         :type verbose: bool
         :rtype: list of strings (states names)"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+
         states = self._get_by_name(lf_name).state_list(reachable=reachable)
         if doc:
             return [{'name': s.name, 'doc': s.__doc__, 'os-type': s.supported_os_type} for s in states]
@@ -897,15 +900,19 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
-    def state_show(self, lf_name, state_name):
+    def state_show(self, lf_name=None, state_name=None, xpath=None):
         """From the current state go to state.
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :param state_name: The name of the state to go to
         :type state_name: str"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+            state_name = XmlRegister.get_ressource(xpath, "state")
         logger.debug("state-show %s %s" % (
                 lf_name, state_name))
+            
         return self._get_by_name(lf_name)._get_state_class(state_name).to_primitive()
 
 
@@ -932,26 +939,34 @@ class LifecycleManager(object):
         return acc
 
     @expose
-    def provide_call_requires(self, lf_name, provide_name):
+    def provide_call_requires(self, lf_name=None, provide_name=None, xpath=None):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
 
         :param lf_name: The name of the lifecycle object
         :param provide_name: The name of the provide"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+#            state_name = XmlRegister.get_ressource(xpath, "state")
+            provide_name = XmlRegister.get_ressource(xpath, "provide")
         return self._get_by_name(lf_name).provide_call_requires(provide_name)
 
     @expose
-    def provide_call_args(self, lf_name, provide_name):
+    def provide_call_args(self, lf_name=None, provide_name=None, xpath=None):
         """From a provide_name, returns its needed arguments.
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+#            state_name = XmlRegister.get_ressource(xpath, "state")
+            provide_name = XmlRegister.get_ressource(xpath, "provide")
         return self._get_by_name(lf_name).provide_call_args(provide_name)
 
     @expose
-    def provide_call_path(self, lf_name, provide_name):
+    def provide_call_path(self, lf_name=None, provide_name=None, xpath=None):
         """From a provide_name, return the path to the state of the lifecycle that
         provides the "provide".
 
@@ -959,10 +974,14 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+#            state_name = XmlRegister.get_ressource(xpath, "state")
+            provide_name = XmlRegister.get_ressource(xpath, "provide")
         return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(provide_name)]
 
     @expose
-    def provide_call(self, lf_name, provide_name, requires={}, provide_args={}):
+    def provide_call(self, lf_name=None, provide_name=None, xpath=None, requires={}, provide_args={}):
         """Call a provide of a lifecycle and go to provider state if needed
 
         :param lf_name: The name of the lifecycle object
@@ -974,6 +993,10 @@ class LifecycleManager(object):
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
+        if xpath != None:
+            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+#            state_name = XmlRegister.get_ressource(xpath, "state")
+            provide_name = XmlRegister.get_ressource(xpath, "provide")
         logger.debug("provide-call %s %s %s %s" % (
                 lf_name, provide_name, requires, provide_args))
         return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
