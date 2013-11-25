@@ -29,7 +29,7 @@ class XmlRegister(object):
 
     def _xml_register(self, parent=None):
         if XmlRegister._xml_root == None:
-            XmlRegister._xml_root = Element(uname()[1])
+            XmlRegister._xml_root = Element(uname()[1], attrib={"ressource":"location"})
             XmlRegister._xml_root_tree = ElementTree(XmlRegister._xml_root)
 
         attributes = {RESSOURCE_ATTR : self._xml_ressource_name()}
@@ -63,13 +63,13 @@ class XmlRegister(object):
 
     @classmethod
     def find_all_elts(cls, xpath):
-        return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.findall(xpath)]
+        return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.xpath(xpath)]
 
     @classmethod
     def _find_one(cls, xpath):
         """Return the ressource uri. Raise exception if multiple match
         or not match."""
-        ressource = cls._xml_root_tree.findall(xpath)
+        ressource = cls._xml_root_tree.xpath(xpath)
         if len(ressource) == 0:
             raise XpathNotMatch("%s matches nothing!" % xpath)
         elif len(ressource) > 1:
