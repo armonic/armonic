@@ -342,11 +342,12 @@ class RequireLocal(Require):
     :param nargs: occurence number of variables.
     :type nargs: ["1","?","*"].
     """
-    def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
+    def __init__(self, xpath, provide_args=[], provide_ret=[], name=None, nargs="1"):
         variables=provide_args + provide_ret
         Require.__init__(self, variables, name)
-        self.lf_name = lf_name
-        self.provide_name = provide_name
+        self.xpath = xpath
+        self.lf_name = None
+        self.provide_name = None
         self.provide_args = provide_args
         self.provide_ret = provide_ret
         self.name = name if name else "%s.%s" % (self.lf_name, self.provide_name)
@@ -462,8 +463,8 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, lf_name, provide_name, provide_args=[], provide_ret=[], name=None, nargs="1"):
-        RequireLocal.__init__(self, lf_name, provide_name, provide_args + [VString('host')], provide_ret, name, nargs)
+    def __init__(self, xpath, provide_args=[], provide_ret=[], name=None, nargs="1"):
+        RequireLocal.__init__(self, xpath, provide_args + [VString('host')], provide_ret, name, nargs)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):

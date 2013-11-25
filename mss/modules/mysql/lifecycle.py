@@ -251,9 +251,9 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
     @RequireUser(name='auth',
                      provided_by=Uri("Mysql","SetRootPassword","entry","auth","password"),
                      variables=[Password('root_password')])
-    @RequireExternal(lf_name='Mysql',provide_name='get_dump',
+    @RequireExternal(xpath='//Mysql//get_dump',
                      provide_ret=[VUrl('fileUrl'),VString('logFile'), VInt('logPosition')])
-    @RequireExternal(lf_name='Mysql',provide_name='add_slave_auth',
+    @RequireExternal(xpath='//Mysql//add_slave_auth',
                      provide_args=[VString('user',default='replication'),
                                    VString('password',default='repl_pwd')])
     def entry(self):
@@ -348,7 +348,7 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
     @RequireUser(name = 'auth',
                  provided_by = Uri("Mysql","SetRootPassword","entry","auth","password"),
                  variables = [Password('root_password')])
-    @RequireLocal("Sharing", "get_file_access",
+    @RequireLocal("//Sharing//get_file_access",
                   provide_ret=[VString("filePath"), VString("fileUrl")])
     def get_dump(self,requires):
         """Dump datas to file and return in a dict its filePath, the

@@ -14,7 +14,7 @@ class Installed(mss.state.InstallPackagesUrpm):
 class Active(State):
     services=["nfs-client"]
     
-    @RequireExternal("Nfs_server", "get_dir", provide_ret = [VString("remotetarget")])
+    @RequireExternal("//Nfs_server//get_dir", provide_ret = [VString("remotetarget")])
     @Require([VString("path")], name="mountpoint")
     def get_dir(self, requires):
         mountpoint = requires.get("mountpoint").variables.path.value

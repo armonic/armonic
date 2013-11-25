@@ -21,7 +21,7 @@ class Configured(State):
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     @Require([VString("root",default="/")], name='augeas')
-    @RequireExternal("Mysql", "addDatabase",
+    @RequireExternal("//Mysql//addDatabase",
                          provide_args=[VString("user",default="wordpress_user"),
                                        Password("password",default="wordpress_pwd"),
                                        VString("database",default="wordpress_db")])
@@ -42,10 +42,10 @@ class Configured(State):
 class Active(State):
     supported_os_type = [mss.utils.OsTypeMBS()]
 
-    @RequireLocal("Httpd", "get_documentRoot",
+    @RequireLocal("//Httpd//get_documentRoot",
                       provide_args=[VString("httpdDocumentRoot",
                                     default="/var/www/wordpress")])
-    @RequireLocal("Httpd", "start")
+    @RequireLocal("//Httpd//start")
     def entry(self):
         logger.info("%s.%-10s: activation with %s"%(self.lf_name,self.name,self.requires_entry))
         self.httpdDocumentRoot=self.requires_entry.get('Httpd.get_documentRoot').variables[0].httpdDocumentRoot.value
@@ -66,7 +66,7 @@ class Active(State):
 
 class ActiveWithNfs(State):
     """Get wp-content from a NFS share."""
-    @RequireLocal("Nfs_client", "get_dir", provide_args = [VString("path", default = "/var/www/wordpress/wp-content")])
+    @RequireLocal("//Nfs_client//get_dir", provide_args = [VString("path", default = "/var/www/wordpress/wp-content")])
     def entry(self):
         pass
     
