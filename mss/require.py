@@ -183,8 +183,8 @@ class Require(XmlRegister):
     :param name: name of the require (default: "local")
     """
 
-    def __init__(self, variables, name=None):
-        self.name = name if name else "this"
+    def __init__(self, name, variables):
+        self.name = name
         self.type = "simple"
         self._validated = False
         self.variables = IterContainer(*variables)
@@ -317,7 +317,7 @@ class RequireUser(Require):
     instance, mysql password is just know by user who must remember
     it."""
     def __init__(self, name, provided_by, variables):
-        Require.__init__(self,variables,name)
+        Require.__init__(self,name, variables)
         self.type = "user"
         self.provided_by = provided_by
     def __repr__(self):
@@ -342,15 +342,15 @@ class RequireLocal(Require):
     :param nargs: occurence number of variables.
     :type nargs: ["1","?","*"].
     """
-    def __init__(self, xpath, provide_args=[], provide_ret=[], name=None, nargs="1"):
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
         variables=provide_args + provide_ret
-        Require.__init__(self, variables, name)
+        Require.__init__(self, name, variables)
         self.xpath = xpath
         self.lf_name = None
         self.provide_name = None
         self.provide_args = provide_args
         self.provide_ret = provide_ret
-        self.name = name if name else "%s.%s" % (self.lf_name, self.provide_name)
+        self.name = name
         self.type = "local"
         if nargs not in ["1","?","*"]:
             raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
@@ -463,8 +463,8 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, xpath, provide_args=[], provide_ret=[], name=None, nargs="1"):
-        RequireLocal.__init__(self, xpath, provide_args + [VString('host')], provide_ret, name, nargs)
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
+        RequireLocal.__init__(self, name, xpath, provide_args + [VString('host')], provide_ret, nargs)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):
