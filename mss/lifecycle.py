@@ -583,7 +583,8 @@ class Lifecycle(XmlRegister):
 
     def state_goto_requires(self, state, go_back=True):
         """Return all requires needed to go from current state to state.
-
+        :param state: The state where we want to goto
+        :type state: a state name or a state class
         :rtype: [Require]
         """
         acc = []
@@ -603,7 +604,9 @@ class Lifecycle(XmlRegister):
         return [(s, s.get_provides()) for s in self.state_list() if s.get_provides() != []]
 
     def _get_state_from_provide(self, provide_name):
-        """From a provide_name, return a tuple of (state, provide_name).
+        """
+        DEPRECATED
+        From a provide_name, return a tuple of (state, provide_name).
         provide_name can be fully qualified, ie. state.provide_name.
 
         :param provide_name: the name of a provide (can be fully qualified or not)
@@ -627,30 +630,40 @@ class Lifecycle(XmlRegister):
             s.get_provide_by_name(p[1])
             return (s,p[1])
 
-    def provide_call_requires(self, provide_name):
+    def provide_call_requires(self, state_name):
         """From a provide_name, return the list of "requires" needed to
-        apply the state which provides provide_name."""
-        (s, p) = self._get_state_from_provide(provide_name)
-        if not self._is_state_in_stack(s):
-            return self.state_goto_requires(s)
+        apply the state which provides provide_name.
+
+        Note: this method should be useless. We should use
+        state_goto_requires instead!
+        """
+        state = self._get_state_class(state_name)
+        if not self._is_state_in_stack(state):
+            return self.state_goto_requires(state)
         else:
             return []
 
-    def provide_call_args(self, provide_name):
+    def provide_call_args(self, state_name, provide_name):
         """From a provide_name, returns its needed arguments."""
-        (s, p) = self._get_state_from_provide(provide_name)
-        return s.get_provide_args(p)
+        state = self._get_state_class(state_name)
+        # To be sure that the provide exists
+        state.get_provide_by_name(provide_name)
+        return state.get_provide_args(provide_name)
 
-    def provide_call_path(self, provide_name):
+    def provide_call_path(self, state_name):
         """From a provide_name, return the path to the state that
-        provides the "provide"."""
-        (s, p) = self._get_state_from_provide(provide_name)
-        if not self._is_state_in_stack(s):
-            return self.state_goto_path(s)
+        provides the "provide".
+
+        Note: this method should be useless. We should use
+        state_goto_requires instead!
+        """
+        state = self._get_state_class(state_name)
+        if not self._is_state_in_stack(state):
+            return self.state_goto_path(state)
         else:
             return []
 
-    def provide_call(self, provide_name, requires, provide_args):
+    def provide_call(self, state_name, provide_name, requires, provide_args):
         """Call a provide and go to provider state if needed.
 
         :param provide_name: The name (simple or fully qualified) of the provide
@@ -659,10 +672,12 @@ class Lifecycle(XmlRegister):
         :param provide_args: Args needed by this provide
 
         """
-        (s, p) = self._get_state_from_provide(provide_name)
-        if not self._is_state_in_stack(s):
-            self.state_goto(s, requires)
-        return self.provide_call_in_stack(s, p, provide_args)
+        state = self._get_state_class(state_name)
+        # To be sure that the provide exists
+        state.get_provide_by_name(provide_name)
+        if not self._is_state_in_stack(state):
+            self.state_goto(state, requires)
+        return self.provide_call_in_stack(state, provide_name, provide_args)
 
     def provide_call_in_stack(self, state, provide_name, provide_args):
         """Call a provide by name. State which provides must be in the stack.
@@ -947,9 +962,9 @@ class LifecycleManager(object):
         :param provide_name: The name of the provide"""
         if xpath != None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-#            state_name = XmlRegister.get_ressource(xpath, "state")
+            state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return self._get_by_name(lf_name).provide_call_requires(provide_name)
+        return self._get_by_name(lf_name).provide_call_requires(state_name)
 
     @expose
     def provide_call_args(self, lf_name=None, provide_name=None, xpath=None):
@@ -961,9 +976,9 @@ class LifecycleManager(object):
         :type provide_name: str"""
         if xpath != None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-#            state_name = XmlRegister.get_ressource(xpath, "state")
+            state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return self._get_by_name(lf_name).provide_call_args(provide_name)
+        return self._get_by_name(lf_name).provide_call_args(state_name, provide_name)
 
     @expose
     def provide_call_path(self, lf_name=None, provide_name=None, xpath=None):
@@ -976,9 +991,9 @@ class LifecycleManager(object):
         :type provide_name: str"""
         if xpath != None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-#            state_name = XmlRegister.get_ressource(xpath, "state")
+            state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(provide_name)]
+        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name, provide_name)]
 
     @expose
     def provide_call(self, lf_name=None, provide_name=None, xpath=None, requires={}, provide_args={}):
@@ -995,11 +1010,11 @@ class LifecycleManager(object):
         :type provide_args: dict"""
         if xpath != None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-#            state_name = XmlRegister.get_ressource(xpath, "state")
+            state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
         logger.debug("provide-call %s %s %s %s" % (
                 lf_name, provide_name, requires, provide_args))
-        return self._get_by_name(lf_name).provide_call(provide_name, requires, provide_args)
+        return self._get_by_name(lf_name).provide_call(state_name, provide_name, requires, provide_args)
 
     @expose
     def to_dot(self, lf_name):
