@@ -20,7 +20,7 @@ types to fill values of a require.
 
 import logging
 
-from mss.common import IterContainer, DoesNotExist, Uri
+from mss.common import IterContainer, DoesNotExist, Uri, ValidationError
 from mss.variable import VariableNotSet , VString
 import copy
 
@@ -81,7 +81,7 @@ class Requires(IterContainer, XmlRegister):
         return self
 
     def _xml_ressource_name(self):
-        return "method"
+        return "provide"
 
     @property
     def uri(self):
@@ -134,7 +134,11 @@ class Requires(IterContainer, XmlRegister):
         # Validate each require
         for require in self:
             logger.debug("Validating %s" % (require))
-            require.validate()
+            try:
+                require.validate()
+            except ValidationError as e:
+                e.require_name = require.name
+                raise e
 
 
     def has_variable(self, variable_name):
