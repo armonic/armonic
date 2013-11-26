@@ -1,4 +1,4 @@
-from lxml.etree import Element, SubElement, Comment, tostring, ElementTree
+from lxml.etree import Element, SubElement, Comment, tostring, ElementTree, XPathEvalError
 from platform import uname
 
 RESSOURCE_ATTR="ressource"
@@ -8,6 +8,8 @@ class XpathNotMatch(Exception):
 class XpathMultipleMatch(Exception):
     pass
 class XpathHaveNotRessource(Exception):
+    pass
+class XpathInvalidExpression(Exception):
     pass
 
 class XmlRegister(object):
@@ -63,13 +65,19 @@ class XmlRegister(object):
 
     @classmethod
     def find_all_elts(cls, xpath):
-        return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.xpath(xpath)]
+        try:
+            return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.xpath(xpath)]
+        except XPathEvalError:
+            raise XpathInvalidExpression("xpath '%s' is not valid!" % xpath)
 
     @classmethod
     def _find_one(cls, xpath):
         """Return the ressource uri. Raise exception if multiple match
         or not match."""
-        ressource = cls._xml_root_tree.xpath(xpath)
+        try:
+            ressource = cls._xml_root_tree.xpath(xpath)
+        except XPathEvalError:
+            raise XpathInvalidExpression("xpath '%s' is not valid!" % xpath)
         if len(ressource) == 0:
             raise XpathNotMatch("%s matches nothing!" % xpath)
         elif len(ressource) > 1:
