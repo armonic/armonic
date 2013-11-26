@@ -55,7 +55,7 @@ class Active(State):
         logger.info("you should call 'apache.leaveActiveState(%s)'"%self.httpdDocumentRoot)
 
     @provide()
-    def get_site(self, requires):
+    def get_website(self, requires):
         return
 
     @provide()
@@ -71,7 +71,7 @@ class ActiveWithNfs(State):
         pass
     
     @provide()
-    def get_site():
+    def get_website():
         pass
 
 class Installed(mss.state.InstallPackagesUrpm):
