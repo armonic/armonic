@@ -89,7 +89,7 @@ class RequireSmart(object):
         
         :rtype: A dict of variable name and values.
         """
-        raise NotImplementedError("%s.build_value must be implemented" % self.__class__.__name__)
+        raise NotImplementedError("%s.build_values must be implemented" % self.__class__.__name__)
 
     def on_require_not_filled_error(self,err_variable,values):
         """This method is called when a variable is not filled. Redefine it to adapt its behavior.
@@ -101,11 +101,11 @@ class RequireSmart(object):
 
         raise NotImplementedError
 
-    def on_validation_error(self,err_variable,values):
+    def on_validation_error(self,err_variable_name ,values):
         """This method is called when the validation of a variable is
         not satisfated. Redefine it to adapt its behavior.
         
-        :param err_variable: The variable name of not filled variable
+        :param err_variable_name: The variable name of not filled variable
         :param values: The dict of current values
         :rtype: A updated dict of 'values' variable name and values
         """
@@ -117,6 +117,9 @@ class RequireSmart(object):
         :param variable: the variable that we want to save
         :type variable: subclass of :py:meth:`mss.variable.Variable`
         """
+        logger.debug("%s.build_save_to(%s)" % (
+                self.__class__.__name__,
+                variable))
         pass
 
     def _build(self,provide_caller):
@@ -349,16 +352,23 @@ class Provide(object):
 
     def confirm_call(self):
         """Redefine it to confirm the provide call after that requires has been filled.
-
+        By default, return True.
         :rtype: boolean"""
-        raise NotImplementedError
+        return True
 
+    def set_logging_handlers(self):
+        """Redefine it to get agent logs.
+        
+        :rtype: logging.Handler
+        """
+        return None
 
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':"  % (
             self.used_xpath,
             self.host))
-        self.lf_manager = ClientSocket(host=self.host)
+        self.lf_manager = ClientSocket(host=self.host, 
+                                       handlers = self.set_logging_handlers())
         self.used_xpath = self.xpath
         while True:
             try:

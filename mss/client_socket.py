@@ -12,10 +12,19 @@ class ConnectionError(Exception):
     pass
 
 class ClientSocket(object):
-    def __init__(self, host="127.0.0.1", port=8000):
+    """A simple socket client for mss agent.
+    
+    Logs emit by agent are forwarded to this client. To use them, add
+    a logging handler with
+    `:py:meth:ClientSocket.add_logging_handler`.
+
+    :param handlers: To set handlers to forward agent logs
+    :type handlers: [logging.Handler]
+    """
+    def __init__(self, host="127.0.0.1", port=8000, handlers=[]):
         self._host = host
         self._port = port
-        self.handlers = []
+        self.handlers = handlers
 
     def _connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -73,8 +82,8 @@ class ClientSocket(object):
 
     def _receive(self):
         while True:
-            (l, r) = self._receive_string()
-            if l:
+            (last_msg, r) = self._receive_string()
+            if last_msg:
                 break
             for h in self.handlers:
                 if r.levelno >= h.level:
