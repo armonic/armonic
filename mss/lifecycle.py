@@ -205,7 +205,13 @@ class State(XmlRegister):
         return self.name
 
     def _xml_children(self):
-        return self.provides
+        acc = []
+        for method in STATE_RESERVED_METHODS:
+            require = getattr(self, "requires_%s" % method)
+            if require is not None:
+                acc.append(require)
+
+        return self.provides + acc
 
     def _xml_ressource_name(self):
         return "state"
