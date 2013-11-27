@@ -70,10 +70,10 @@ class RequireSmart(object):
     This class has to be used to handle how a require is built.
     So, basically we have to handle :
     
-    - how values of a require are built (see :py:meth:`Require.build_values`)
-    - what happen if a variable is not filled (see :py:meth:`Require.on_require_not_filled_error`)
-    - what happen if a variable is not validated (see :py:meth:`Require.on_validation_error`)
-    - how values used to fill this require are saved (see :py:meth:`Require.build_save_to`)
+    - how values of a require are built (see :py:meth:`RequireSmart.build_values`)
+    - what happen if a variable is not filled (see :py:meth:`RequireSmart.on_require_not_filled_error`)
+    - what happen if a variable is not validated (see :py:meth:`RequireSmart.on_validation_error`)
+    - how values used to fill this require are saved (see :py:meth:`RequireSmart.build_save_to`)
 
     DOC TODO :To build value of this require, several object are available
 
@@ -89,7 +89,7 @@ class RequireSmart(object):
         
         :rtype: A dict of variable name and values.
         """
-        raise NotImplementedError
+        raise NotImplementedError("%s.build_value must be implemented" % self.__class__.__name__)
 
     def on_require_not_filled_error(self,err_variable,values):
         """This method is called when a variable is not filled. Redefine it to adapt its behavior.
@@ -148,6 +148,47 @@ class RequireSmart(object):
     def _build_save_variables(self):
         for v in self.variables:
             self.build_save_to(v)
+
+
+
+    def helper_needed_values(self):
+        """
+        To get all values needed by this require. The returned dict
+        contains variable_name and the value is the current value or
+        the default value.
+
+        This is generally used as the base dict for require value
+        building.
+
+        :rtype: a dict of {variable_name : value}
+        """
+        return self.get_values()
+
+    def helper_suggested_values(self):
+        """
+        To get the variable value suggested by the local or external
+        require that is the origin of the provide of this require.
+
+        For instance, suppose that we have a external require:
+        RequireExternal("external", xpath=/a_provide, variables[VString("variable",default=value)])
+        This require can generate a provide call.
+        Suppose the provide 'a_provide' have the require:
+        require=Require("this")
+        Then, require.helper_suggested_value() will return:
+        {'variable':value}
+
+        :rtype: a dict of {variable_name : value}
+
+        """
+        #To ensure this require is not a goto state require
+        if self in self.provide_caller.provide_requires:
+            suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
+        else :
+            suggested = {}
+        return suggested
+
+    
+            
         
 class RequireSmartWithProvide(RequireSmart):
     """This class is a subclass of :class:`Require` and can be use if
@@ -198,6 +239,14 @@ class RequireSmartWithProvide(RequireSmart):
         """
         for v in self.variables[0]:
             self.build_save_to(v)
+
+    def helper_provide_result_values(self):
+        """
+        To get the dict of value returned by the provide call.
+
+        :rtype: a dict of {variable_name : value}
+        """
+        return self.provide.provide_ret
 
 
 class Require(mss.require.RequireUser, RequireSmart):
@@ -303,6 +352,7 @@ class Provide(object):
 
         :rtype: boolean"""
         raise NotImplementedError
+
 
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':"  % (
