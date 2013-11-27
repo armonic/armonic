@@ -13,9 +13,18 @@ class XpathInvalidExpression(Exception):
     pass
 
 class XmlRegister(object):
+    """
+    This add an xpath path to subclasses instance.
+
+    If you use these objects via pickle, get_xpath() and get_xpath_relative() methods is the only
+    one that is managed.
+    """
     _xml_elt = None
     _xml_root = None
     _xml_root_tree = None
+
+    _xpath = None
+    _xpath_relative = None
 
     def _xml_tag(self):
         raise NotImplementedError
@@ -45,6 +54,9 @@ class XmlRegister(object):
                                        self._xml_tag(),
                                        attrib = attributes)
 
+        self._xpath = XmlRegister._xml_root_tree.getpath(self._xml_elt)
+        self._xpath_relative = self._xpath.split("/",2)[2]
+
         for c in self._xml_children():
             c._xml_register(self)
         
@@ -52,11 +64,17 @@ class XmlRegister(object):
     def to_string(cls):
         return tostring(cls._xml_root)
 
-    def get_uri(self):
-        return XmlRegister._xml_root_tree.getpath(self._xml_elt)
+    def get_xpath(self):
+        return self._xpath 
+    def get_xpath_relative(self):
+        """Get a relatvie xpath, ie. without host.
+        This can be useful when a client wants to mix hostname and ip addr."""
+        return self._xpath_relative
 
     def __getstate__(self):
         dct = self.__dict__.copy()
+        if "_xpath" not in self.__dict__:
+            print self.__dict__
         try:
             dct.pop("_xml_elt")
         except KeyError:
