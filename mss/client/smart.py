@@ -49,190 +49,14 @@ from mss.common import load_lifecycles, ValidationError
 from mss.require import RequireNotFilled
 from mss.client_socket import ClientSocket
 
-from itertools import repeat
 load_lifecycles("modules")
 
 import sys
 import logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-if len(sys.argv) > 1:
-    if sys.argv[1] == 'debug':
-        logger.setLevel(logging.DEBUG)
-
-class ShowAble(object):
-    def sep(self,offset=0):
-        if self.depth + offset == 0:
-            return ""
-#        return str(self.depth)+"/"+str(offset)+"".join(repeat("    ",self.depth+offset))
-        return "".join(repeat("    ",self.depth+offset))
-
-    def show(self,str,indent=0):
-        print "%s%s" % (self.sep(offset=indent) , str)
 
 
-class Provide(ShowAble):
-    """This class describes a Provide and permit to fill its require
-    by creating instances of :class:`Require`.
 
-    To use this class, we have to ::
-
-    - redefine method :py:meth:`Provide.handle_call`,
-    - redefine method :py:meth:`Provide.confirm_call`,
-    - attach specialised Require classes to require type by using the static method :py:meth:`set_require_class`.
-
-    By redefining this class, you can control the host where the
-    provide (via :py:meth:`Provide.handle_call`) will be called, and
-    control if the provide has to be call or not (via
-    :py:meth:`Provide.confirm_call`).
-
-
-    Note: A provide name should not be defined with a lifecycle name
-    because in the future, the user will be able to choose a lifecycle
-    that offers this provide.
-
-
-    :param lf_name: Name of provide's lifecycle 
-    :type lf_name: String
-    :param provide_name: Name of the provide
-    :type provide_name: String
-    :param host: Host where the provide has to be call
-    :type host: String
-
-    :param caller_provide: Name of provide that called this one.
-    :type caller_provide: Subclass of :class:`Provide`
-
-    :param suggested_args: Suggested args provided by the caller. This\
-    corresponds to the require (that expect this provide) variables.
-    :type suggested_args: List of Variable.
-    :param depth: The depth in provide call tree
-    :type depth: Integer
-    """
-
-    #Contain user specified require classes.
-    _require_classes = {}
-
-
-    def __init__(self, xpath, host=None, caller_provide=None, suggested_args=[], depth=0):
-        self.xpath = xpath
-        # This describes the xpath that will be really called.
-        # It can be set by the return value of handle_provide_xpath()
-        self.used_xpath = xpath
-
-        self.lf_name=None
-        self.provide_name = None
-        self.requires=None
-        self.suggested_args=suggested_args
-        self.host = host
-        self.depth = depth
-        self.caller_provide = caller_provide
-
-        # This is filled by self.call(). This contains the dict of
-        # returned value by this provide.
-        self.provide_ret = {}
-
-    def handle_provide_xpath(self,xpath, matches):
-        """This method is called when the xpath doesn't match a unique
-        provide. Redefine it to choose the good one.
-        
-        :param xpath: submitted xpath
-        :param matches: list of xpath that match the submitted xpath
-        :rtype: a xpath (str)
-        """ 
-        raise NotImplementedError("Method handle_provide_xpath must be implemented!")
-
-    def handle_call(self):
-        """Redefine it to validate that the inferred provide should be called.
-        Moreover, you can set the host variable of this provide.
-
-        :rtype: Return True if the provide must be called, false otherwise
-        """
-        raise NotImplementedError
-
-    def confirm_call(self):
-        """Redefine it to confirm the provide call after that requires has been filled.
-
-        :rtype: boolean"""
-        raise NotImplementedError
-
-    def _get_requires(self):
-        logger.debug("%sRequires needed to call provide %s:"  % (
-            self.sep(0),
-            self.used_xpath))
-        self.lf_manager = ClientSocket(host=self.host)
-        self.used_xpath = self.xpath
-        while True:
-            try:
-                self.provide_goto_requires = self.lf_manager.call("provide_call_requires",xpath = self.used_xpath)
-                self.provide_requires = self.lf_manager.call("provide_call_args",xpath = self.used_xpath)
-            except mss.xml_register.XpathMultipleMatch:
-                matches = self.lf_manager.call("uri", xpath = self.used_xpath)
-                self.used_xpath = self.handle_provide_xpath(self.used_xpath, matches)
-                continue
-            break
-        self.requires = self.provide_goto_requires + self.provide_requires
-
-    def call(self):
-        if self.handle_call():
-            self._build_requires()
-            
-            if self.confirm_call():
-                provide_requires_primitive = self._generate_requires_primitive(self.provide_goto_requires)
-                provide_args_primitive = self._generate_requires_primitive(self.provide_requires)
-                logger.debug("mss.call(%s, %s, %s)" % (
-                        self.used_xpath,
-                        provide_requires_primitive,
-                        provide_args_primitive))
-                self.provide_ret = self.lf_manager.call("provide_call",
-                                                        xpath = self.used_xpath,
-                                                        requires = provide_requires_primitive,
-                                                        provide_args = provide_args_primitive)
-    
-                # Because provide return type is currently not strict.
-                # This must be FIXED because useless.
-                if self.provide_ret == None:
-                    self.provide_ret = {}
-        return self.provide_ret
-
-    def _generate_requires_primitive(self,require_list):
-        """From a require list, generate suitable require dict to be
-        passed to provide_call function.
-
-        :type require_list: [Require]
-        :rtype: {require1: {variable1:v1,...}, ...}
-        """
-        ret = {}
-        for r in require_list:
-            ret.update({r.name: r.get_values()})
-        return ret
-
-    def _build_requires(self):
-        """This method makes the recursion. If external or local
-        Require are required, we build a provide, call it and use its
-        values to fill the Require."""
-
-        self._get_requires()
-        requires_external = [r for r in self.requires if r.type == "external"]
-        requires_simple = [r for r in self.requires if r.type == "simple"]
-        requires_user = [r for r in self.requires if r.type == "user"]
-        requires_local = [r for r in self.requires if r.type == "local"]
-
-        for r in (requires_external + requires_local):
-            if self._require_classes.has_key(r.type):
-                r.__class__ = self._require_classes[r.type]
-            r._build(self)
-
-        for r in (requires_simple + requires_user):
-            if self._require_classes.has_key(r.type):
-                r.__class__ = self._require_classes[r.type]
-            r._build(self)
-
-
-    @classmethod
-    def set_require_class(cls, require_type, klass):
-        """Use this method to specify which Require subclass has to be
-        used for a require type."""
-        cls._require_classes.update({require_type : klass})
 
 
 ################################################################################
@@ -241,7 +65,7 @@ class Provide(ShowAble):
 
 import mss.require
 
-class Require(object):
+class RequireSmart(object):
     """
     This class has to be used to handle how a require is built.
     So, basically we have to handle :
@@ -325,7 +149,7 @@ class Require(object):
         for v in self.variables:
             self.build_save_to(v)
         
-class RequireWithProvide(Require):
+class RequireSmartWithProvide(RequireSmart):
     """This class is a subclass of :class:`Require` and can be use if
     the require needs to call a provide. See :class:`Require` for more
     common informations.
@@ -342,7 +166,7 @@ class RequireWithProvide(Require):
         used to build the provide needed by this require.
 
         :rtype: class that inherit from Provide """
-        NotImplementedError
+        raise NotImplementedError
 
     def _provide_call(self):
         self.provide = self.build_provide_class()(xpath = self.xpath, 
@@ -374,6 +198,197 @@ class RequireWithProvide(Require):
         """
         for v in self.variables[0]:
             self.build_save_to(v)
+
+
+class Require(mss.require.RequireUser, RequireSmart):
+    pass
+class RequireUser(mss.require.RequireUser, RequireSmart):
+    pass
+class RequireLocal(mss.require.RequireLocal, RequireSmartWithProvide):
+    pass
+class RequireExternal(mss.require.RequireExternal, RequireSmartWithProvide):
+    pass
+
+
+class Provide(object):
+    """This class describes a Provide and permit to fill its require
+    by creating instances of :class:`Require`.
+
+    To use this class, we have to ::
+
+    - redefine method :py:meth:`Provide.handle_call`,
+    - redefine method :py:meth:`Provide.confirm_call`,
+    - attach specialised Require classes to require type by using the static method :py:meth:`set_require_class`.
+
+    By redefining this class, you can control the host where the
+    provide (via :py:meth:`Provide.handle_call`) will be called, and
+    control if the provide has to be call or not (via
+    :py:meth:`Provide.confirm_call`).
+
+
+    Note: A provide name should not be defined with a lifecycle name
+    because in the future, the user will be able to choose a lifecycle
+    that offers this provide.
+
+
+    :param lf_name: Name of provide's lifecycle 
+    :type lf_name: String
+    :param provide_name: Name of the provide
+    :type provide_name: String
+    :param host: Host where the provide has to be call
+    :type host: String
+
+    :param caller_provide: Name of provide that called this one.
+    :type caller_provide: Subclass of :class:`Provide`
+
+    :param suggested_args: Suggested args provided by the caller. This\
+    corresponds to the require (that expect this provide) variables.
+    :type suggested_args: List of Variable.
+    :param depth: The depth in provide call tree
+    :type depth: Integer
+    """
+
+    #Contain user specified require classes.
+    _require_classes = {"external":RequireExternal,
+                        "local":RequireLocal,
+                        "simple":Require,
+                        "user":RequireUser}
+
+
+    def __init__(self, xpath, host=None, caller_provide=None, suggested_args=[], depth=0):
+        self.xpath = xpath
+        # This describes the xpath that will be really called.
+        # It can be set by the return value of handle_provide_xpath()
+        self.used_xpath = xpath
+
+        self.lf_name=None
+        self.provide_name = None
+        self.requires=None
+        self.suggested_args=suggested_args
+        self.host = host
+        self.depth = depth
+        self.caller_provide = caller_provide
+
+        # This is filled by self.call(). This contains the dict of
+        # returned value by this provide.
+        self.provide_ret = {}
+
+    def handle_connection_error(self):
+        """This method is called when a mss connection occurs.
+        If it return True, the mss call is triyed again.
+        If False, exception is raised.
+        By default, it returns false."""
+        return False
+
+    def handle_provide_xpath(self,xpath, matches):
+        """This method is called when the xpath doesn't match a unique
+        provide. Redefine it to choose the good one.
+        
+        :param xpath: submitted xpath
+        :param matches: list of xpath that match the submitted xpath
+        :rtype: a xpath (str)
+        """ 
+        raise NotImplementedError("Method handle_provide_xpath must be implemented!")
+
+    def handle_call(self):
+        """Redefine it to validate that the inferred provide should be called.
+        Moreover, you can set the host variable of this provide.
+
+        :rtype: Return True if the provide must be called, false otherwise
+        """
+        raise NotImplementedError("Method handle_call is not implemented!")
+
+    def confirm_call(self):
+        """Redefine it to confirm the provide call after that requires has been filled.
+
+        :rtype: boolean"""
+        raise NotImplementedError
+
+    def _get_requires(self):
+        logger.debug("Requires needed to call provide '%s' on '%s':"  % (
+            self.used_xpath,
+            self.host))
+        self.lf_manager = ClientSocket(host=self.host)
+        self.used_xpath = self.xpath
+        while True:
+            try:
+                self.provide_goto_requires = self.lf_manager.call("provide_call_requires",xpath = self.used_xpath)
+                self.provide_requires = self.lf_manager.call("provide_call_args",xpath = self.used_xpath)
+            except mss.client_socket.ConnectionError:
+                if self.handle_connection_error():
+                    continue
+                else:
+                    raise
+            except mss.xml_register.XpathMultipleMatch:
+                matches = self.lf_manager.call("uri", xpath = self.used_xpath)
+                self.used_xpath = self.handle_provide_xpath(self.used_xpath, matches)
+                continue
+            break
+        self.requires = self.provide_goto_requires + self.provide_requires
+
+    def call(self):
+        if self.handle_call():
+            if self.host == None:
+                raise TypeError("host can not be 'None'")
+            self._build_requires()
+            
+            if self.confirm_call():
+                provide_requires_primitive = self._generate_requires_primitive(self.provide_goto_requires)
+                provide_args_primitive = self._generate_requires_primitive(self.provide_requires)
+                logger.debug("mss.call(%s, %s, %s)" % (
+                        self.used_xpath,
+                        provide_requires_primitive,
+                        provide_args_primitive))
+                self.provide_ret = self.lf_manager.call("provide_call",
+                                                        xpath = self.used_xpath,
+                                                        requires = provide_requires_primitive,
+                                                        provide_args = provide_args_primitive)
+    
+                # Because provide return type is currently not strict.
+                # This must be FIXED because useless.
+                if self.provide_ret == None:
+                    self.provide_ret = {}
+        return self.provide_ret
+
+    def _generate_requires_primitive(self,require_list):
+        """From a require list, generate suitable require dict to be
+        passed to provide_call function.
+
+        :type require_list: [Require]
+        :rtype: {require1: {variable1:v1,...}, ...}
+        """
+        ret = {}
+        for r in require_list:
+            ret.update({r.name: r.get_values()})
+        return ret
+
+    def _build_requires(self):
+        """This method makes the recursion. If external or local
+        Require are required, we build a provide, call it and use its
+        values to fill the Require."""
+
+        self._get_requires()
+        requires_external = [r for r in self.requires if r.type == "external"]
+        requires_simple = [r for r in self.requires if r.type == "simple"]
+        requires_user = [r for r in self.requires if r.type == "user"]
+        requires_local = [r for r in self.requires if r.type == "local"]
+
+        for r in (requires_external + requires_local):
+            if self._require_classes.has_key(r.type):
+                r.__class__ = self._require_classes[r.type]
+            r._build(self)
+
+        for r in (requires_simple + requires_user):
+            if self._require_classes.has_key(r.type):
+                r.__class__ = self._require_classes[r.type]
+            r._build(self)
+
+
+    @classmethod
+    def set_require_class(cls, require_type, klass):
+        """Use this method to specify which Require subclass has to be
+        used for a require type."""
+        cls._require_classes.update({require_type : klass})
 
 
 ################################################################################
