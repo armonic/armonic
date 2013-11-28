@@ -160,10 +160,15 @@ class Require(XmlRegister):
     :param name: name of the require (default: "local")
     """
 
-    def __init__(self, name, variables):
+    def __init__(self, name, variables, nargs='1'):
         self.name = name
         self.type = "simple"
         self._validated = False
+
+        if nargs not in ["1","?","*"]:
+            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
+        self.nargs = nargs
+
 
         self._variables = IterContainer(*variables)
 
@@ -231,6 +236,7 @@ class Require(XmlRegister):
                 tmp = IterContainer(*tmp_vars)
                 self._fill(tmp,primitive)
                 self._variables.append(tmp)
+                self._xml_register_children()
         return True
 
     def _validate(self, iterContainer, values={}):
@@ -333,7 +339,7 @@ class RequireLocal(Require):
     """
     def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
         _variables=provide_args + provide_ret
-        Require.__init__(self, name, _variables)
+        Require.__init__(self, name, _variables, nargs=nargs)
         self.xpath = xpath
         self.lf_name = None
         self.provide_name = None
@@ -341,9 +347,6 @@ class RequireLocal(Require):
         self.provide_ret = provide_ret
         self.name = name
         self.type = "local"
-        if nargs not in ["1","?","*"]:
-            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
-        self.nargs = nargs
         # This contains Variable submitted
         self._variables_skel = _variables
         # This will contain Variables. fill method will append
