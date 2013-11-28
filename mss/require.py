@@ -20,7 +20,7 @@ types to fill values of a require.
 
 import logging
 
-from mss.common import IterContainer, DoesNotExist, Uri, ValidationError
+from mss.common import IterContainer, DoesNotExist, ValidationError
 from mss.variable import VariableNotSet , VString
 import copy
 
@@ -57,8 +57,6 @@ class Requires(IterContainer, XmlRegister):
     def __init__(self, name, require_list=[], flags=None):
         self.name = name
         IterContainer.__init__(self, *require_list)
-        self._full_name = None
-        self._uri = None
         self.flags = flags # Should not be in Requires ...
 
 
@@ -83,27 +81,6 @@ class Requires(IterContainer, XmlRegister):
     def _xml_ressource_name(self):
         return "provide"
 
-    @property
-    def uri(self):
-        return self._uri
-    #self._full_name if self._full_name != None else self.name
-
-    def _set_uri(self,parent_uri):
-        self._uri = parent_uri.from_uri(method = self.name)
-        for r in self:
-            r._set_uri(self.uri)
-
-    @property
-    def full_name(self):
-        return self._full_name if self._full_name != None else self.name
-
-    def _set_full_name(self,prefix,separator="."):
-        """Build a full name and requires full names by joining
-        prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
-
-        for r in self:
-            r._set_full_name(self._full_name,separator)
 
     def build_args_from_primitive(self,primitive):
         self.build_from_primitive(primitive)
@@ -160,7 +137,7 @@ class Requires(IterContainer, XmlRegister):
 
     def to_primitive(self):
         return {"name": self.name, 
-                "uri": self.uri, 
+#                "xpath": self.get_xpath(), 
                 "require_list":[r.to_primitive() for r in self] , 
                 "flags": self.flags}
 
@@ -188,8 +165,6 @@ class Require(XmlRegister):
         self.type = "simple"
         self._validated = False
         self.variables = IterContainer(*variables)
-        self._full_name = None
-        self._uri = None
 
     def _xml_tag(self):
         return self.name
@@ -199,26 +174,6 @@ class Require(XmlRegister):
 
     def _xml_ressource_name(self):
         return "require"
-
-
-    @property
-    def uri(self):
-        return self._uri
-
-    def _set_uri(self,parent_uri):
-        self._uri = parent_uri.from_uri(require = self.name, register = True)
-        for r in self.variables:
-            r._set_uri(self.uri)
-
-    @property
-    def full_name(self):
-        return self._full_name if self._full_name != None else self.name
-
-    def _set_full_name(self, prefix, separator="."):
-        """Build a full name by joining prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
-        for v in self.variables:
-            v._set_full_name(self._full_name, separator)
 
     def __call__(self, func):
         """
@@ -367,21 +322,6 @@ class RequireLocal(Require):
         for vs in self.variables:
             acc+=vs
         return acc
-
-    def _set_uri(self,parent_uri):
-        """Build a full name by joining prefix, separator and name."""
-        self._uri = parent_uri.from_uri(require = self.name)
-        for i in self.variables:
-            for v in i:
-                v._set_uri(self._uri)
-
-
-    def _set_full_name(self,prefix,separator="."):
-        """Build a full name by joining prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
-        for i in self.variables:
-            for v in i:
-                v._set_full_name(self._full_name,separator)
 
     def fill(self,primitives=[]):
         """Fill variables from a list of primitive. If primitive is

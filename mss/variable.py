@@ -25,32 +25,16 @@ class Variable(XmlRegister):
         self.default = default
         if default is not None:
             self.value = default
-        self._full_name = None
-        self._uri = None
 
     def _xml_tag(self):
         return self.name
     def _xml_ressource_name(self):
         return "variable"
 
-    @property
-    def uri(self):
-        return self._uri
-
-    def _set_uri(self,parent_uri):
-        self._uri = parent_uri.from_uri(variable = self.name, register = True)
-
-    @property
-    def full_name(self):
-        return self._full_name if self._full_name != None else self.name
-
-    def _set_full_name(self,prefix,separator="."):
-        """Build a full name by joining prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
 
     def to_primitive(self):
         return {'name':self.name, 
-                'uri':self.uri, 
+#                'uri':self.uri, 
                 'type':self.type, 'default': self.default}
 
     @property

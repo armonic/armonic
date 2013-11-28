@@ -106,7 +106,7 @@ method of Httpd active state.
 import inspect
 import logging
 
-from mss.common import is_exposed, expose, IterContainer, DoesNotExist, Uri
+from mss.common import is_exposed, expose, IterContainer, DoesNotExist
 from mss.require import Requires, Require
 from mss.variable import VString
 import mss.utils
@@ -171,7 +171,6 @@ class State(XmlRegister):
     """
     _lf_name = ""
     _instance = None
-    _full_name = None
 
     supported_os_type = [mss.utils.OsTypeAll()]
 
@@ -196,7 +195,6 @@ class State(XmlRegister):
                         cls.provides.append(r)
 
                     logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
-                    r._set_full_name(cls.__name__)
 
         return cls._instance
 
@@ -216,40 +214,6 @@ class State(XmlRegister):
     def _xml_ressource_name(self):
         return "state"
 
-
-    @property
-    def full_name(self):
-        return self._full_name if self._full_name != None else self.name
-
-    @property
-    def uri(self):
-        return self._uri
-    
-    def _set_uri(self, parent_uri):
-        self._uri = copy.copy(parent_uri)
-        self._uri.state = self.name
-
-        for method in STATE_RESERVED_METHODS:
-            require = getattr(self, "requires_%s" % method)
-            if require is not None:
-                require._set_uri(self.uri)
-
-        for require in self.provides:
-            require._set_uri(self.uri)
-        
-
-    def _set_full_name(self, prefix, separator="."):
-        """Build a full name and requires full names by joining
-        prefix, separator and name."""
-        self._full_name = prefix + separator + self.name
-
-        for method in STATE_RESERVED_METHODS:
-            require = getattr(self, "requires_%s" % method)
-            if require is not None:
-                require._set_full_name(self._full_name, separator)
-
-        for require in self.provides:
-            require._set_full_name(self._full_name, separator)
 
     @property
     def name(self):
@@ -336,7 +300,7 @@ class State(XmlRegister):
     
     def to_primitive(self):
         return {"name":self.name,
-                "uri":self.uri,
+#                "uri":self.uri,
                 "supported_os_type":[t.to_primitive() for t in self.supported_os_type],
                 "provides":[r.to_primitive() for r in self.__class__.get_provides()],
                 "requires_entry":self.requires_entry.to_primitive()}
@@ -369,7 +333,6 @@ class Lifecycle(XmlRegister):
 
     """
     _initialized = False
-    _uri = None
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
             cls)
@@ -401,12 +364,6 @@ class Lifecycle(XmlRegister):
                         instance.transitions.remove(t)
                         instance.transitions += update_transitions
 
-        # We set full name for state, requires, require and variable
-        for s in instance._state_list():
-            s._set_full_name(instance.name,separator=".")
-            s._set_uri(instance.uri)
-
-#        self._set_uri()
         instance._xml_register()
 
         return instance
@@ -431,16 +388,6 @@ class Lifecycle(XmlRegister):
     @property
     def name(self):
         return self.__class__.__name__
-
-    @property
-    def uri(self):
-        if self._uri == None :
-            self._set_uri()
-        return self._uri
-    
-    
-    def _set_uri(self):
-        self._uri = Uri(lifecycle = self.name, register = True)
 
     @classmethod
     def _state_list(cls):
@@ -768,7 +715,7 @@ class Lifecycle(XmlRegister):
                 
     def to_primitive(self):
         return {'name': self.name,
-                'uri' : self.uri,
+#                'uri' : self.uri,
                 'states':[s.to_primitive() for s in self.state_list()],
                 "transitions": [(s.name,d.name) for (s,d) in self.transitions]}
 
