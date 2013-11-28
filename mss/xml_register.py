@@ -57,8 +57,15 @@ class XmlRegister(object):
         self._xpath = XmlRegister._xml_root_tree.getpath(self._xml_elt)
         self._xpath_relative = self._xpath.split("/",2)[2]
 
+        self._xml_register_children()
+
+    def _xml_register_children(self):
+        for c in self._xml_elt.iterchildren():
+            self._xml_elt.remove(c)
+
         for c in self._xml_children():
             c._xml_register(self)
+        
         
     @classmethod
     def to_string(cls):
