@@ -163,7 +163,6 @@ class Require(XmlRegister):
     def __init__(self, name, variables, nargs='1'):
         self.name = name
         self.type = "simple"
-        self._validated = False
 
         if nargs not in ["1","?","*"]:
             raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
@@ -239,22 +238,33 @@ class Require(XmlRegister):
                 self._xml_register_children()
         return True
 
-    def _validate(self, iterContainer, values={}):
-        """Validate Require values
+    def validate_one_set(self, iterContainer, values={}):
+        """Validate Require values on one variables set.
+        If values is specified, they are
+        used to validate the require variables. Otherwise, you must
+        already have fill it because filled values will be used.
 
         :rtype: boolean"""
         for variable in iterContainer:
-            variable._validate()
+            variable._validate(values)
                 
-        self._validated = True
-        return self._validated
+        return True
 
-    def validate(self, values={}):
-        """Validate Require values
+    def validate(self, values=[]):
+        """Validate Require values.  If values is specified, they are
+        used to validate the require variables. Otherwise, you must
+        already have fill it because filled values will be used.
 
         :rtype: boolean"""
-        for v in self._variables:
-            self._validate(v,values)
+        for (idx, vs) in enumerate(self._variables):
+            if values != []:
+                try:
+                    v = values[idx]
+                except IndexError:
+                    raise ValidationError("Values must contains as much element as variables set elements.")
+                self.validate_one_set(vs,v)
+            else:
+                self.validate_one_set(vs)
         return True
 
     def to_primitive(self):

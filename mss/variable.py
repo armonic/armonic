@@ -56,8 +56,16 @@ class Variable(XmlRegister):
 #            raise TypeError("value can't be empty")
         return value
 
-    def _validate(self):
-        if not self._value and self.required:
+    def _validate(self, value = None):
+        """Validate value or self.value if value is not set.
+        If values is specified, they are
+        used to validate the require variables. Otherwise, you must
+        already have fill it because filled values will be used.
+        """
+        if not value:
+            value = self._value
+
+        if not value and self.required:
             raise ValidationError(variable_name=self.name , msg="%s is required" % self.name)
 
     def validate(self):
@@ -162,9 +170,12 @@ class VString(Variable):
     pattern = None
     pattern_error = None
 
-    def _validate(self):
-        Variable._validate(self)
-        if self.pattern and not re.match(self.pattern, self.value):
+    def _validate(self, value = None):
+        if not value:
+            value = self.value
+
+        Variable._validate(self, value)
+        if self.pattern and not re.match(self.pattern, value):
             raise ValidationError(variable_name=self.name , msg=self.pattern_error)
         return self.validate()
 
@@ -180,11 +191,14 @@ class VInt(Variable):
     min_val = None
     max_val = None
 
-    def _validate(self):
-        Variable._validate(self)
-        if self.min_val and self.value < self.min_val:
+    def _validate(self, value = None):
+        if not value:
+            value = self.value
+            
+        Variable._validate(self, value)
+        if self.min_val and value < self.min_val:
             raise ValidationError(variable_name=self.name , msg="%s value must be greater than %s" % (self.name, self.min_val))
-        if self.max_val and self.value > self.max_val:
+        if self.max_val and value > self.max_val:
             raise ValidationError(variable_name=self.name , msg="%s value must be lower than %s" % (self.name, self.max_val))
         return self.validate()
 
