@@ -88,7 +88,7 @@ class Requires(IterContainer, XmlRegister):
         for a in self.func_args:
             for r in self:
                 try :
-                    args.update({a:r.variables.get(a).value})
+                    args.update({a:r.variables().get(a).value})
                 except DoesNotExist:
                     pass
         return args
@@ -122,7 +122,7 @@ class Requires(IterContainer, XmlRegister):
         """Return True if variable_name is specified by this requires."""
         for r in self:
             try :
-                r.variables.get(variable_name)
+                r.variables().get(variable_name)
                 return True
             except DoesNotExist:
                 pass
@@ -131,7 +131,7 @@ class Requires(IterContainer, XmlRegister):
     def get_all_variables(self):
         acc=[]
         for r in self:
-            for v in r.variables:
+            for v in r._variables:
                 acc.append(v.name)
         return acc
 
@@ -164,13 +164,23 @@ class Require(XmlRegister):
         self.name = name
         self.type = "simple"
         self._validated = False
-        self.variables = IterContainer(*variables)
+
+        self._variables = IterContainer(*variables)
+
+        self._variables_skel = variables
+        # This will contain Variables. fill method will append
+        # IterContainer if needed, but we have to initialize it in
+        # order to manage default values.
+        self._variables = [IterContainer(*variables)]
 
     def _xml_tag(self):
         return self.name
 
     def _xml_children(self):
-        return [v for v in self.variables]
+        acc = []
+        for vs in self._variables:
+            acc+=vs
+        return acc
 
     def _xml_ressource_name(self):
         return "require"
@@ -206,14 +216,22 @@ class Require(XmlRegister):
         return True
 
 
-    def fill(self, primitive={}):
-        """Fill variable values from a dict.
+    def fill(self,primitives=[]):
+        """Fill variables from a list of primitive.
 
-        :param primitive: variables values for this require
-        :type primitive: dict of variable_name: primitive_value
-        :rtype: boolean"""
-        return self._fill(self.variables,primitive)
-
+        NotImplementedYet: We must check if provided primitive
+        correspond to nargs.
+        """
+        if primitives != []:
+            # To avoid vaiables append on multiple calls
+            self._variables = [IterContainer(*self._variables_skel)]
+            self._fill(self._variables[0],primitives[0])
+            for primitive in primitives[1:]:
+                tmp_vars = copy.deepcopy(self._variables_skel)
+                tmp = IterContainer(*tmp_vars)
+                self._fill(tmp,primitive)
+                self._variables.append(tmp)
+        return True
 
     def _validate(self, iterContainer, values={}):
         """Validate Require values
@@ -229,21 +247,37 @@ class Require(XmlRegister):
         """Validate Require values
 
         :rtype: boolean"""
-        return self._validate(self.variables,values)
+        for v in self._variables:
+            self._validate(v,values)
+        return True
 
     def to_primitive(self):
         return {"name": self.name, 
-                "uri": self.uri,
-                "variables": [a.to_primitive() for a in self.variables],
+#                "uri": self.uri,
+                "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "simple"}
 
+
+    def variables(self, index=0, all=False):
+        """Return variables of given index.
+        
+        TODO: Check if index respect nargs.
+        :param index: index of a variable set.
+        :param all: if true returns all variables
+        :rtype: iterContainer or ([iterContainer] if all == True)
+        """
+        if all:
+            return self._variables
+        else:
+            return self._variables[index]
     
     def get_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.variables, {})
+        """ FIXME This jsut return the first element"""
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self._variables[0], {})
 
     def get_default_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.variables, {})
-            
+        """ FIXME This jsut return the first element"""
+        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self._variables[0], {})
 
 
     def generate_args(self, dct={}):
@@ -254,7 +288,7 @@ class Require(XmlRegister):
         :param dct: To specify a argName and its value.
         """
         ret = ({}, [])
-        for a in self.variables:
+        for a in self._variables:
             if a.name in dct:
                 ret[0].update({a.name: dct[a.name]})
             elif a.has_default_value():
@@ -264,7 +298,7 @@ class Require(XmlRegister):
         return ret
 
     def __repr__(self):
-        return "<Require(name=%s, variables=%s)>" % (self.name, self.variables)
+        return "<Require(name=%s, variables=%s)>" % (self.name, self._variables)
 
 
 class RequireUser(Require):
@@ -276,12 +310,12 @@ class RequireUser(Require):
         self.type = "user"
         self.provided_by = provided_by
     def __repr__(self):
-        return "<RequireUser(name=%s, variables=%s)>" % (self.name, self.variables)
+        return "<RequireUser(name=%s, variables=%s)>" % (self.name, self._variables)
 
     def to_primitive(self):
         return {"name": self.name, 
-                "uri": self.uri,
-                "variables": [a.to_primitive() for a in self.variables],
+#                "uri": self.uri,
+                "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "user",
                 "provided_by": self.provided_by.to_primitive()}
 
@@ -298,8 +332,8 @@ class RequireLocal(Require):
     :type nargs: ["1","?","*"].
     """
     def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
-        variables=provide_args + provide_ret
-        Require.__init__(self, name, variables)
+        _variables=provide_args + provide_ret
+        Require.__init__(self, name, _variables)
         self.xpath = xpath
         self.lf_name = None
         self.provide_name = None
@@ -311,51 +345,17 @@ class RequireLocal(Require):
             raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
         self.nargs = nargs
         # This contains Variable submitted
-        self._variables_skel = variables
+        self._variables_skel = _variables
         # This will contain Variables. fill method will append
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
-        self.variables = [IterContainer(*variables)]
+        self._variables = [IterContainer(*_variables)]
 
-    def _xml_children(self):
-        acc = []
-        for vs in self.variables:
-            acc+=vs
-        return acc
-
-    def fill(self,primitives=[]):
-        """Fill variables from a list of primitive. If primitive is
-        not a list, then it is encapsulated in a list. This permit to
-        easily managed request from cli. Need to be FIXED.
-
-        NotImplementedYet: We must check if provided primitive
-        correspond to nargs.
-        """
-        if type(primitives) is not list:
-            primitives=[primitives]
-        if primitives != []:
-            # To avoid vaiables append on multiple calls
-            self.variables = [IterContainer(*self._variables_skel)]
-            self._fill(self.variables[0],primitives[0])
-            for primitive in primitives[1:]:
-                tmp_vars = copy.deepcopy(self._variables_skel)
-                tmp = IterContainer(*tmp_vars)
-                self._fill(tmp,primitive)
-                self.variables.append(tmp)
-        return True
-
-    def validate(self, values={}):
-        """Validate Require values
-
-        :rtype: boolean"""
-        for v in self.variables:
-            self._validate(v,values)
-        return True
 
 
     def to_primitive(self):
         return {"name": self.name,
-                "uri": self.uri,
+#                "uri": self.uri,
                 "type": self.type,
                 "lf_name": self.lf_name,
                 "provide_name": self.provide_name,
@@ -364,7 +364,7 @@ class RequireLocal(Require):
 
     def __repr__(self):
         return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
-                    (self.name, self.variables, self.lf_name, self.provide_name, self.provide_args)
+                    (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -386,11 +386,6 @@ class RequireLocal(Require):
     def generate_provide_args(self, dct={}):
         return self.generate_args(dct)
 
-    def get_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self.variables[0], {})
-
-    def get_default_values(self):
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self.variables[0], {})
 
 
 class RequireVhost(VString):
@@ -422,4 +417,4 @@ class RequireExternal(RequireLocal):
 
     def __repr__(self):
         return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
-                    (self.name, self.variables, self.lf_name, self.provide_name, self.provide_args)
+                    (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)

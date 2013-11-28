@@ -35,10 +35,8 @@ def parseArgs(args):
     for r in args:
         a=reqList(r[1:])
         if r[0] in acc:
-            if type(acc[r[0]]) != list:
-                acc[r[0]]=[acc[r[0]]]
             acc[r[0]].append(a)
-        else: acc.update({r[0]:a})
+        else: acc.update({r[0]:[a]})
     return acc
 
 def require_to_table(requires):
