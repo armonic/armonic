@@ -17,8 +17,8 @@ class Configured(State):
     def entry(self):
         """Set listen and vhost port"""
         logger.info("%s.%-10s: set listen and vhost port in  httpd.conf with requires %s"%(self.lf_name,self.name,self.requires_entry))
-        port = self.requires_entry.get('conf').variables.port.value
-        augeas = self.requires_entry.get('augeas').variables.root.value
+        port = self.requires_entry.get('conf').variables().port.value
+        augeas = self.requires_entry.get('augeas').variables().root.value
 
         self.conf=configuration.Apache(autoload=True,augeas_root=augeas)
         self.conf.setPort(str(port))
@@ -36,7 +36,7 @@ class Configured(State):
     #flags={'restart':True})
     def set_port(self, requires):
         """Set listen and vhost port"""
-        self.conf.setPort(requires.conf.port.value)
+        self.conf.setPort(requires.get('conf').variables().port.value)
 
     @provide()
     def get_port(self, requires):

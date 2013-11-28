@@ -12,17 +12,17 @@ class Configured(mss.state.RunScript):
     script_name="setup.sh"
 
     def require_to_script_args(self):
-        hosts=[v.host.value for v in self.requires_entry.get('backend').variables]
+        hosts=[v.host.value for v in self.requires_entry.get('backend').variables(all=True)]
         return [",".join(hosts),
-                str(self.requires_entry.conf.variables.port.value)]
+                str(self.requires_entry.conf.variables().port.value)]
 
     @Require('conf', [Port("port", default=80)])
     @RequireExternal('backend', "//get_website")
     def entry(self):
         mss.state.RunScript.entry(self)
-        for v in self.requires_entry.get('backend').variables:
+        for v in self.requires_entry.get('backend').variables(all=True):
             logger.event({"lifecycle":self.lf_name,"event":"binding","target":v.host.value})
-        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.conf.variables.port.value})
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.conf.variables().port.value})
 
 
 class Active(mss.state.ActiveWithSystemd):

@@ -29,14 +29,14 @@ class Configured(State):
     def entry(self):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s"%(self.lf_name,self.name,self.requires_entry))
-        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
-        self.config.port.set(str(self.requires_entry.get('conf').variables.port.value))
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables().root.value)
+        self.config.port.set(str(self.requires_entry.get('conf').variables().port.value))
 #        self.config.server_id.set("1")
         try:
             self.config.skipNetworking.rm()
         except XpathNotInFile : pass
         self.config.save()
-        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.get('conf').variables.port.value})
+        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.get('conf').variables().port.value})
 
 
     # @provide(requires=Requires([Require([Port("port")])]),
@@ -56,7 +56,7 @@ class SetRootPassword(mss.lifecycle.State):
 
     @Require('auth', [VString("password",default="root")])
     def entry(self):
-        pwd = self.requires_entry.get('auth').variables.get('password').value #password.value
+        pwd = self.requires_entry.get('auth').variables().get('password').value #password.value
         thread_mysqld = ProcessThread("mysql", None, "test",
                                       ["/bin/systemctl", "start", "mysqld.service"])
         if not thread_mysqld.launch():
@@ -111,10 +111,10 @@ class ResetRootPassword(mss.lifecycle.State):
         pwd_change=False
         for i in range(1,6):
             logger.info("%s.%s changing password ... [attempt %s/5]",self.lf_name,self.name,i)
-            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("auth").variables.password.value, None, "test",
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s"%self.requires_entry.get("auth").variables().password.value, None, "test",
                                          ["/usr/bin/mysql",
                                           "-u","root",
-                                          "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("auth").variables.password.value
+                                          "-e","use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;"%self.requires_entry.get("auth").variables().password.value
                                           ])
             thread_mysql.start()
             thread_mysql.join()
@@ -125,7 +125,7 @@ class ResetRootPassword(mss.lifecycle.State):
             time.sleep(1)
         thread_mysqld.stop()
         if pwd_change:
-            logger.info("%s.%s mysql root password is now '%s'",self.lf_name,self.name,self.requires_entry.get("auth").variables.password.value)
+            logger.info("%s.%s mysql root password is now '%s'",self.lf_name,self.name,self.requires_entry.get("auth").variables().password.value)
         else:
             logger.info("%s.%s mysql root password changing fail",self.lf_name,self.name)
 
@@ -163,8 +163,8 @@ class Active(mss.lifecycle.MetaState):
 
     @Require("auth", [VString('user'), VString('password')])
     def getDatabases(self,requires):
-        user = requires.get('auth').variables.get('user').value
-        password = requires.get('auth').variables.get('password').value
+        user = requires.get('auth').variables().get('user').value
+        password = requires.get('auth').variables().get('password').value
 
         con = MySQLdb.connect('localhost', user,
                               password);
@@ -179,10 +179,10 @@ class Active(mss.lifecycle.MetaState):
     @Require('data', [VString('user'), VString('password'), VString('database')])
     def addDatabase(self,requires):
         """Add a user and a database. User have permissions on all databases."""
-        database = requires.get('data').variables.get('database').value
-        user = requires.get('data').variables.get('user').value
-        password = requires.get('data').variables.get('password').value
-        mysql_root_pwd = requires.get('auth').variables.get('root_password').value
+        database = requires.get('data').variables().get('database').value
+        user = requires.get('data').variables().get('user').value
+        password = requires.get('data').variables().get('password').value
+        mysql_root_pwd = requires.get('auth').variables().get('root_password').value
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)
@@ -228,8 +228,8 @@ class ConfiguredAsSlave(State):
     @Require('conf', [VInt('server_id',default=2)])
     @Require('augeas', [VString("root",default="/")])
     def entry(self):
-        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
-        self.config.server_id.set(str(self.requires_entry.get('conf').variables.server_id.value))
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables().root.value)
+        self.config.server_id.set(str(self.requires_entry.get('conf').variables().server_id.value))
         self.config.log_bin.set("mysql-bin")
         self.config.save()
 
@@ -257,7 +257,7 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
                                    VString('password',default='repl_pwd')])
     def entry(self):
         root_user = "root"
-        root_password = self.requires_entry.get('auth_root').variables.get('root_password').value
+        root_password = self.requires_entry.get('auth_root').variables().get('root_password').value
         # We are using VUrl object retrieve the dump.
         filePath = self.requires_entry.get('dump').variables[0].fileUrl.get_file()
         logFile = self.requires_entry.get('dump').variables[0].logFile.value
@@ -293,7 +293,7 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
                      variables=[Password('root_password')])
     def slave_status(self,requires):
         root_user = "root"
-        root_password = requires.get('auth').variables.get('root_password').value
+        root_password = requires.get('auth').variables().get('root_password').value
 
         con = MySQLdb.connect('localhost', root_user, root_password);
         cur = con.cursor()
@@ -306,8 +306,8 @@ class ConfiguredAsMaster(State):
     @Require('conf', [VInt('server_id',default=1)])
     @Require('augeas', [VString("root",default="/")])
     def entry(self):
-        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables.root.value)
-        self.config.server_id.set(str(self.requires_entry.get('conf').variables.server_id.value))
+        self.config=configuration.Mysql(autoload=True,augeas_root=self.requires_entry.get('augeas').variables().root.value)
+        self.config.server_id.set(str(self.requires_entry.get('conf').variables().server_id.value))
         self.config.log_bin.set("mysql-bin")
 
         # Management of bin_log_ignore directive.
@@ -334,9 +334,9 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
                  variables=[Password('root_password')])
     def add_slave_auth(self,requires):
         root_user = "root"
-        root_password = requires.get('auth').variables.get('root_password').value
-        slave_user = requires.get('slave_id').variables.get('user').value
-        slave_password = requires.get('slave_id').variables.get('password').value
+        root_password = requires.get('auth').variables().get('root_password').value
+        slave_user = requires.get('slave_id').variables().get('user').value
+        slave_password = requires.get('slave_id').variables().get('password').value
 
         con = MySQLdb.connect('localhost', root_user, root_password);
         cur = con.cursor()
@@ -352,7 +352,7 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
         """Dump datas to file and return in a dict its filePath, the
         logPosition and the logFile"""
         root_user = "root"
-        root_password = requires.get('auth').variables.get('root_password').value
+        root_password = requires.get('auth').variables().get('root_password').value
         con = MySQLdb.connect('localhost', root_user, root_password);
         cur = con.cursor()
         # First, we lock all tables
@@ -395,10 +395,10 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
     @Require('data', [VString('user'), VString('password'), VString('database')])
     def addDatabaseMaster(self,requires):
         """Add a user and a database. User have permissions on all databases."""
-        database = requires.get('data').variables.get('database').value
-        user = requires.get('data').variables.get('user').value
-        password = requires.get('data').variables.get('password').value
-        mysql_root_pwd = requires.get('auth').variables.get('root_password').value
+        database = requires.get('data').variables().get('database').value
+        user = requires.get('data').variables().get('user').value
+        password = requires.get('data').variables().get('password').value
+        mysql_root_pwd = requires.get('auth').variables().get('root_password').value
 
         if database in ['database']:
             raise mss.common.ProvideError('Mysql', self.name, 'addDatabase', "database name can not be '%s'"%database)

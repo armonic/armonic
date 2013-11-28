@@ -17,8 +17,8 @@ class Active(State):
     @RequireExternal('nfs', "//Nfs_server//get_dir", provide_ret = [VString("remotetarget")])
     @Require('mountpoint', [VString("path")])
     def get_dir(self, requires):
-        mountpoint = requires.get("mountpoint").variables.path.value
-        remotetarget = requires.get("nfs").variables.remotetarget.value
+        mountpoint = requires.get("mountpoint").variables().path.value
+        remotetarget = requires.get("nfs").variables().remotetarget.value
         logging.info("mount.nfs %s %s" % (remotetarget, path))
 
 class Nfs_client(Lifecycle):
