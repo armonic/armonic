@@ -1,27 +1,34 @@
 #!/usr/bin/python
 
-from mss.client.smart import Provide, ShowAble, update_empty
+from mss.client.smart import Provide, update_empty
 import mss.client.smart
 import mss.require
 import readline
+from itertools import repeat
 
 import argparse
 
 Variables=[]
 
-class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
+class ShowAble(object):
+    def sep(self,offset=0):
+        if self.depth + offset == 0:
+            return ""
+#        return str(self.depth)+"/"+str(offset)+"".join(repeat("    ",self.depth+offset))
+        return "".join(repeat("    ",self.depth+offset))
+
+    def show(self,str,indent=0):
+        print "%s%s" % (self.sep(offset=indent) , str)
+
+
+class RequireSimple(mss.client.smart.Require, ShowAble):
     def build_values(self):
-        needed = self.get_values()
-        if self in self.provide_caller.provide_requires:
-            suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
-        else :
-            suggested = {}
-        ret = update_empty(suggested,needed)
-        return ret
+        return update_empty(self.helper_suggested_values(),
+                            self.helper_needed_values())
 
     def build_save_to(self, variable):
-        variable.uri.host = self.provide_caller.host
-        Variables.append((variable.uri,variable.value))
+        abs_xpath="/"+self.provide_caller.host+"/"+variable.get_xpath_relative()
+        Variables.append((abs_xpath,variable.value))
 
     def on_require_not_filled_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
@@ -35,45 +42,47 @@ class RequireSimple(mss.require.Require, mss.client.smart.Require, ShowAble):
 
 
 
-class RequireUser(mss.require.RequireUser, mss.client.smart.Require, ShowAble):
+class RequireUser(mss.client.smart.RequireUser, ShowAble):
     def build_values(self):
         # Here we generate require value
-        self.provided_by.host = self.provide_caller.host
-        for (uri,value) in Variables:
-            if str(self.provided_by) == str(uri):
-                return {self.variables[0].name : value}
+        host = self.provide_caller.host
+        for (absXpath,value) in Variables:
+            if ("/"+host+"/"+self.provided_by) == absXpath:
+                return {self._variables[0][0].name : value}
         self.show("Variable %s not found is already set variables!" % self.provided_by)
         return {}
 
     def build_save_to(self, variable):
-        variable.uri.host = self.provide_caller.host
-        Variables.append((variable.uri,variable.value))
+        xpath_rel = variable.get_xpath_relative()
+        xpath_abs = "/" + self.provide_caller.host + "/" + xpath_rel
+        Variables.append((xpath_abs,variable.value))
 
     def on_validation_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
 
-class RequireWithProvide(mss.client.smart.RequireWithProvide):
+class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
     def build_provide_class(self):
         return MyProvide
 
-    def build_values(self):
-        # Here we generate require value
-#        print "PROVIDE RET" , self.provide.provide_ret
-#        print "GET VALUE" , self.get_values()
-#        print "PROVIDE ARGS" , self.provide_args
+    def handle_many_requires(self, counter):
+        msg = ("Do you want to call again %s (already called %s time(s))?" % (
+                self.xpath, counter))
+        return user_input_confirm(msg, prefix=self.sep())
         
-#        print "REQUIRE" , self.variables
-        ret = update_empty(self.get_values(), self.provide.provide_ret)
-#        print "RET VALUE" , ret
-        return ret
+
+    def build_values(self):
+        return update_empty(
+            self.helper_needed_values(), 
+            self.helper_current_provide_result_values())
 
     def build_save_to(self, variable):
-        variable.uri.host = self.provide_caller.host
-        Variables.append((variable.uri,variable.value))
+        xpath_rel = variable.get_xpath_relative()
+        xpath_abs = "/" + self.provide_caller.host + "/" + xpath_rel
+        Variables.append((xpath_abs,variable.value))
 
-class RequireLocal(mss.require.RequireLocal, RequireWithProvide, ShowAble):
+class RequireLocal(mss.client.smart.RequireLocal, RequireWithProvide, ShowAble):
     def on_require_not_filled_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide.caller_provide.used_xpath)
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep(), prefill=self.provide.host))
@@ -85,7 +94,7 @@ class RequireLocal(mss.require.RequireLocal, RequireWithProvide, ShowAble):
             err_variable, values[err_variable])
         values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg))
 
-class RequireExternal(mss.require.RequireExternal, RequireWithProvide, ShowAble):
+class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, ShowAble):
     def on_require_not_filled_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide.caller_provide.used_xpath)
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep(), prefill=self.provide.host))
@@ -97,18 +106,18 @@ class RequireExternal(mss.require.RequireExternal, RequireWithProvide, ShowAble)
         except KeyError :
             value = None
         if err_variable == 'host':
-            prefill = self.provide.host
+            prefill = self._provide_current.host
         else:
             prefill = ""
         msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
-            err_variable, self.name, self.provide.caller_provide.used_xpath,
+            err_variable, self.name, self._provide_current.caller_provide.used_xpath,
             err_variable, value)
         values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg, prefill = prefill))
         return values
 
 
 
-class MyProvide(Provide):
+class MyProvide(Provide, ShowAble):
     
     def handle_provide_xpath(self,xpath, matches):
         return user_input_choose_amongst(matches, self.sep())

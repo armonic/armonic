@@ -51,6 +51,8 @@ from mss.client_socket import ClientSocket
 
 load_lifecycles("modules")
 
+import types
+
 import sys
 import logging
 logger = logging.getLogger()
@@ -122,36 +124,73 @@ class RequireSmart(object):
                 variable))
         pass
 
-    def _build(self,provide_caller):
-        self.provide_caller = provide_caller
-        self.depth = provide_caller.depth
-        # We validate this require with values returned by provide.
+    def handle_many_requires(self, counter):
+        """Return True if a new set of variable has to be provided."""
+        return False
 
-        ret = self.build_values()
-        self._build_validate(ret)
 
-        self._build_save_variables()
-
-    def _build_validate(self,values):
+    def _build_one_validate(self):
+        values = self._build_one()
         while True:
             try:
-                if values == None:
-                    values = {}
-                self.fill(values)
-                self.validate()
+                self.validate_one_set(self.factory_variable(), values)
             # except RequireNotFilled as e:
             #     values = self.on_require_not_filled_error(e.variable_name,values)
             #     continue
             except ValidationError as e:
+                logger.debug("Variable %s has not been validated." % e.variable_name)
                 values = self.on_validation_error(e.variable_name,values)
                 continue
             break
+        return values
 
+    def _build_one(self):
+        """
+        Build one set a variables.
+
+        :rtype: a dict of values
+        """
+        values = self.build_values()
+        return values
+
+    def _build_many(self):
+        """Build value for many variables set.
+        This manages the nargs arguments or this require.
+
+        :rtype: a list of dict of values
+        """
+        require_values = []
+        while self.nargs in ['?','*'] or len(require_values) < int(self.nargs):
+            if require_values == [] or self.handle_many_requires(len(require_values)):
+                pass
+            else:
+                break
+            values = self._build_one_validate()
+            require_values.append(values)
+
+        return require_values
+
+    def _build(self,provide_caller):
+        """Build values of this require"""
+        self.provide_caller = provide_caller
+        self.depth = provide_caller.depth
+        # We validate this require with values returned by provide.
+
+        require_values = self._build_many()
+    
+        self._build_validate(require_values)
+        self._build_save_variables()
+
+    def _build_validate(self,values):
+        if values == None:
+            values = []
+        self.fill(values)
+        self.validate()
 
     def _build_save_variables(self):
-        for v in self.variables:
-            self.build_save_to(v)
-
+        for vs in self._variables:
+            for v in vs:
+                self.build_save_to(v)
 
 
     def helper_needed_values(self):
@@ -165,7 +204,7 @@ class RequireSmart(object):
 
         :rtype: a dict of {variable_name : value}
         """
-        return self.get_values()
+        return self.get_values()[0]
 
     def helper_suggested_values(self):
         """
@@ -204,6 +243,7 @@ class RequireSmartWithProvide(RequireSmart):
 
     DOC TODO :To build value of this require, several object are available
     """
+    provides = []
 
     def build_provide_class(self):
         """Must be redefined. It must return the class that has to be
@@ -213,43 +253,30 @@ class RequireSmartWithProvide(RequireSmart):
         raise NotImplementedError
 
     def _provide_call(self):
-        self.provide = self.build_provide_class()(xpath = self.xpath, 
+        provide = self.build_provide_class()(xpath = self.xpath, 
                                                   caller_provide = self.provide_caller,
                                                   suggested_args = self.provide_args,
                                                   depth = self.depth+1)
         # Maybe, we don't want to call the proposed require. Moreover,
         # we have to choose the provide host.
-        self.provide.call()
+        provide.call()
+        return provide
 
-    def _build(self,provide_caller):
-        self.provide_caller = provide_caller
-        self.depth = provide_caller.depth
+    def _build_one(self):
+        provide = self._provide_call()
+        self._provide_current = provide
+        self.provides.append(provide)
 
-        # We call the provide to get its return values
-        self._provide_call()
+        values = self.build_values()
+        return values
 
-        # We validate this require with values returned by provide.
-        ret = self.build_values()
-        self._build_validate(ret)
-
-        self._build_save_variables()
-    
-    def _build_save_variables(self):
-        """Take a list as input and append a tuple of variable_name
-        and value to this list.
-        
-        :param variables: a list a 2-uple variable_name and value
+    def helper_current_provide_result_values(self):
         """
-        for v in self.variables[0]:
-            self.build_save_to(v)
-
-    def helper_provide_result_values(self):
-        """
-        To get the dict of value returned by the provide call.
+        To get the dict of value returned by the last provide call.
 
         :rtype: a dict of {variable_name : value}
         """
-        return self.provide.provide_ret
+        return self._provide_current.provide_ret
 
 
 class Require(mss.require.RequireUser, RequireSmart):
@@ -257,7 +284,17 @@ class Require(mss.require.RequireUser, RequireSmart):
 class RequireUser(mss.require.RequireUser, RequireSmart):
     pass
 class RequireLocal(mss.require.RequireLocal, RequireSmartWithProvide):
-    pass
+    def _provide_call(self):
+        provide = self.build_provide_class()(xpath = self.xpath, 
+                                                  caller_provide = self.provide_caller,
+                                                  suggested_args = self.provide_args,
+                                                  depth = self.depth+1,
+                                                  host = self.provide_caller.host)
+        # Maybe, we don't want to call the proposed require. Moreover,
+        # we have to choose the provide host.
+        provide.call()
+        return provide
+
 class RequireExternal(mss.require.RequireExternal, RequireSmartWithProvide):
     pass
 
@@ -361,7 +398,7 @@ class Provide(object):
         
         :rtype: logging.Handler
         """
-        return None
+        return []
 
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':"  % (
@@ -395,7 +432,7 @@ class Provide(object):
             if self.confirm_call():
                 provide_requires_primitive = self._generate_requires_primitive(self.provide_goto_requires)
                 provide_args_primitive = self._generate_requires_primitive(self.provide_requires)
-                logger.debug("mss.call(%s, %s, %s)" % (
+                logger.debug("mss.call(%s, %s, %s) ..." % (
                         self.used_xpath,
                         provide_requires_primitive,
                         provide_args_primitive))
@@ -403,7 +440,11 @@ class Provide(object):
                                                         xpath = self.used_xpath,
                                                         requires = provide_requires_primitive,
                                                         provide_args = provide_args_primitive)
-    
+                logger.debug("mss.call(%s, %s, %s) done." % (
+                        self.used_xpath,
+                        provide_requires_primitive,
+                        provide_args_primitive))
+                
                 # Because provide return type is currently not strict.
                 # This must be FIXED because useless.
                 if self.provide_ret == None:
@@ -436,11 +477,13 @@ class Provide(object):
         for r in (requires_external + requires_local):
             if self._require_classes.has_key(r.type):
                 r.__class__ = self._require_classes[r.type]
+                r._xml_register_children = types.MethodType( _xml_register_children, r )
             r._build(self)
 
         for r in (requires_simple + requires_user):
             if self._require_classes.has_key(r.type):
                 r.__class__ = self._require_classes[r.type]
+                r._xml_register_children = types.MethodType( _xml_register_children, r )
             r._build(self)
 
 
@@ -449,6 +492,27 @@ class Provide(object):
         """Use this method to specify which Require subclass has to be
         used for a require type."""
         cls._require_classes.update({require_type : klass})
+
+
+# Really shitty hack!  Because _xml_elt is not forwarded via
+# pickling, we have to manually create xpath in order to be able
+# to save it.  
+#
+# This method is just called when multiple variable
+# are filled by a client to validate them.
+def _xml_register_children(require):
+    if len(require.variables(all=True)) > 1:
+        for idx, vs in enumerate(require.variables(all=True)):
+            for v in vs:
+                print v._xpath
+                xpath_relative = v.get_xpath_relative()+"[%s]"%(idx+1)
+                xpath = v.get_xpath()+"[%s]"%(idx+1)
+
+                v._xpath_relative = xpath_relative
+                v._xpath = xpath
+                print "After " , v._xpath
+
+
 
 
 ################################################################################
