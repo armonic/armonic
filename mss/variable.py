@@ -74,7 +74,6 @@ class Variable(XmlRegister):
         return True
 
     def has_default_value(self):
-        print self.default
         return self.default != None
 
     def __str__(self):
