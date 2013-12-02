@@ -220,6 +220,16 @@ class Require(XmlRegister):
         return True
 
 
+    def factory_variable(self):
+        """Return an Itercontainer of variable based on variable
+        skeleton.
+
+        :rtype: IterContainer of Variable 
+        """
+        tmp_vars = copy.deepcopy(self._variables_skel)
+        return IterContainer(*tmp_vars)
+        
+
     def fill(self,primitives=[]):
         """Fill variables from a list of primitive.
 
@@ -231,11 +241,10 @@ class Require(XmlRegister):
             self._variables = [IterContainer(*self._variables_skel)]
             self._fill(self._variables[0],primitives[0])
             for primitive in primitives[1:]:
-                tmp_vars = copy.deepcopy(self._variables_skel)
-                tmp = IterContainer(*tmp_vars)
+                tmp = self.factory_variable()
                 self._fill(tmp,primitive)
                 self._variables.append(tmp)
-                self._xml_register_children()
+            self._xml_register_children()
         return True
 
     def validate_one_set(self, iterContainer, values={}):
@@ -246,7 +255,11 @@ class Require(XmlRegister):
 
         :rtype: boolean"""
         for variable in iterContainer:
-            variable._validate(values)
+            if values == {}:
+                value = None
+            else:
+                value = values[variable.name]
+            variable._validate(value)
                 
         return True
 
@@ -289,12 +302,15 @@ class Require(XmlRegister):
     
     def get_values(self):
         """ FIXME This jsut return the first element"""
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.value}.items()) , self._variables[0], {})
+        return [reduce(lambda a , x : 
+                       dict(a.items() + {x.name : x.value}.items()),
+                       vs, {}) for vs in self._variables]
 
     def get_default_values(self):
         """ FIXME This jsut return the first element"""
-        return reduce(lambda a , x : dict(a.items() + {x.name : x.default}.items()) , self._variables[0], {})
-
+        return [reduce(lambda a , x : 
+                       dict(a.items() + {x.name : x.default}.items()),
+                       vs, {}) for vs in self._variables]
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
