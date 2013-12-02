@@ -17,7 +17,7 @@ class Configured(mss.state.RunScript):
                 str(self.requires_entry.conf.variables().port.value)]
 
     @Require('conf', [Port("port", default=80)])
-    @RequireExternal('backend', "//get_website")
+    @RequireExternal('backend', "//get_website", nargs = '*')
     def entry(self):
         mss.state.RunScript.entry(self)
         for v in self.requires_entry.get('backend').variables(all=True):
