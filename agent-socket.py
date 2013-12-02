@@ -102,9 +102,10 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         except Exception as e:
             # self._logger.exception doesn't go through the socket so we get
             # the traceback and include it in an error log
-            t, v, tb = sys.exc_info()
-            self._logger.error("Error while processing %s:\n%s" % (request['method'],
-                                                                   "".join(traceback.format_tb(tb))))
+#            t, v, tb = sys.exc_info()
+#            self._logger.error("Error while processing %s:\n%s" % (request['method'],
+#                                                                   "".join(traceback.format_tb(tb))))
+            self._logger.exception(e)
             sendString(self.request, {'exception': e}, True)
         else:
             sendString(self.request, {'return': ret}, True)
