@@ -70,7 +70,8 @@ def state_to_table(state):
 def cmd_status(args):
     pass
 def cmd_module(args):
-    print client.call('lf_list')
+    for m in client.call('lf_list'):
+        print m
 
 def cmd_uri(args):
     pprint.pprint(client.call('uri', args.xpath))
@@ -140,11 +141,11 @@ def cmd_provide_call(args):
 
 def cmd_plot(args):
     if args.T == 'dot':
-        print client.call('to_dot', args.module)
+        print client.call('to_dot', args.module, reachable = args.reachable)
     elif args.T == 'json':
-            print json.dumps(client.call('to_primitive', args.module))
+            print json.dumps(client.call('to_primitive', args.module, reachable = args.reachable))
     elif args.T == 'json-human':
-            pprint.pprint(client.call('to_primitive', args.module))
+            pprint.pprint(client.call('to_primitive', args.module, reachable = args.reachable))
     elif args.T == 'automaton':
         raise NotImplementedError
     elif args.T == 'xml':
@@ -263,6 +264,7 @@ parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
 parser_plot.add_argument('module' , type=str, nargs='?', help='a module').completer = ModuleCompleter
+parser_plot.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe mss stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
 parser_plot.set_defaults(func=cmd_plot)
 

@@ -407,7 +407,7 @@ class Lifecycle(XmlRegister):
         if reachable:
             acc=[]
             for s in states:
-                if self._get_from_state_path(self.state_current(), s, go_back=True) != []:
+                if self._get_from_state_path(self.state_current(), s, go_back=True) != [] or s == self.state_current():
                     acc.append(s)
             states = acc
         return states
@@ -647,7 +647,7 @@ class Lifecycle(XmlRegister):
             i.cross(**(p.flags))
         return ret
 
-    def to_dot(self,cross=False, enter_doc=False, leave_doc=False):
+    def to_dot(self,cross=False, enter_doc=False, leave_doc=False, reachable=False):
         """Return a dot string of lifecycle."""
 
         def dotify(string): # To remove illegal character
@@ -677,7 +677,8 @@ class Lifecycle(XmlRegister):
         acc = ""
         acc += "digraph finite_state_machine {\n"
         acc += "node [shape = ellipse];\n"
-        for s in self.state_list():
+        state_list = self.state_list(reachable = reachable)
+        for s in state_list:
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
             requires = ""
@@ -704,8 +705,9 @@ class Lifecycle(XmlRegister):
             # End of label
             acc += '}"\n'
             acc += "];\n"
-        for (s, d) in self.transitions:
-            acc += '"%s" -> "%s";\n' % (s.name, d.name)
+        for (s, d) in self.transitions :
+            if s in state_list and d in state_list:
+                acc += '"%s" -> "%s";\n' % (s.name, d.name)
         acc += "}\n"
         return acc
 
@@ -713,11 +715,12 @@ class Lifecycle(XmlRegister):
         return "<Lifecycle:%s>" % self.name
 
                 
-    def to_primitive(self):
+    def to_primitive(self, reachable = False):
+        state_list = self.state_list(reachable = reachable)
         return {'name': self.name,
 #                'uri' : self.uri,
-                'states':[s.to_primitive() for s in self.state_list()],
-                "transitions": [(s.name,d.name) for (s,d) in self.transitions]}
+                'states':[s.to_primitive() for s in state_list],
+                "transitions": [(s.name,d.name) for (s,d) in self.transitions if s in state_list and d in state_list]}
 
 
 class LifecycleNotExist(Exception):
@@ -970,22 +973,22 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).provide_call(state_name, provide_name, requires, provide_args)
 
     @expose
-    def to_dot(self, lf_name):
+    def to_dot(self, lf_name, reachable = False):
         """Return the dot string of a lifecyle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_dot()
+        return self._get_by_name(lf_name).to_dot(reachable = reachable)
 
     @expose
-    def to_primitive(self, lf_name):
+    def to_primitive(self, lf_name, reachable = False):
         """Return the dot string of a lifecyle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_primitive()
+        return self._get_by_name(lf_name).to_primitive(reachable = reachable)
 
     @expose
     def uri(self, xpath = "//"):
