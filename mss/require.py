@@ -349,7 +349,7 @@ class RequireUser(Require):
 #                "uri": self.uri,
                 "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "user",
-                "provided_by": self.provided_by.to_primitive()}
+                "provided_by": self.provided_by}
 
 
 class RequireLocal(Require):
