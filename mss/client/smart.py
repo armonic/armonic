@@ -393,12 +393,21 @@ class Provide(object):
         :rtype: boolean"""
         return True
 
+    def on_call_provide_begin(self):
+        """This can be redefine to do some action just before the provide is called."""
+        logger.debug("on_call_provide_begin()")
+
+    def on_call_provide_end(self):
+        """This can be redefine to do some action just after the provide has been called."""
+        logger.debug("on_call_provide_end()")
+
     def set_logging_handlers(self):
         """Redefine it to get agent logs.
         
         :rtype: logging.Handler
         """
         return []
+
 
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':"  % (
@@ -436,10 +445,14 @@ class Provide(object):
                         self.used_xpath,
                         provide_requires_primitive,
                         provide_args_primitive))
+                
+                self.on_provide_call_begin()
                 self.provide_ret = self.lf_manager.call("provide_call",
                                                         xpath = self.used_xpath,
                                                         requires = provide_requires_primitive,
                                                         provide_args = provide_args_primitive)
+                self.on_provide_call_end()
+
                 logger.debug("mss.call(%s, %s, %s) done." % (
                         self.used_xpath,
                         provide_requires_primitive,
