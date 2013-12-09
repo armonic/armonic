@@ -297,13 +297,13 @@ class State(XmlRegister):
 
     def __repr__(self):
         return "<State:%s>" % self.name
-    
+
     def to_primitive(self):
-        return {"name":self.name,
-#                "uri":self.uri,
-                "supported_os_type":[t.to_primitive() for t in self.supported_os_type],
-                "provides":[r.to_primitive() for r in self.__class__.get_provides()],
-                "requires_entry":self.requires_entry.to_primitive()}
+        return {"name": self.name,
+                "xpath": self.get_xpath_relative(),
+                "supported_os_type": [t.to_primitive() for t in self.supported_os_type],
+                "provides": [r.to_primitive() for r in self.__class__.get_provides()],
+                "requires_entry": self.requires_entry.to_primitive()}
 
 class MetaState(State):
     """Set by state.__new__ to add implementation of this metastate."""
@@ -375,10 +375,9 @@ class Lifecycle(XmlRegister):
             self._push_state(state, requires)
             self._initialized = True
 
-            
     def _xml_tag(self):
         return self.name
-    
+
     def _xml_children(self):
         return self.state_list()
 
@@ -393,11 +392,13 @@ class Lifecycle(XmlRegister):
     def _state_list(cls):
         acc = []
         for (s, d) in cls.transitions:
-            if s not in acc: acc += [s]
-            if d not in acc: acc += [d]
+            if s not in acc:
+                acc += [s]
+            if d not in acc:
+                acc += [d]
         return acc
 
-    def state_list(self,reachable=False):
+    def state_list(self, reachable=False):
         """To get all available states.
 
         :parama reachable: list reachable states from the current state.
@@ -405,7 +406,7 @@ class Lifecycle(XmlRegister):
         """
         states = self.__class__._state_list()
         if reachable:
-            acc=[]
+            acc = []
             for s in states:
                 if self._get_from_state_path(self.state_current(), s, go_back=True) != [] or s == self.state_current():
                     acc.append(s)
@@ -442,7 +443,7 @@ class Lifecycle(XmlRegister):
         ret = state.safe_entry(requires)
         self._stack.append(state)
         logger.event({'event': 'state_applied', 'state': state.name, 'lifecycle': self.name})
-        logger.debug("push state '%s'" % state)
+        logger.debug("push state '%s'" % state.get_xpath())
         return ret
 
     def _pop_state(self):
@@ -718,7 +719,7 @@ class Lifecycle(XmlRegister):
     def to_primitive(self, reachable = False):
         state_list = self.state_list(reachable = reachable)
         return {'name': self.name,
-#                'uri' : self.uri,
+                'xpath' : self.get_xpath_relative(),
                 'states':[s.to_primitive() for s in state_list],
                 "transitions": [(s.name,d.name) for (s,d) in self.transitions if s in state_list and d in state_list]}
 

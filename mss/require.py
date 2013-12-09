@@ -136,8 +136,8 @@ class Requires(IterContainer, XmlRegister):
         return acc
 
     def to_primitive(self):
-        return {"name": self.name, 
-#                "xpath": self.get_xpath(), 
+        return {"name": self.name,
+                "xpath": self.get_xpath_relative(),
                 "require_list":[r.to_primitive() for r in self] , 
                 "flags": self.flags}
 
@@ -282,7 +282,7 @@ class Require(XmlRegister):
 
     def to_primitive(self):
         return {"name": self.name, 
-#                "uri": self.uri,
+                "xpath": self.get_xpath_relative(),
                 "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "simple"}
 
@@ -345,11 +345,11 @@ class RequireUser(Require):
         return "<RequireUser(name=%s, variables=%s)>" % (self.name, self._variables)
 
     def to_primitive(self):
-        return {"name": self.name, 
-#                "uri": self.uri,
+        return {"name": self.name,
+                "xpath": self.get_xpath_relative(),
                 "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "user",
-                "provided_by": self.provided_by}
+                "provided_by_xpath": self.provided_by}
 
 
 class RequireLocal(Require):
@@ -384,10 +384,10 @@ class RequireLocal(Require):
 
     def to_primitive(self):
         return {"name": self.name,
-#                "uri": self.uri,
+                "xpath": self.get_xpath_relative(),
                 "type": self.type,
                 "lf_name": self.lf_name,
-                "provide_name": self.provide_name,
+                "provide_xpath": self.xpath,
                 "provide_args": [v.to_primitive() for v in self.provide_args],
                 "provide_ret": [v.to_primitive() for v in self.provide_ret]}
 

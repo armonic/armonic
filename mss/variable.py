@@ -34,7 +34,7 @@ class Variable(XmlRegister):
 
     def to_primitive(self):
         return {'name':self.name, 
-#                'uri':self.uri, 
+                'xpath':self.get_xpath_relative(), 
                 'type':self.type, 'default': self.default}
 
     @property
