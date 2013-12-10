@@ -21,7 +21,7 @@ class NetworkFilter(logging.Filter):
             record.ip = ""
         return True
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 format = '%(asctime)s|%(levelname)7s - %(message)s'
