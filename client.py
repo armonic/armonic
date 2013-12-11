@@ -39,6 +39,23 @@ def parseArgs(args):
         else: acc.update({r[0]:[a]})
     return acc
 
+def provide_to_table(provide):
+    x = PrettyTable(["Provide Name","Require name", "Type", "ArgName", "ArgType", "ArgDefault", "Extra"])
+    x.align["Require Name"] = "l"
+    x.padding_width = 1 # One space between column edges and contents (default)
+    x.add_row([provide.name, "", "","","","",""])
+    for r in provide:
+        x.add_row(["", r.name , r.type,"","","",""])
+        for a in r.variables():
+            if r.type == 'user':
+                x.add_row(["", "","",a.name,a.type,a.default,r.provided_by])
+            else:
+                x.add_row(["", "","",a.name,a.type,a.default,""])
+        x.add_row(["", "" , "","","","",""])
+    print x
+
+
+
 def require_to_table(requires):
     x = PrettyTable(["Require Name","Type","ArgName", "ArgType","ArgDefault","Extra"])
     x.align["Require Name"] = "l"
@@ -113,19 +130,11 @@ def cmd_dot(args):
     print client.call('to_dot', args.module)
 
 def cmd_provide(args):
-    if args.state:
-        ret=client.call('provide_list', args.module,state_name=args.state)
-    else:
-        ret=client.call('provide_list', args.module)
-
-    x = PrettyTable(["Provide Name", "State Name","Args"])
-    x.align["Provide Name"] = "l"
-    x.align["State Name"] = "l"
-    x.align["Args"] = "l"
-    for k in ret.iterkeys():
-        for i in ret[k]:
-            x.add_row([i.name,k,i.get_all_variables()])
-    print x
+    ret=client.call('provide', args.xpath)
+    for provide in ret:
+        print provide.get_xpath()
+        provide_to_table(provide)
+        print ""
 
 def cmd_provide_show(args):
     if args.path:

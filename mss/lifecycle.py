@@ -112,7 +112,7 @@ from mss.variable import VString
 import mss.utils
 import copy
 
-from xml_register import XmlRegister
+from xml_register import XmlRegister, XpathHaveNotRessource
 
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
@@ -276,7 +276,7 @@ class State(XmlRegister):
         return cls.provides
 
     @classmethod
-    def _get_provide_by_name(cls, provide_name):
+    def _provide_by_name(cls, provide_name):
         """
         :rtype: Requires
         """
@@ -287,13 +287,13 @@ class State(XmlRegister):
 
     @classmethod
     def get_provide_args(cls, provide_name):
-        return cls._get_provide_by_name(provide_name)
+        return cls._provide_by_name(provide_name)
 
-    def get_provide_by_name(self, provide_name):
+    def provide_by_name(self, provide_name):
         """
         :rtype: Requires
         """
-        return self.__class__._get_provide_by_name(provide_name)
+        return self.__class__._provide_by_name(provide_name)
 
     def __repr__(self):
         return "<State:%s>" % self.name
@@ -516,6 +516,16 @@ class Lifecycle(XmlRegister):
                 return s
         raise StateNotExist("%s is not a valid state" % state)
 
+    def state_by_name(self, name):
+        """Get a state from its name
+
+        :param name: the name of a state
+        :rtype: State or None (if state doesn't exist)
+        """
+        for s in self.state_list():
+            if s.name == name:
+                return s
+
     def has_state(self,state):
         """To know if state_name is a state of self."""
         self._get_state_class(state)
@@ -581,7 +591,7 @@ class Lifecycle(XmlRegister):
                 return (sp[0])
         elif len(p) == 2: # Fully qualified provide name
             s = self._get_state_class(p[0])
-            s.get_provide_by_name(p[1])
+            s.provide_by_name(p[1])
             return (s,p[1])
 
     def provide_call_requires(self, state_name):
@@ -601,7 +611,7 @@ class Lifecycle(XmlRegister):
         """From a provide_name, returns its needed arguments."""
         state = self._get_state_class(state_name)
         # To be sure that the provide exists
-        state.get_provide_by_name(provide_name)
+        state.provide_by_name(provide_name)
         return state.get_provide_args(provide_name)
 
     def provide_call_path(self, state_name):
@@ -628,7 +638,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state_name)
         # To be sure that the provide exists
-        state.get_provide_by_name(provide_name)
+        state.provide_by_name(provide_name)
         if not self._is_state_in_stack(state):
             self.state_goto(state, requires)
         return self.provide_call_in_stack(state, provide_name, provide_args)
@@ -639,7 +649,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state)
         sidx = self._stack.index(state)
-        p = state.get_provide_by_name(provide_name)
+        p = state.provide_by_name(provide_name)
         sfct = state.__getattribute__(p.name)
         #args = p.build_args_from_primitive(provide_args)
         p.build_from_primitive(provide_args)
@@ -889,7 +899,7 @@ class LifecycleManager(object):
 
 
     @expose
-    def provide_list(self, lf_name, in_stack=False, state_name=None):
+    def provide(self, xpath):
         """If in_stack is True, just returns provides available in
         stack. Otherwise, returns all provides of this lf_name.
 
@@ -897,17 +907,15 @@ class LifecycleManager(object):
         :type lf_name: str
         :param in_stack: True or False (default)
         :type in_stack: bool"""
-        acc = {}
-        lf=self._get_by_name(lf_name)
-        if in_stack:
-            ps = lf.provide_list_in_stack()
-        else:
-            ps = lf.provide_list()
-        # Filter state based on state_name
-        if state_name != None and lf.has_state(state_name):
-            ps = [(s,p) for (s,p) in ps if s.name == state_name]
-        for (s, p) in ps:
-            acc.update({s.name: p})
+        matches = mss.xml_register.XmlRegister.find_all_elts(xpath)
+        acc = []
+        for m in matches:
+            if XmlRegister.is_ressource(m, "provide"):
+                provide_name = XmlRegister.get_ressource(m, "provide")
+                if provide_name not in STATE_RESERVED_METHODS:
+                    lf_name = XmlRegister.get_ressource(m, "lifecycle")
+                    state_name = XmlRegister.get_ressource(m, "state")
+                    acc.append(self._get_by_name(lf_name).state_by_name(state_name).provide_by_name(provide_name))
         return acc
 
     @expose
