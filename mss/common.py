@@ -22,24 +22,6 @@ class NetworkFilter(logging.Filter):
         return True
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-format = '%(asctime)s|%(levelname)7s - %(message)s'
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter(format))
-
-format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
-fh = logging.handlers.RotatingFileHandler("/tmp/mss.log", maxBytes=10485760, backupCount=5)
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(logging.Formatter(format))
-
-logger.addHandler(ch)
-logger.addHandler(fh)
-
-
-def log_disable_stdout():
-    logger.removeHandler(ch)
 
 EVENT_LEVELV_NUM = 25
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")

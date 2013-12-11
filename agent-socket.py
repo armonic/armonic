@@ -28,13 +28,28 @@ import mss.common
 
 PACKET_INFO_SIZE = 5
 
-def my_send(socket,string):
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+format = '%(asctime)s|%(levelname)7s - %(message)s'
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(logging.Formatter(format))
+
+format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
+fh = logging.handlers.RotatingFileHandler("/tmp/mss.log", maxBytes=10485760, backupCount=5)
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(logging.Formatter(format))
+
+logger.addHandler(ch)
+logger.addHandler(fh)
+
+
+def my_send(socket, string):
     send_size = len(string)
     sent_size = socket.send(string)
     if sent_size < send_size:
         logger.warning("Packet has not been sent entirely: %d bytes instead of %d bytes." % (sent_size, send_size))
-        
-    
 
 def sendString(socket,string,last=False):
     packer=struct.Struct("!I?")
