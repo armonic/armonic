@@ -8,12 +8,12 @@ initialisation and write tree to configuration file via
 
 Mapping is based on `xpath
 <https://github.com/hercules-team/augeas/wiki/Path-expressions>`_
-which are specified via :py:attr:`SuperNode.label` attribute.  When a node contains an
+which are specified via :py:attr:`BaseNode.label` attribute.  When a node contains an
 inner node, xpath of inner node should be specified as a relative
 xpath, ie. xpath of inner node is the concatenation of xpath of outer
 node and xpath of inner node.
 
-There are two :class:`SuperNode` subclasses:
+There are two :class:`BaseNode` subclasses:
 
 * :class:`Node` which represents normal node
 * :class:`Nodes` which represents array of normal node
@@ -46,14 +46,15 @@ class AugeasSaveError(Exception):pass
 class AugeasSetError(Exception):pass
 
 
-class SuperNode(object):
+class BaseNode(object):
     """This is the base class for :class:`Node` and :class:`Nodes`.
     
     
     """
-    baseXpath=""
+    baseXpath=None
+    """It is the absolute xpath of this node without its label."""
     label=""
-    """This attribute describes augeas variable xpath. To find it, use augtool command."""
+    """This attribute describes augeas variable xpath. To determine it, use augtool command."""
 
     def setAugeasParameters(self,augeas=None,baseXpath=None,label=None,index=None):
         if augeas != None:
@@ -66,14 +67,24 @@ class SuperNode(object):
             self.index=index
 
 
-class Node(SuperNode):
-    """This is a subclass of :class:`SuperNode`.
+    def load(self):
+        if self.baseXpath == None:
+            raise AttributeError("%s.baseXpath can not be None" % self.__class__.__name__)
+        if self.baseXpath.endswith("/"):
+            raise AttributeError("%s.baseXpath '%s' must not be end with '/'" % (
+                self.__class__.__name__,
+                self.baseXpath))
+        self._load(self.baseXpath,self.baseXpath)
+
+
+class Node(BaseNode):
+    """This is a subclass of :class:`BaseNode`.
     Basically, a node is described by
 
-    * :py:attr:`SuperNode.label` which corresponds to a relative xpath
+    * :py:attr:`BaseNode.label` which corresponds to a relative xpath
     * :py:attr:`Node.value` which describes the value of this node
 
-    Moreover, if :class:`SuperNode` are specified as :class:`Node`
+    Moreover, if :class:`BaseNode` are specified as :class:`Node`
     attributes, they are considered as children of this node.
 
     Children must be declared as class attribute and can then be
@@ -125,6 +136,7 @@ class Node(SuperNode):
         - if value is None, gets the value
         - if child augeas is None, sets child augeas field
         """
+        logging.debug("load node '%s'"%(self.__class__))
         self.baseXpath=baseXpath
         xpath="%s/%s" %(baseXpath,self.xpath_access())
         # We check that xpath exists and is unique
@@ -148,7 +160,10 @@ class Node(SuperNode):
         for c in self._children:
             if c.augeas==None:
                 c.augeas=self.augeas
+            logger.debug("%s calls load for %s with baseXpath '%s'" % (
+                self.__class__, c.__class__, self.xpath))
             c._load(baseXpath=self.xpath,createXpath=self.xpathCreate)
+            
         
 
 
@@ -170,6 +185,7 @@ class Node(SuperNode):
 
     def create(self):
         """This method is used to create new element in configuration files."""
+        logger.debug("Create element %s in tree" % self.xpathCreate)
         if self.value != None:
             logger.debug("augtool set %s %s" % (self.xpathCreate,self.value))
             self.augeas.set(self.xpathCreate,self.value)
@@ -181,8 +197,6 @@ class Node(SuperNode):
         fct(self)
         for n in self._children:
             n.walk(fct)
-
-    def load(self): self._load(self.baseXpath,self.baseXpath)    
 
     def get(self):
         if not self.inFile:raise XpathNotInFile()
@@ -220,9 +234,19 @@ class Node(SuperNode):
 
 
 
-class Nodes(SuperNode,list):
+class Nodes(BaseNode,list):
     """This class permits to described an array of nodes with same label.
     Basically, this is a list of :class:`Node`. To specialize the inner type, redefine cls attribute.
+
+    baseXpath is the absolute xpath without the label.
+
+    The initialisation of a node consists on create the python
+    tree.
+
+    The load methods consists on create the mapping between python
+    tree and augeas tree depending on the considered configuration
+    file.
+
     """
     cls=Node
     """This attribute permits to specialize inner type."""
@@ -230,8 +254,7 @@ class Nodes(SuperNode,list):
     def __init__(self,augeas=None,baseXpath=None):
         self.augeas=augeas
         if baseXpath != None:
-            self.baseXpath=baseXpath
-
+            self.baseXpath = baseXpath
 
     def walk(self,fct):
         for n in self:
@@ -242,12 +265,18 @@ class Nodes(SuperNode,list):
             n.create()
 
     def _load(self,baseXpath="",createXpath=""):
+        logging.debug("load node '%s'"%(self.__class__))
         acc=[]
         xpath="%s/%s" % (baseXpath,self.label)
         self.xpath=xpath
         self.createXpath=createXpath+"/"+self.label
-        logging.debug("match %s" % xpath)
+
+        if self.baseXpath == None:
+             self.baseXpath = baseXpath
+        
         m=self.augeas.match(xpath)
+        if m == []:
+            logging.debug("%s match nothing" % xpath)
         acc=[]
         i=1
         for j in m:
@@ -256,18 +285,18 @@ class Nodes(SuperNode,list):
             n._load(baseXpath,createXpath)
             list.append(self,n)
     
-    def load(self):  self._load(self.baseXpath,self.baseXpath)    
 
     def append(self,elt):
+        """To append a elt of type Node to this :py:class:`Nodes`. :py:class:`Node` elt must be """
         elt.setAugeasParameters(augeas=self.augeas,
                                 baseXpath=self.baseXpath,
                                 index=len(self)+1,
                                 label=self.label)
-        logging.debug("Append load node element")
+        logging.debug("Append %s to %s" % (
+            elt.__class__.__name__,
+            self.__class__.__name__))
         elt.load()
-        logging.debug("Append set node element (rec)")
         elt.create()
-#        elt.walk(lambda s : Node.set(s,s.value))
         list.append(self,elt)
 
 def BuildTree(cls,**kwargs):
@@ -301,16 +330,20 @@ class Configuration(object):
     _augeasInstance=None
 
     def __init__(self,augeas_root="/",autoload=False):
-        """ augeas_root parameter permits to specify the root of configuration files (a kind of chroot).
-        If autoload is set to True, all nodes are loaded, otherwise, you have to load them manually."""
+        """augeas_root parameter permits to specify the root of configuration
+        files (a kind of chroot).  
+
+        If autoload is set to True, all nodes are loaded, otherwise,
+        you have to load them manually.
+        """
         self.__initAugeas__(augeas_root)
         for a in dir(self):
             attr=self.__getattribute__(a)
-#            print a , attr
             if type(attr)==type:
                 if issubclass(attr,Node) or issubclass(attr,Nodes) :
                     setattr(self,a,attr(augeas=self._augeasInstance))
                     if autoload:
+                        logging.debug("autoload node named '%s' %s"%(a, getattr(self,a).__class__))
                         getattr(self,a).load()
                     self._nodes.append(getattr(self,a))
                     logging.debug("%s is a Node(s) "%a)
