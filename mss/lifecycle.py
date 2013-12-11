@@ -958,7 +958,7 @@ class LifecycleManager(object):
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
             state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name, provide_name)]
+        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name)]
 
     @expose
     def provide_call(self, lf_name=None, provide_name=None, xpath=None, requires={}, provide_args={}):
