@@ -133,8 +133,9 @@ def cmd_provide(args):
     ret=client.call('provide', args.xpath)
     for provide in ret:
         print provide.get_xpath()
-        provide_to_table(provide)
-        print ""
+        if args.long_description:
+            provide_to_table(provide)
+            print ""
 
 def cmd_provide_show(args):
     if args.path:
@@ -251,9 +252,8 @@ parser_state_goto.set_defaults(func=cmd_state_goto)
 
 
 parser_provide = subparsers.add_parser('provide', help='List all provide of a module')
-parser_provide.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
-parser_provide.add_argument('-s', '--state' , type=str, nargs='?', default=None, help='a state').completer= StateCompleter
-parser_provide.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
+parser_provide.add_argument('xpath' , type=str, help='a xpath')
+parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_show = subparsers.add_parser('provide-show', help='Show arguments of a provide.')
