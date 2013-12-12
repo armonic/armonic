@@ -16,7 +16,7 @@ class Variable(XmlRegister):
     type = 'variable'
     _value = None
 
-    def __init__(self, name, default=None, required=True):
+    def __init__(self, name, default=None, required=True, help=""):
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
@@ -25,6 +25,7 @@ class Variable(XmlRegister):
         self.default = default
         if default is not None:
             self.value = default
+        self.help = help
 
     def _xml_tag(self):
         return self.name
