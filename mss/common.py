@@ -93,13 +93,16 @@ class ValidationError(Exception):
         Exception.__init__(self,msg)
         self.variable_name = variable_name
         self.require_name = require_name
+        self.msg = msg
 
     def __setstate__(self,dict):
         self.variable_name = dict['variable_name']
         self.require_name = dict['require_name']
+        self.msg = dict['msg']
 
     def __repr__(self):
-        return "Variable '%s' of require '%s' is required!" % (self.variable_name, self.require_name)
+        return "Error for variable %s in require %s:\n\t%s" % (
+            self.variable_name, self.require_name, self.msg)
 
     def __str__(self):
         return self.__repr__()
