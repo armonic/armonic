@@ -211,9 +211,15 @@ class VInt(Variable):
         return self._value
 
 
+    
+
+class Host(VString):
+    pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
+    pattern_error = 'Incorrect host (pattern: %s)' % pattern
+
 class Hostname(VString):
     pattern = '^[a-z]+[a-z0-9]*$'
-    pattern_error = 'Incorrect Hostname'
+    pattern_error = 'Incorrect Hostname (pattern: %s)' % pattern
 
 
 class Port(VInt):
