@@ -56,7 +56,8 @@ class BaseNode(object):
     label=""
     """This attribute describes augeas variable xpath. To determine it, use augtool command."""
 
-    def setAugeasParameters(self,augeas=None,baseXpath=None,label=None,index=None):
+    def setAugeasParameters(self,augeas=None,baseXpath=None,label=None,index=None, nodes_container=None):
+        self._nodes_container = nodes_container
         if augeas != None:
             self.augeas=augeas
         if baseXpath != None:
@@ -100,12 +101,24 @@ class Node(BaseNode):
     2. Call setAugeasParamater()
     3. Call load()
 
+
+    :param nodes_container: Set to the nodes that contains this node
+    if this node belongs to a Nodes. This is used to remove a Node.
+
     """
     value=None
     """Permit to specify constant node value. See apache example for instance"""
     xpath="undefined"
-    inFile=False
-    def __init__(self,baseXpath=None,index=None,augeas=None,label=None):
+
+    _in_file = False
+    """If the element has been found in the file"""
+    will_be_in_file = False
+    """If the element will be written in the file on next augeas.save"""
+
+    def __init__(self,baseXpath=None,index=None,augeas=None,label=None, nodes_container = None):
+        logger.debug("create instance of class %s" % self.__class__.__name__)
+        self._nodes_container = nodes_container
+
         if label != None:
             self.label=label
         if baseXpath != None:
@@ -120,7 +133,13 @@ class Node(BaseNode):
                 attr=self.__getattribute__(a)
                 # We initialize all Node(s) fields
                 if type(attr)==type:
+                    # HERE, there is a big mistery
+                    # We should use this:
+                    #
                     if issubclass(attr,Node) or issubclass(attr,Nodes) :
+                    #
+                    # but it doesn't work ... and I don't know why! 
+                    #if "BaseNode" in [ c.__name__ for c in attr.mro()]:
                         aObj=attr()
                         setattr(self,a,aObj)
                         self._children.append(getattr(self,a))
@@ -137,18 +156,21 @@ class Node(BaseNode):
         - if child augeas is None, sets child augeas field
         """
         logging.debug("load node '%s'"%(self.__class__))
+
         self.baseXpath=baseXpath
         xpath="%s/%s" %(baseXpath,self.xpath_access())
         # We check that xpath exists and is unique
-        logging.debug("match %s" % xpath)
+        logging.debug("augtool match %s" % xpath)
         xpaths=self.augeas.match(xpath)
         if len(xpaths) == 0:
             logging.debug("Not in configuration file  %s"%xpath)
             self.xpath=xpath
         elif len(xpaths) != 1:
-            raise XpathNotUnique(xpath)
+            raise XpathNotUnique("%s is not unique. If it is "\
+                                 "an array of node, use Nodes"\
+                                 "as self class." % xpath)
         else: 
-            self.inFile=True
+            self._in_file=True
             self.xpath=xpaths[0]
             if self.value == None:
                 self.value=self.get()
@@ -189,6 +211,7 @@ class Node(BaseNode):
         if self.value != None:
             logger.debug("augtool set %s %s" % (self.xpathCreate,self.value))
             self.augeas.set(self.xpathCreate,self.value)
+            self._will_be_in_file = True
         for n in self._children:
             n.create()
         
@@ -199,21 +222,22 @@ class Node(BaseNode):
             n.walk(fct)
 
     def get(self):
-        if not self.inFile:raise XpathNotInFile()
+        if not self._in_file:raise XpathNotInFile()
         logger.debug("augtool get %s"%(self.xpath))
         return self.augeas.get(self.xpath)
 
     def rm(self):
-        """Remove the tree. This is really shity because we should del
-        object as same time ... maybe ot not.
-        FIXME
+        """Remove the tree. It also remove this element from its Nodes if it
+        belongs to a Nodes.
         """
-        if not self.inFile:raise XpathNotInFile()
+        if not self._in_file:
+            return
         logger.debug("augtool rm %s"%(self.xpath))
-        return self.augeas.remove(self.xpath)
-
-
-
+        self.augeas.remove(self.xpath)
+        if self._nodes_container != None:
+            self._nodes_container.remove(self)
+        self._nodes_container.load()
+            
     def set(self,value):
         if value != None:
             self.value=value
@@ -226,10 +250,12 @@ class Node(BaseNode):
         return None
 
     def __repr__(self):
-        if self.inFile:
+        if self._in_file:
             value=self.value
+        elif self._will_be_in_file:
+            value="'%s' (on next augeas.save)" % self.value
         else:
-            value="not in file and not set"
+            value = self.value
         return "%s = %s" % (self.xpath , value)
 
 
@@ -265,7 +291,19 @@ class Nodes(BaseNode,list):
             n.create()
 
     def _load(self,baseXpath="",createXpath=""):
-        logging.debug("load node '%s'"%(self.__class__))
+        """Be careful. If elements are added without saving, and another
+        element is removed, they are lost.
+
+        """
+        logging.debug("load Nodes '%s'"%(self.__class__.__name__))
+        # We are removing all elements
+        if self!=[]:
+            while True:
+                try:
+                    self.pop()
+                except IndexError:
+                    break
+
         acc=[]
         xpath="%s/%s" % (baseXpath,self.label)
         self.xpath=xpath
@@ -279,8 +317,17 @@ class Nodes(BaseNode,list):
             logging.debug("%s match nothing" % xpath)
         acc=[]
         i=1
+        logger.debug("\n\n")
         for j in m:
-            n=self.cls(baseXpath=baseXpath,augeas=self.augeas,label=self.label,index=i)
+            print self.cls
+            n=self.cls(baseXpath=baseXpath,
+                       augeas=self.augeas,
+                       label=self.label,
+                       index=i, 
+                       nodes_container=self)
+            logger.debug("created instance of class %s for %s"%(
+                n.__class__.__name__,
+                self.__class__.__name__))
             i+=1
             n._load(baseXpath,createXpath)
             list.append(self,n)
@@ -291,7 +338,8 @@ class Nodes(BaseNode,list):
         elt.setAugeasParameters(augeas=self.augeas,
                                 baseXpath=self.baseXpath,
                                 index=len(self)+1,
-                                label=self.label)
+                                label=self.label,
+                                nodes_container=self)
         logging.debug("Append %s to %s" % (
             elt.__class__.__name__,
             self.__class__.__name__))
