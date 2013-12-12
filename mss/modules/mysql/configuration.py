@@ -10,9 +10,9 @@ class BinLogIgnoreDbs(Nodes):
     cls=BinLogIgnoreDb
 
 class Mysql(Configuration):
-    port=Child("Port",baseXpath='//target[. = "mysqld"]/',label="port")
+    port=Child("Port",baseXpath='//target[. = "mysqld"]',label="port")
     log_bin=Child("LogBin",baseXpath='//target[. = "mysqld"]',label="log-bin")
     server_id=Child("ServerId",baseXpath='//target[. = "mysqld"]',label="server-id")
     binlog_ignore_dbs=BinLogIgnoreDbs
-    skipNetworking=Child("SkipNetworking",baseXpath='//my.cnf/target[*]/',label="skip-networking")
+    skipNetworking=Child("SkipNetworking",baseXpath='//my.cnf/target[*]',label="skip-networking")
     lenses={"MySQL":["/etc/mysql/my.cnf","/etc/my.cnf"]}
