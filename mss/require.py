@@ -258,7 +258,13 @@ class Require(XmlRegister):
             if values == {}:
                 value = None
             else:
-                value = values[variable.name]
+                try:
+                    value = values[variable.name]
+                except KeyError:
+                    raise ValidationError(
+                        variable_name = variable.name,
+                        msg = "Submitted value doen't contain key %s" % variable.name)
+                    
             variable._validate(value)
                 
         return True
@@ -274,7 +280,9 @@ class Require(XmlRegister):
                 try:
                     v = values[idx]
                 except IndexError:
-                    raise ValidationError("Values must contains as much element as variables set elements.")
+                    raise ValidationError(
+                        "Values must contains as much element"
+                        " as variables set elements.")
                 self.validate_one_set(vs,v)
             else:
                 self.validate_one_set(vs)
