@@ -51,6 +51,9 @@ class MissingRequire(Exception):
     def __repr__(self):
         return "Missing require %s" % self.variable
 
+class RequireDefinitionError(Exception):
+    """This is raised when the definition of a require is not correct."""
+    pass
 
 class Requires(IterContainer, XmlRegister):
     """Basically, this describes a list of :py:class:`Require`."""
@@ -189,6 +192,7 @@ class Require(XmlRegister):
     def _xml_ressource_name(self):
         return "require"
 
+        
     def __call__(self, func):
         """
         Used as a method decorator to define Require on :py:class:`State` methods
@@ -196,7 +200,6 @@ class Require(XmlRegister):
         """
         has_requires = hasattr(func, '_requires')
         require = self
-
         if has_requires:
             func._requires.append(require)
         else:
@@ -436,6 +439,12 @@ class RequireExternal(RequireLocal):
     It MUST be provided.
     """
     def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
+        for v in provide_args:
+            if v.name == 'host':
+                raise RequireDefinitionError(
+                    "Variable name 'host' can not be use because it is a"
+                    " reserved variable name for External require.")
+
         RequireLocal.__init__(self, name, xpath, provide_args + [VString('host')], provide_ret, nargs)
         self.type = "external"
 
