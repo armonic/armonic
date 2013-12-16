@@ -222,11 +222,17 @@ class RequireSmart(object):
         :rtype: a dict of {variable_name : value}
 
         """
+        suggested = {}
         #To ensure this require is not a goto state require
         if self in self.provide_caller.provide_requires:
-            suggested = dict([(s.name,s.value) for s in self.provide_caller.suggested_args])
-        else :
-            suggested = {}
+            acc = []
+            caller_provide = self.provide_caller
+            while caller_provide != None:
+                tmp = (dict([(s.name,s.value) for s in caller_provide.suggested_args if s.value != None]))
+                acc.append(tmp)
+                caller_provide = caller_provide.caller_provide
+            for s in reversed(acc):
+                suggested.update(s)
         return suggested
 
     
@@ -393,11 +399,11 @@ class Provide(object):
         :rtype: boolean"""
         return True
 
-    def on_call_provide_begin(self):
+    def on_provide_call_begin(self):
         """This can be redefine to do some action just before the provide is called."""
         logger.debug("on_call_provide_begin()")
 
-    def on_call_provide_end(self):
+    def on_provide_call_end(self):
         """This can be redefine to do some action just after the provide has been called."""
         logger.debug("on_call_provide_end()")
 
