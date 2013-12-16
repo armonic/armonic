@@ -68,8 +68,7 @@ logger = logging.getLogger()
 import mss.require
 
 class RequireSmart(object):
-    """
-    This class has to be used to handle how a require is built.
+    """This class has to be used to handle how a require is built.
     So, basically we have to handle :
     
     - how values of a require are built (see :py:meth:`RequireSmart.build_values`)
@@ -84,6 +83,13 @@ class RequireSmart(object):
     - Arguments specified by the require : require.provide_args
     - Arguments used to call the provide : ~provide_requires[*].values
     - Default values of requires of this provide : ~provide_requires[*].defaults
+
+    How from_xpath variable parameter is managed.  All variable are
+    stored in class variable Provide._Variable.  When a variable has a
+    from_xpath atrtibute not equal to None, the value of this xpath is
+    retreived from this list and the value of the variable is set to
+    the previoulsly used value.
+
     """
 
     def build_values(self):
@@ -147,6 +153,11 @@ class RequireSmart(object):
         :rtype: a list of dict of values
         """
         require_values = []
+        for v in self.variables():
+            if v.from_xpath is not None:
+                import ipdb; ipdb.set_trace()
+                v.value = self.provide_caller.__class__.find_xpath(v.from_xpath)
+
         while self.nargs in ['?','*'] or len(require_values) < int(self.nargs):
             if require_values == [] or self.handle_many_requires(len(require_values)):
                 pass
@@ -177,6 +188,7 @@ class RequireSmart(object):
     def _build_save_variables(self):
         for vs in self._variables:
             for v in vs:
+                self.provide_caller.__class__._Variables.append((v.get_xpath(), v.value))
                 self.build_save_to(v)
 
 
@@ -336,6 +348,8 @@ class Provide(object):
                         "simple":Require,
                         "user":RequireUser}
 
+    # Class variable that contains all xpath and value filled for the main provide.
+    _Variables = []
 
     def __init__(self, xpath, host=None, caller_provide=None, suggested_args=[], depth=0):
         self.xpath = xpath
@@ -491,6 +505,16 @@ class Provide(object):
                 r.__class__ = self._require_classes[r.type]
                 r._xml_register_children = types.MethodType( _xml_register_children, r )
             r._build(self)
+
+    @classmethod
+    def find_xpath(cls, xpath):
+        """Try to find the value associated to xpath.
+        :rtype: a value, None otherwise.
+        """
+        for v in cls._Variables:
+            if v[0].endswith(xpath):
+                return v[1]
+        return None
 
 
     @classmethod
