@@ -6,9 +6,15 @@ import mss.require
 import readline
 from itertools import repeat
 
+import sys
 import argparse
 
 Variables=[]
+
+import logging
+logger_root = logging.getLogger()
+logger_root.setLevel(logging.DEBUG)
+
 
 class ShowAble(object):
     def sep(self,offset=0):
@@ -31,12 +37,22 @@ class RequireSimple(mss.client.smart.Require, ShowAble):
         Variables.append((abs_xpath,variable.value))
 
     def on_require_not_filled_error(self,err_variable,values):
-        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
+        msg = ("Variable '%s' of simple require '%s' of provide '%s' is not set.\n"
+               "%sPlease set it:" % (
+                   err_variable, 
+                   self.name, 
+                   self.provide_caller.provide_name,
+                   self.sep()))
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
 
     def on_validation_error(self,err_variable,values):
-        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
+        msg = ("Variable '%s' of simple require '%s' of provide '%s' is not set.\n"
+               "%sPlease set it:" % (
+                   err_variable, 
+                   self.name,
+                   self.provide_caller.provide_name, 
+                   self.sep()))
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
 
@@ -58,7 +74,12 @@ class RequireUser(mss.client.smart.RequireUser, ShowAble):
         Variables.append((xpath_abs,variable.value))
 
     def on_validation_error(self,err_variable,values):
-        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide_caller.provide_name)
+        msg = ("Variable '%s' of user require '%s' of provide '%s' is not set.\n"
+               "%sPlease set it:" % (
+                   err_variable, 
+                   self.name,
+                   self.provide_caller.provide_name, 
+                   self.sep()))
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
 
@@ -84,7 +105,12 @@ class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
 
 class RequireLocal(mss.client.smart.RequireLocal, RequireWithProvide, ShowAble):
     def on_require_not_filled_error(self,err_variable,values):
-        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide.caller_provide.used_xpath)
+        msg = ("Variable '%s' of local require '%s' of provide '%s' is not set.\n"
+               "%sPlease set it:" % (
+                   err_variable, 
+                   self.name,
+                   self.provide_caller.used_xpath, 
+                   self.sep()))
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep(), prefill=self.provide.host))
         return values
 
@@ -148,10 +174,18 @@ class MyProvide(Provide, ShowAble):
             self.show("%s" % (r.get_values()) , indent = 2)
         return user_input_confirm("Confirm the call?", prefix=self.sep())
 
+
+    def set_logging_handlers(self):
+        handler = logging.StreamHandler(sys.stdout)
+        format = '%(levelname)6s %(ip)15s - %(message)s'
+        handler.setFormatter(logging.Formatter(format))
+        return [handler]
+
 MyProvide.set_require_class("external",RequireExternal)
 MyProvide.set_require_class("simple",RequireSimple)
 MyProvide.set_require_class("local",RequireLocal)
 MyProvide.set_require_class("user",RequireUser)
+
 
 
 def user_input_choose_amongst(choices, prefix=''):
@@ -207,6 +241,9 @@ args = parser.parse_args()
 
 class ProvideInit(object):
     host = args.host
+    caller_provide = None
+    suggested_args = []
+    xpath = "Init"
 
 p = MyProvide(xpath=args.xpath, caller_provide=ProvideInit())
 print p.call()
