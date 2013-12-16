@@ -2,36 +2,44 @@ from mss.common import ValidationError, IterContainer
 import copy
 import inspect
 import re
-
+from types import MethodType
 from mss.xml_register import XmlRegister
 
 class VariableNotSet(Exception):pass
 
 class Variable(XmlRegister):
-    """
+    """A object :py:class:`Variable` is a container for a value used by a
+    provide. The minimal definition is just the name of the
+    variable. It is possbile to specify a default value. Moreover, it
+    is also possible to specify an xpath from where the value must be retreive.
+
     The type of a variable is validate (with _validate_type method)
     when the value is set. The value of a variable can be validate by
-    hand with validate method. """ 
+    hand with validate method.
+
+    :param from_xpath: If this parameter is set, the client can reuse
+    a value already used by the varaible targeted by this xpath.
+
+    """ 
 
     type = 'variable'
     _value = None
 
-    def __init__(self, name, default=None, required=True, help=""):
+    def __init__(self, name, default=None, required=True, help="", from_xpath=None):
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
         self.name = name
         self.required = required
         self.default = default
-        if default is not None:
-            self.value = default
+        self._value = default
+        self.from_xpath = from_xpath
         self.help = help
 
     def _xml_tag(self):
         return self.name
     def _xml_ressource_name(self):
         return "variable"
-
 
     def to_primitive(self):
         return {'name':self.name, 
@@ -64,7 +72,7 @@ class Variable(XmlRegister):
         already have fill it because filled values will be used.
         """
         if not value:
-            value = self._value
+            value = self.value
 
         if not value and self.required:
             raise ValidationError(variable_name=self.name , msg="%s is required" % self.name)
@@ -107,7 +115,7 @@ class VList(Variable):
 
     @property
     def value(self):
-        return self._value
+        return self.value
 
     @value.setter
     def value(self, value):
@@ -124,7 +132,7 @@ class VList(Variable):
             var.fill(value)
             values.append(var)
         if not len(value) == 0:
-            self._value = values
+            self.value = values
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
@@ -209,7 +217,7 @@ class VInt(Variable):
         return value
 
     def __int__(self):
-        return self._value
+        return self.value
 
 
     
