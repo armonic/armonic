@@ -93,16 +93,6 @@ class RequireSmart(object):
         """
         raise NotImplementedError("%s.build_values must be implemented" % self.__class__.__name__)
 
-    def on_require_not_filled_error(self,err_variable,values):
-        """This method is called when a variable is not filled. Redefine it to adapt its behavior.
-        
-        :param err_variable: The variable name of not filled variable
-        :param values: The dict of current values
-        :rtype: A updated dict of 'values' variable name and values
-        """
-
-        raise NotImplementedError
-
     def on_validation_error(self,err_variable_name ,values):
         """This method is called when the validation of a variable is
         not satisfated. Redefine it to adapt its behavior.
@@ -134,9 +124,6 @@ class RequireSmart(object):
         while True:
             try:
                 self.validate_one_set(self.factory_variable(), values)
-            # except RequireNotFilled as e:
-            #     values = self.on_require_not_filled_error(e.variable_name,values)
-            #     continue
             except ValidationError as e:
                 logger.debug("Variable %s has not been validated." % e.variable_name)
                 values = self.on_validation_error(e.variable_name,values)
