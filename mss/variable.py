@@ -17,6 +17,12 @@ class Variable(XmlRegister):
     when the value is set. The value of a variable can be validate by
     hand with validate method.
 
+    About from_xpath parameter. The goal it to reuse a value already provided. We
+    can not directly use the value because at init time, it is not
+    been filled yet. So, another way is to use a lamdba but in this case
+    we must go to a state state per state if we want to know the value
+    before using it. Indeed, if 
+
     :param from_xpath: If this parameter is set, the client can reuse
     a value already used by the varaible targeted by this xpath.
 
@@ -174,9 +180,25 @@ class VList(Variable):
 
 
 class VString(Variable):
+    """:param modifier: a format string with one string arg which will be the value."""
     type = 'str'
     pattern = None
     pattern_error = None
+
+    def __init__(self, name, default=None, required=True, help="", from_xpath=None, modifier="%s"):
+        Variable.__init__(self, name, default, required, help, from_xpath)
+        self._modifier = modifier
+
+    @property
+    def value(self):
+        if self._value is not None:
+            return self._modifier % self._value
+        else:
+            return None
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
     def _validate(self, value = None):
         if not value:
