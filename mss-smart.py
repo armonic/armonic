@@ -98,34 +98,23 @@ class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
             self.helper_needed_values(), 
             self.helper_current_provide_result_values())
 
+
     def build_save_to(self, variable):
         xpath_rel = variable.get_xpath_relative()
         xpath_abs = "/" + self.provide_caller.host + "/" + xpath_rel
         Variables.append((xpath_abs,variable.value))
 
 class RequireLocal(mss.client.smart.RequireLocal, RequireWithProvide, ShowAble):
-    def on_require_not_filled_error(self,err_variable,values):
-        msg = ("Variable '%s' of local require '%s' of provide '%s' is not set.\n"
-               "%sPlease set it:" % (
-                   err_variable, 
-                   self.name,
-                   self.provide_caller.used_xpath, 
-                   self.sep()))
-        values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep(), prefill=self.provide.host))
-        return values
-
     def on_validation_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
             err_variable, self.name, self.provide_name,
             err_variable, values[err_variable])
-        values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg))
+        values.update(user_input_variable(
+            variable_name = err_variable, 
+            prefix=self.sep(), 
+            message = msg))
 
 class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, ShowAble):
-    def on_require_not_filled_error(self,err_variable,values):
-        msg = "Variable '%s' of require '%s' of provide '%s' is not set.\nPlease set it:"%(err_variable, self.name, self.provide.caller_provide.used_xpath)
-        values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep(), prefill=self.provide.host))
-        return values
-
     def on_validation_error(self,err_variable,values):
         try :
             value = values[err_variable]
@@ -135,10 +124,17 @@ class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, Show
             prefill = self._provide_current.host
         else:
             prefill = ""
-        msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
-            err_variable, self.name, self._provide_current.caller_provide.used_xpath,
-            err_variable, value)
-        values.update(user_input_variable(variable_name = err_variable, prefix=self.sep(), message = msg, prefill = prefill))
+        msg = ("Variable '%s' of require '%s' of provide '%s' has "
+               "been set with wrong value.\n'%s' = '%s'\nPlease change it:")%(
+                   err_variable, 
+                   self.name, 
+                   self._provide_current.caller_provide.used_xpath,
+                   err_variable, value)
+        values.update(user_input_variable(
+            variable_name = err_variable, 
+            prefix=self.sep(), 
+            message = msg, 
+            prefill = prefill))
         return values
 
 
