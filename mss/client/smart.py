@@ -155,7 +155,6 @@ class RequireSmart(object):
         require_values = []
         for v in self.variables():
             if v.from_xpath is not None:
-                import ipdb; ipdb.set_trace()
                 v.value = self.provide_caller.__class__.find_xpath(v.from_xpath)
 
         while self.nargs in ['?','*'] or len(require_values) < int(self.nargs):
