@@ -654,6 +654,8 @@ class Lifecycle(XmlRegister):
         #args = p.build_args_from_primitive(provide_args)
         p.build_from_primitive(provide_args)
         ret = sfct(p)
+        logger.debug("Provide %s returns values %s"%(
+            p.name, ret))
         for i in self._stack[sidx:]:
             i.cross(**(p.flags))
         return ret

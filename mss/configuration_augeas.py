@@ -236,7 +236,7 @@ class Node(BaseNode):
         self.augeas.remove(self.xpath)
         if self._nodes_container != None:
             self._nodes_container.remove(self)
-        self._nodes_container.load()
+            self._nodes_container.load()
             
     def set(self,value):
         if value != None:
