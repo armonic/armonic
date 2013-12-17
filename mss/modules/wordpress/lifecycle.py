@@ -40,6 +40,8 @@ class Configured(State):
 
 
 class Active(State):
+    httpdDocumentRoot = None
+
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     @RequireLocal("http_document", "//Httpd//get_documentRoot",
@@ -63,15 +65,22 @@ class Active(State):
         """Return the httpd listening port for this wordpress installation"""
         return "Call Httpd.getPortByDocumentRoot('%s')"%self.httpdDocumentRoot
 
-
 class ActiveWithNfs(State):
     """Get wp-content from a NFS share."""
-    @RequireLocal("nfs", "//Nfs_client//get_dir", provide_args = [VString("path", default = "/var/www/wordpress/wp-content")])
+    @RequireLocal(
+        "nfs", 
+        "//Nfs_client//mount", 
+        provide_args=[
+            VString(
+                "path",
+                from_xpath = "Wordpress/Active/entry/http_document/httpdDocumentRoot",
+                modifier = "%s/wp-content"),
+            VString("name", default = "wordpress")])
     def entry(self):
         pass
     
     @provide()
-    def get_website():
+    def get_website(self, requires):
         pass
 
 class Installed(mss.state.InstallPackagesUrpm):

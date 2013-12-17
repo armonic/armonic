@@ -3,6 +3,9 @@ from mss.require import Require, RequireExternal
 from mss.variable import Port, Host, VString
 import mss.state
 
+import os
+import os.path
+
 import mss.configuration_augeas as augeas
 
 import mss.common
@@ -42,9 +45,10 @@ class Configuration(augeas.Configuration):
         client = Client()
         client.value = client_addr
         dir.clients.append(client)
-        option = augeas.Node()
-        option.value = "ro"
-        client.options.append(option)
+        for o in options:
+            option = augeas.Node()
+            option.value = o
+            client.options.append(option)
 
     def rm_dir(self, directory, client):
         """To remove the dir of a client. If several client use this dir, all
@@ -62,20 +66,26 @@ class Installed(mss.state.InstallPackagesUrpm):
     packages=["nfs-utils"]
 class Configured(State):
     
-    @Require("export", variables=[VString("dir"), Host("host")])
+    @Require("export", variables=[VString("name"), Host("client")])
     @flags({'restart':True})
-    def add_dir(self, requires):
+    def get_dir(self, requires):
         conf = Configuration()
-        dir = requires.get("export").variables().get("dir").value
-        host = requires.get("export").variables().get("host").value
-    
-        conf.add_dir(dir, host, ["rw", "sync"])
+        name = requires.get("export").variables().get("name").value
+        client = requires.get("export").variables().get("client").value
+        
+        dir = "/var/mss/nfs/%s" % name
+        if not os.path.exists(dir):
+            logger.debug("Directory %s has been created" % dir)
+            os.makedirs(dir)
+        conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
+        remotetarget = "%s:%s" % (client, dir)
+        return {'remotetarget':remotetarget}
 
 class Active(mss.state.ActiveWithSystemd):
     services=["nfs-common", "nfs-server"]
     
-    @provide()
+#    @provide()
     def get_dir(self, requires):
         return {"remotetarget" : "undefined/remote/target"}
 
