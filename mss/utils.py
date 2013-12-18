@@ -86,3 +86,7 @@ def ethernet_ifs():
                 ifs.append([interface, addr, network, netmask])
 
     return ifs
+
+
+def get_ip():
+    return ethernet_ifs()[0][1]

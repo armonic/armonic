@@ -2,7 +2,7 @@ from mss.lifecycle import State, Transition, Lifecycle, provide, flags
 from mss.require import Require, RequireExternal
 from mss.variable import Port, Host, VString
 import mss.state
-
+import mss.utils
 import os
 import os.path
 
@@ -79,15 +79,31 @@ class Configured(State):
             os.makedirs(dir)
         conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
-        remotetarget = "%s:%s" % (client, dir)
+        remotetarget = "%s:%s" % (mss.utils.get_ip(), dir)
         return {'remotetarget':remotetarget}
 
 class Active(mss.state.ActiveWithSystemd):
     services=["nfs-common", "nfs-server"]
     
-#    @provide()
+    # This should be useless because we shoyuld call it in state
+    # Configuration and the n call start provide. But Zephyrus is
+    # currently not able to call two provide...
+    @Require("export", variables=[VString("name"), Host("client")])
+    @flags({'restart':True})
     def get_dir(self, requires):
-        return {"remotetarget" : "undefined/remote/target"}
+        conf = Configuration()
+        name = requires.get("export").variables().get("name").value
+        client = requires.get("export").variables().get("client").value
+        
+        dir = "/var/mss/nfs/%s" % name
+        if not os.path.exists(dir):
+            logger.debug("Directory %s has been created" % dir)
+            os.makedirs(dir)
+        conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
+        conf.save()
+        remotetarget = "%s:%s" % (mss.utils.get_ip(), dir)
+        return {'remotetarget':remotetarget}
+
 
 class Nfs_server(Lifecycle):
     transitions=[

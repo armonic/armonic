@@ -31,8 +31,8 @@ class Active(State):
                        Host("client", default=ethernet_ifs()[0][1])],
         provide_ret = [VString("remotetarget")])
     @Require('mountpoint', [VString("path")])
-    @RequireExternal('nfs-start', 
-                     '//Nfs_server/Active/start')
+#    @RequireExternal('nfs-start', 
+#                     '//Nfs_server/Active/start')
     def mount(self, requires):
         mountpoint = requires.get("mountpoint").variables().path.value
         remotetarget = requires.get("nfs").variables().remotetarget.value
