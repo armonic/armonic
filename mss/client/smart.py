@@ -440,6 +440,8 @@ class Provide(object):
 
     def call(self):
         if self.handle_call():
+            self.on_provide_call_begin()
+
             if self.host == None:
                 raise TypeError("host can not be 'None'")
             self._build_requires()
@@ -452,7 +454,6 @@ class Provide(object):
                         provide_requires_primitive,
                         provide_args_primitive))
                 
-                self.on_provide_call_begin()
                 self.provide_ret = self.lf_manager.call("provide_call",
                                                         xpath = self.used_xpath,
                                                         requires = provide_requires_primitive,
