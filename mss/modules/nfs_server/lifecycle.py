@@ -38,17 +38,31 @@ class Configuration(augeas.Configuration):
     dirs = Dirs
 
     def add_dir(self, directory, client_addr, options = []):
-        dir = Dir()
-        dir.value = directory
-        self.dirs.append(dir)
-
-        client = Client()
-        client.value = client_addr
-        dir.clients.append(client)
+        """This add a new dir in /etc/exports. It tries to update the dir if
+        it already exists."""
+        dir = None
+        for d in self.dirs:
+            if d.value == directory:
+                dir = d
+        if dir is None:
+            dir = Dir()
+            dir.value = directory
+            self.dirs.append(dir)
+            
+        client = None
+        for c in dir.clients:
+            if c.value == client_addr:
+                client = c
+        if client is None:
+            client = Client()
+            client.value = client_addr
+            dir.clients.append(client)
+        
         for o in options:
-            option = augeas.Node()
-            option.value = o
-            client.options.append(option)
+            if o not in [ tmp.value for tmp in client.options]:
+                option = augeas.Node()
+                option.value = o
+                client.options.append(option)
 
     def rm_dir(self, directory, client):
         """To remove the dir of a client. If several client use this dir, all

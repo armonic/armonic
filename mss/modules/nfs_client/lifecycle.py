@@ -34,11 +34,26 @@ class Active(State):
 #    @RequireExternal('nfs-start', 
 #                     '//Nfs_server/Active/start')
     def mount(self, requires):
+        """Mount remotetarget on mountpoint. If it is already mounted, it does nothing."""
         mountpoint = requires.get("mountpoint").variables().path.value
         remotetarget = requires.get("nfs").variables().remotetarget.value
 
-        already_exist = False
+        for line in file("/proc/mounts"):
+            device = line.split(" ")[0]
+            dir = line.split(" ")[1]
+            if dir == mountpoint:
+                if device == remotetarget:
+                    logger.info("%s is already mounted in %s" %(
+                        remotetarget, mountpoint))
+                    return
+                else:
+                    raise Exception("Directory %s is used by %s."
+                                    "Can not mount nfs share %s"%(
+                                        mountpoint,
+                                        device,
+                                        remotetarget))
 
+        already_exist = False
         if not os.path.exists(mountpoint):
             logging.debug("Directory %s has been created" % mountpoint)
             os.makedirs(mountpoint)
