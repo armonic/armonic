@@ -128,7 +128,7 @@ class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, Show
                "been set with wrong value.\n'%s' = '%s'\nPlease change it:")%(
                    err_variable, 
                    self.name, 
-                   self._provide_current.caller_provide.used_xpath,
+                   self._provide_current.requirer.used_xpath,
                    err_variable, value)
         values.update(user_input_variable(
             variable_name = err_variable, 
@@ -152,7 +152,7 @@ class MyProvide(Provide, ShowAble):
         """
         self.show("Preparing the call of provide %s ..." % (self.used_xpath))
         msg = "Where do you want to call it?"
-        ret = user_input_variable(prefix=self.sep(), variable_name = 'host', message = msg, prefill = self.caller_provide.host)
+        ret = user_input_variable(prefix=self.sep(), variable_name = 'host', message = msg, prefill = self.requirer.host)
         host = ret['host']
         self.host = host
         msg = ("Do you really want to call %s on '%s' ?" % (
@@ -237,11 +237,11 @@ args = parser.parse_args()
 
 class ProvideInit(object):
     host = args.host
-    caller_provide = None
+    requirer = None
     suggested_args = []
     xpath = "Init"
 
-p = MyProvide(xpath=args.xpath, caller_provide=ProvideInit())
+p = MyProvide(xpath=args.xpath, requirer=ProvideInit())
 print p.call()
 
 print "Filled variables during this deployment:"
