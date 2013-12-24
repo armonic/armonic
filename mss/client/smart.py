@@ -32,6 +32,7 @@ How it works on a example::
 6. Finally, the provide /Wordpress/Active/get_website is called.
 """
 
+from mss.common import ValidationError
 from mss.client_socket import ClientSocket
 
 import types
@@ -555,7 +556,6 @@ def _xml_register_children(require):
     if len(require.variables(all=True)) > 1:
         for idx, vs in enumerate(require.variables(all=True)):
             for v in vs:
-                print v._xpath
                 xpath_relative = v.get_xpath_relative()+"[%s]" % (idx+1)
                 xpath = v.get_xpath()+"[%s]" % (idx+1)
 
