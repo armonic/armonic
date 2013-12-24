@@ -11,7 +11,7 @@ class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
     useful if we simultaneous use several agents.
 
-    It add %(ip) formatter.
+    It adds %(ip) formatter.
 
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
@@ -20,6 +20,32 @@ class NetworkFilter(logging.Filter):
         except IndexError:
             record.ip = ""
         return True
+
+class XpathFilter(logging.Filter):
+    """Use this filter to add xpath of object that emit the log.
+
+    It adds %(xpath) formatter.
+
+    Add this filter to a handler via addFilter method."""
+    def filter(self, record):
+        f = logging.currentframe()
+        #On some versions of IronPython, currentframe() returns None if
+        #IronPython isn't run with -X:Frames.
+        if f is not None:
+            f = f.f_back
+        while hasattr(f, "f_code"):
+            co = f.f_code
+            filename = os.path.normcase(co.co_filename)
+            if filename != record.pathname:
+                f = f.f_back
+                continue
+            try:
+                record.xpath = f.f_locals['self'].get_xpath_relative()
+            except AttributeError:
+                record.xpath = ""
+            break
+        return True
+
 
 logger = logging.getLogger(__name__)
 

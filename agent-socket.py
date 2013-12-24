@@ -94,6 +94,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self._logHandler.setLevel(logging.DEBUG)
 #        self._logHandler.setFormatter(logging.Formatter(format))
         self._logHandler.addFilter(mss.common.NetworkFilter())
+        print "add filter xpath"
+        self._logHandler.addFilter(mss.common.XpathFilter())
         self._logger.addHandler(self._logHandler)
 
     def finish(self):

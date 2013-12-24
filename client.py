@@ -294,7 +294,7 @@ elif args.protocol == "socket":
     from mss.client_socket import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
-    format = '%(asctime)s|%(levelname)6s %(ip)15s - %(message)s'
+    format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
     sh = logging.StreamHandler()
     sh.setLevel(args.verbose)
     sh.setFormatter(logging.Formatter(format))
