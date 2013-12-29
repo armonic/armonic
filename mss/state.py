@@ -21,8 +21,9 @@ class CopyTemplate(mss.lifecycle.State):
     src=""
     dst=""
     def entry(self):
-        logger.info("%s.%s copy template file from '%s' to '%s' ...", self.lf_name, self.name, self.src, self.dst)
+        logger.info("Copying template file from '%s' to '%s' ...", self.src, self.dst)
         copyfile(self.src,self.dst)
+        logger.info("Copying template file from '%s' to '%s': done.", self.src, self.dst)
 
 class RunScript(mss.lifecycle.State):
     """This state permit to run a shell script. To convert require to
@@ -39,17 +40,18 @@ class RunScript(mss.lifecycle.State):
         script_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), self.script_name)
         script_dir = os.path.dirname(script_path)
         script_args = self.require_to_script_args()
-        logger.info("%s.%s run script %s %s ...", self.lf_name,
-                     self.name, self.script_name, script_args)
+        logger.info("Running script '%s' with args '%s' ..." % (
+            self.script_name, 
+            script_args))
         thread = process.ProcessThread("/bin/bash", None, "test",
                                        ["/bin/bash", script_path] + script_args,
                                        script_dir, None, None, None)
         thread.start()
         thread.join()
         if thread.code == 0:
-            logger.info("%s.%s run script %s done.", self.lf_name, self.name, script_path)
+            logger.info("Running script '%s': done." % script_path)
         else:
-            logger.info("%s.%s run script %s failed.", self.lf_name, self.name, script_path)
+            logger.info("Running script '%s': failed!" % script_path)
             logger.debug("%s",thread.output)
 
 class PackageInstallationError(Exception):
@@ -62,7 +64,7 @@ class InstallPackagesUrpm(mss.lifecycle.State):
 
     def entry(self):
         pkgs = " ".join(self.packages)
-        logger.info("%s.%s urpmi %s ...", self.lf_name, self.name, pkgs)
+        logger.info("Installing packages '%s' ..." % (pkgs))
         for p in self.packages:
             thread = process.ProcessThread("/bin/rpm", None, "test",
                                            ["/bin/rpm", "-q", "%s" % p],
@@ -70,19 +72,20 @@ class InstallPackagesUrpm(mss.lifecycle.State):
             thread.start()
             thread.join()
             if thread.code == 0:
-                logger.info("package %s is already installed" % p)
+                logger.info("Package '%s' is already installed" % p)
             else:
-                logger.info("package %s is installing..." % p)
+                logger.info("Package '%s' is installing..." % p)
                 thread = process.ProcessThread("/usr/sbin/urpmi", None, "test",
                                                ["/usr/sbin/urpmi","--auto", "--no-suggests","%s" % p],
                                                None, None, None, None)
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.info("%s.%s urpmi %s done." % (self.lf_name, self.name, p))
+                    logger.info("Installing of package '%s': done." % p)
                 else:
-                    logger.info("%s.%s urpmi %s failed." % (self.lf_name, self.name, p))
+                    logger.info("Installing of package '%s': failed!" % p)
                     raise UrpmiError()
+        logger.info("Installing packages '%s': done." % (pkgs))
 
     def leave(self):
         logger.info("%s.%-10s: urpme %s" % (self.lf_name, self.name, " ".join(self.packages)))
@@ -134,16 +137,16 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
     def __systemctl(self, action):
         for service in self.services:
-            logger.info("%s.%s systemctl %s %s.service ..." % (self.lf_name, self.name, action, service))
+            logger.info("systemctl %s %s.service ..." % (action, service))
             thread = process.ProcessThread("systemctl %s %s.service" % (action, service), None, "test",
                                            ["/bin/systemctl", action, "%s.service" % service],
                                            None, None, None, None)
             thread.start()
             thread.join()
             if thread.code == 0:
-                logger.info("%s.%s systemctl %s %s.service done" % (self.lf_name, self.name, action, service))
+                logger.info("systemctl %s %s.service: done." % (action, service))
             else:
-                logger.info("%s.%s systemctl %s %s.service failed" % (self.lf_name, self.name, action, service))
+                logger.info("systemctl %s %s.service: failed!" % (action, service))
                 thread = process.ProcessThread("systemctl status %s.service" % service, None, "test",
                                                ["/bin/systemctl", "status", "%s.service" % service],
                                                None, None, None, None)
@@ -152,8 +155,10 @@ class ActiveWithSystemd(mss.lifecycle.State):
                 raise ErrorSystemd("See PROCESS log for information about systemd status %s" % service)
 
     def entry(self):
+        logger.info("Starting services '%s' ..." % self.services)
         self.__systemctl("start")
         logger.event({"lifecycle":self.lf_name,"is_active":"true"})
+        logger.info("Starting services '%s': done." % self.services)
 
 
     def leave(self):
@@ -161,12 +166,13 @@ class ActiveWithSystemd(mss.lifecycle.State):
 
     def cross(self, restart=False):
         if restart:
+            logger.info("Restarting services '%s' ..." % self.services)
             self.__systemctl("reload")
+            logger.info("Restarting services '%s': done." % self.services)
 
     @mss.lifecycle.provide()
     def start(self,requires):
-        logger.info("%s.%-10s: call start provide (going to state Active if not already reached)" %
-                    (self.lf_name, self.name))
+        logger.info("Start (via provide) services '%s': done." % self.services)
 
 
 class ActiveWithSystemV(mss.lifecycle.State):

@@ -43,7 +43,7 @@ class Active(State):
             dir = line.split(" ")[1]
             if dir == mountpoint:
                 if device == remotetarget:
-                    logger.info("%s is already mounted in %s" %(
+                    logger.info("Device %s is already mounted in %s" %(
                         remotetarget, mountpoint))
                     return
                 else:

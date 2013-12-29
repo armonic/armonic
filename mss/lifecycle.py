@@ -250,7 +250,7 @@ class State(XmlRegister):
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
-        logger.info("%s.%-10s: cross state but nothing to do" % (self.lf_name, self.name))
+        logger.info("State crossed but nothing to do.")
 
     def entry_doc(self):
         """NOT YET IMPLEMENTED.
