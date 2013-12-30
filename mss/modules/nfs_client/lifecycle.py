@@ -26,7 +26,7 @@ class Active(State):
     
     @RequireExternal(
         'nfs', 
-        "//Nfs_server//get_dir", 
+        "//Nfs_server/Active/get_dir", 
         provide_args= [
                        Host("client", default=ethernet_ifs()[0][1])],
         provide_ret = [VString("remotetarget")])
