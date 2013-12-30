@@ -214,6 +214,8 @@ class State(XmlRegister):
     def _xml_ressource_name(self):
         return "state"
 
+    def _xml_add_property(self):
+        return [("supported_os_type", str(o)) for o in self.supported_os_type]
 
     @property
     def name(self):
@@ -347,7 +349,10 @@ class Lifecycle(XmlRegister):
                 # permits to create specical path.  If two metastate
                 # has same implementation, we need to create special
                 # implementations for each metastate.
-                created_states = [type('%s.%s'%(ms.__class__.__name__,s.__name__),(s,),{}) for s in ms.implementations]
+                created_states = [type(
+                    '%s.%s'%(ms.__class__.__name__,s.__name__),
+                    (s,),
+                    {}) for s in ms.implementations]
                 for s in created_states:
                     logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name)) 
                 # For each transtion to MetaState ms
@@ -1011,6 +1016,10 @@ class LifecycleManager(object):
         return mss.xml_register.XmlRegister.find_all_elts(xpath)
 
     @expose
-    def to_xml(self):
+    def xpath(self, xpath):
+        return mss.xml_register.XmlRegister.xpath(xpath)
+
+    @expose
+    def to_xml(self, xpath = None):
         """Return the xml representation of agent."""
-        return mss.xml_register.XmlRegister.to_string()
+        return mss.xml_register.XmlRegister.to_string(xpath)

@@ -1,4 +1,4 @@
-from lxml.etree import Element, SubElement, Comment, tostring, ElementTree, XPathEvalError
+from lxml.etree import Element, SubElement, Comment, tostring, ElementTree, XPathEvalError, _Element
 from platform import uname
 
 import logging
@@ -77,7 +77,6 @@ class XmlRegister(object):
                              prop,
                              attrib={'ressource':'property'})
             sub.text = value
-            print tostring(self._xml_elt)
 
     def _xml_register_children(self):
         """Be careful, this removes children before adding them."""
@@ -112,6 +111,26 @@ class XmlRegister(object):
         except KeyError:
             pass
         return dct
+
+    @classmethod
+    def xpath(cls, xpath):
+        """
+        :rtype: [str]
+        """
+        acc=[]
+        try:
+            request = cls._xml_root_tree.xpath(xpath)
+            if type(request) != list:
+                return [str(request)]
+
+            for e  in request:
+                if type(e) == _Element:
+                    acc.append(tostring(e))
+                else:
+                    acc.append(str(e))
+        except XPathEvalError:
+            raise XpathInvalidExpression("xpath '%s' is not valid!" % xpath)
+        return acc
 
     @classmethod
     def find_all_elts(cls, xpath):
