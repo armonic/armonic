@@ -1,6 +1,9 @@
 from lxml.etree import Element, SubElement, Comment, tostring, ElementTree, XPathEvalError
 from platform import uname
 
+import logging
+logger = logging.getLogger(__name__)
+
 RESSOURCE_ATTR="ressource"
 
 class XpathNotMatch(Exception):
@@ -38,7 +41,15 @@ class XmlRegister(object):
     def _xml_children(self):
         return []
 
+    def _xml_add_property(self):
+        """Redefine it to add property nodes to this node.
+
+        :rtype: a list of tuple (property_name, value)"""
+        return []
+                   
+
     def _xml_register(self, parent=None):
+        # The root node is the hostname
         if XmlRegister._xml_root == None:
             XmlRegister._xml_root = Element(uname()[1], attrib={"ressource":"location"})
             XmlRegister._xml_root_tree = ElementTree(XmlRegister._xml_root)
@@ -59,7 +70,17 @@ class XmlRegister(object):
 
         self._xml_register_children()
 
+        for (prop, value) in self._xml_add_property():
+            logger.debug("Add property %s:%s on node with tag %s" %(
+                prop, value, self._xml_tag()))
+            sub = SubElement(self._xml_elt,
+                             prop,
+                             attrib={'ressource':'property'})
+            sub.text = value
+            print tostring(self._xml_elt)
+
     def _xml_register_children(self):
+        """Be careful, this removes children before adding them."""
         for c in self._xml_elt.iterchildren():
             self._xml_elt.remove(c)
 
@@ -68,8 +89,12 @@ class XmlRegister(object):
         
         
     @classmethod
-    def to_string(cls):
-        return tostring(cls._xml_root)
+    def to_string(cls, xpath = None):
+        if xpath is not None:
+            elt = cls._find_one(xpath)
+        else:
+            elt = cls._xml_root
+        return tostring(elt)
 
     def get_xpath(self):
         return self._xpath 
@@ -98,7 +123,10 @@ class XmlRegister(object):
     @classmethod
     def _find_one(cls, xpath):
         """Return the ressource uri. Raise exception if multiple match
-        or not match."""
+        or not match.
+
+        :rtype: a xml element.
+        """
         try:
             ressource = cls._xml_root_tree.xpath(xpath)
         except XPathEvalError:
