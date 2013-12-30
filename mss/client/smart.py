@@ -262,8 +262,6 @@ class RequireSmartWithProvide(RequireSmart):
     get the return values of the current call.
 
     """
-    provides = []
-
     def build_provide_class(self):
         """Can be redefined. It must return the class that has to be
         used to build the provide needed by this require.
@@ -289,6 +287,8 @@ class RequireSmartWithProvide(RequireSmart):
     def _build_one(self):
         provide = self._provide_call()
         self._provide_current = provide
+        if not hasattr(self,"provides"):
+            self.provides = []
         self.provides.append(provide)
 
         values = self.build_values()
