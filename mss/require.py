@@ -84,7 +84,6 @@ class Requires(IterContainer, XmlRegister):
     def _xml_ressource_name(self):
         return "provide"
 
-
     def build_args_from_primitive(self,primitive):
         self.build_from_primitive(primitive)
         args={}
@@ -191,6 +190,9 @@ class Require(XmlRegister):
 
     def _xml_ressource_name(self):
         return "require"
+
+    def _xml_add_property(self):
+        return [("nargs", self.nargs)]
 
         
     def __call__(self, func):
