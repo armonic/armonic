@@ -87,7 +87,7 @@ class ActiveWithNfs(State):
 class Installed(mss.state.InstallPackagesUrpm):
     packages=["wordpress"]
 
-class InstalledOnDebian(mss.state.InstallPackagesUrpm):
+class InstalledOnDebian(mss.state.InstallPackagesApt):
     packages=["wordpress"]
     supported_os_type = [mss.utils.OsTypeDebianWheezy()]
 
