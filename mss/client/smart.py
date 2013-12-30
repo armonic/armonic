@@ -3,8 +3,8 @@ build a client that will automatically satisfate all requires of the
 called provide.
 
 Basicaly, you have to implement the class :py:class:`Provide` and
-classes :py:class:`Require`. The class :py:class:`Provide` permits to
-define how and where a provide is called. Classes :py:class:`Require`
+classes :py:class:`RequireSmart`. The class :py:class:`Provide` permits to
+define how and where a provide is called. Classes :py:class:`RequireSmart`
 and :py:class:`RequireWithProvide` permits to define how require
 values are built.
 
@@ -48,25 +48,29 @@ import mss.require
 
 
 class RequireSmart(object):
-    """This class has to be used to handle how a require is built.
+    """This class has to be used to handle how a require is built.  For
+    external or local requires, this class is specialized in
+    :py:class:`RequireWithProvide`.
+
     So, basically we have to handle :
 
-    - how values of a require are built \
+    * how values of a require are built \
     (see :py:meth:`RequireSmart.build_values`)
-    - what happen if a variable is not filled \
-    (see :py:meth:`RequireSmart.on_require_not_filled_error`)
-    - what happen if a variable is not validated \
+    * what happen if a variable is not validated \
     (see :py:meth:`RequireSmart.on_validation_error`)
-    - how values used to fill this require are saved \
+    * how values used to fill this require are saved \
     (see :py:meth:`RequireSmart.build_save_to`)
 
-    DOC TODO :To build value of this require, several object are available
+    To fill this require, several helpers can be used:
 
-    To fill this require, you can use::
+    * :py:meth:`helper_needed_values` permits to get the dict of \
+    variable names (and their default values)
+    * :py:meth:`helper_suggested_values` permits to get values \
+    suggested by the requirer.
 
-    - Arguments specified by the require : require.provide_args
-    - Arguments used to call the provide : ~provide_requires[*].values
-    - Default values of requires of this provide : ~provide_requires[*].defaults
+    Sometimes, a require can be called several times. This is handle
+    by the method :py:meth:`handle_many_requires`. If this method
+    return True, then, the require will be filled one time more.
 
     How from_xpath variable parameter is managed.  All variable are
     stored in class variable Provide._Variable.  When a variable has a
@@ -83,6 +87,16 @@ class RequireSmart(object):
         """
         raise NotImplementedError(
             "%s.build_values must be implemented" % self.__class__.__name__)
+
+    def handle_validation_error(self):
+        """Redefine it if you don't want to validate values. This can ben
+        useful to run some kind of simulation, ie. the provide is not
+        called. By default, it returns True. If it returns false, the
+        validation process is not realized.
+
+        :rtype: bool
+        """
+        return True
 
     def on_validation_error(self, err_variable_name, values):
         """This method is called when the validation of a variable is
@@ -114,7 +128,7 @@ class RequireSmart(object):
 
     def _build_one_validate(self):
         values = self._build_one()
-        while True:
+        while self.handle_validation_error():
             try:
                 self.validate_one_set(self.factory_variable(), values)
             except ValidationError as e:
@@ -172,7 +186,8 @@ class RequireSmart(object):
         if values is None:
             values = []
         self.fill(values)
-        self.validate()
+        if self.handle_validation_error():
+            self.validate()
 
     def _build_save_variables(self):
         for vs in self._variables:
@@ -199,13 +214,18 @@ class RequireSmart(object):
         To get the variable value suggested by the local or external
         require that is the origin of the provide of this require.
 
-        For instance, suppose that we have a external require:
-        RequireExternal("external", xpath=/a_provide, variables[VString("variable",default=value)])
+        For instance, suppose that we have a external require::
+
+          RequireExternal("external", xpath=/a_provide, variables[VString("variable_name",default=value)])
+
         This require can generate a provide call.
-        Suppose the provide 'a_provide' have the require:
-        require=Require("this")
-        Then, require.helper_suggested_value() will return:
-        {'variable':value}
+        Suppose the provide 'a_provide' have the require::
+
+          require=Require("this")
+
+        Then, require.helper_suggested_value() will return::
+
+          {'variable_name':value}
 
         :rtype: a dict of {variable_name : value}
 
@@ -227,24 +247,34 @@ class RequireSmart(object):
 
 
 class RequireSmartWithProvide(RequireSmart):
-    """This class is a subclass of :class:`Require` and can be use if
-    the require needs to call a provide. See :class:`Require` for more
+    """This class is a subclass of :class:`RequireSmart` and can be use if
+    the require needs to call a provide. See :class:`RequireSmart` for more
     common informations.
 
     When value of this kind of require are built, first a provide
     object is built and called. Then, value from this provide can be
     used to fill this require.
 
-    DOC TODO :To build value of this require, several object are available
+    This class inherits helper from
+    :py:class:`RequireSmart`. Moreover, a other helper is defined:
+
+    * :py:meth:`helper_current_provide_result_values` which permits to \
+    get the return values of the current call.
+
     """
     provides = []
 
     def build_provide_class(self):
-        """Must be redefined. It must return the class that has to be
+        """Can be redefined. It must return the class that has to be
         used to build the provide needed by this require.
 
-        :rtype: class that inherit from Provide """
-        raise NotImplementedError
+        By default, it returns the class of the provide that has
+        called this requirer.
+
+        :rtype: class that inherit from Provide
+
+        """
+        return self.provide_caller.__class__
 
     def _provide_call(self):
         provide = self.build_provide_class()(xpath=self.xpath,
@@ -273,7 +303,7 @@ class RequireSmartWithProvide(RequireSmart):
         return self._provide_current.provide_ret
 
 
-class Require(mss.require.RequireUser, RequireSmart):
+class Require(mss.require.Require, RequireSmart):
     pass
 
 
@@ -328,10 +358,8 @@ class Provide(object):
     .. note:: You would NEVER have to manually create a Provide,\
     except the initial provide.
 
-    :param lf_name: Name of provide's lifecycle
-    :type lf_name: String
-    :param provide_name: Name of the provide
-    :type provide_name: String
+    :param xpath: A xpath that can match several provides.
+    :type xpath: String
     :param host: Host where the provide has to be call
     :type host: String
     :param requirer: Provide that has called this one.
@@ -421,6 +449,13 @@ class Provide(object):
         :rtype: logging.Handler
         """
         return []
+
+    def helper_used_xpath(self):
+        """Return the xpath that is used, ie. the xpath that the user has
+        choosen amongst matched xpath.
+
+        :rtype: xpath (string)"""
+        return self.used_xpath
 
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':" % (
@@ -587,3 +622,15 @@ def update_empty(origin, *dcts):
                         found = True
                         break
     return origin
+
+
+def build_initial_provide(klass, host, xpath):
+    """Build a initial provide.
+
+    :param klass: the class of user definied Provide.
+    :type klass: inherit from :py:class:`Provide`.
+    :param host: the host where is located the agent.
+    :param xpath: a xpath that can match several provide.
+    """
+    provide = klass(xpath=xpath, host=host)
+    return provide
