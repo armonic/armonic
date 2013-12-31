@@ -14,6 +14,8 @@ import json
 
 from mss.client_socket import ClientSocket
 
+import os
+
 def read_string(string):
     try:
         return int(string)
@@ -113,6 +115,15 @@ def cmd_state(args):
     if args.long_description:
         for r in client.call('state', xpath=args.xpath, doc=True):
             state_to_table(r)
+
+    elif args.requires_list:
+        ret=client.call('state_goto_requires', args.xpath)
+        for r in ret:
+            print r['xpath']
+            require_to_table(r['requires'])
+    elif args.path:
+        pprint.pprint(client.call('state_goto_path', args.xpath))
+
     else:
         for s in client.call('state', xpath=args.xpath, doc=False):
             print s
@@ -121,33 +132,26 @@ def cmd_state_current(args):
     print client.call('state_current', args.module)
 
 def cmd_state_goto(args):
-    if args.list_requires:
-        ret=client.call('state_goto_requires', args.module, args.state)
-        require_to_table(ret)
-    elif args.dryrun:
-        pprint.pprint(client.call('state_goto_path', args.module, args.state))
-    else:
-        pprint.pprint(client.call('state_goto', args.module, args.state, parseArgs(args.require)))
+    pprint.pprint(client.call('state_goto', args.xpath, parseArgs(args.require)))
 
 def cmd_dot(args):
     print client.call('to_dot', args.module)
 
 def cmd_provide(args):
+    if args.path:
+        ret = client.call('provide_call_path', args.xpath)
+        for r in ret:
+            print r['xpath']
+            for a in r['actions']:
+                print "\t", a
+        return
+        
     ret=client.call('provide', args.xpath)
     for provide in ret:
         print provide.get_xpath()
         if args.long_description:
             provide_to_table(provide)
             print ""
-
-def cmd_provide_show(args):
-    if args.path:
-        pprint.pprint(client.call('provide_call_path', args.module, args.provide, args.xpath))
-    else:
-        ret=client.call('provide_call_args', args.module, args.provide, args.xpath)
-        require_to_table(ret)
-        ret=client.call('provide_call_requires', args.module, args.provide, args.xpath)
-        require_to_table(ret)
 
 def cmd_provide_call(args):
     pprint.pprint(client.call('provide_call', args.module, args.provide, args.xpath, parseArgs(args.require), parseArgs(args.args)))
@@ -203,9 +207,15 @@ def ProvideCompleter(prefix, parsed_args, **kwargs):
     return (m for m in tmp if m.startswith(prefix))
 
 
-parser = argparse.ArgumentParser(prog='mss3-client')
-parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s))')
-parser.add_argument('--host','-H', type=str, default="localhost",help='Mss agent host (default: %(default)s))')
+parser = argparse.ArgumentParser(
+    prog='mss-client',
+    description=("A simple client to contact a MSS3 agent. "
+                 "It is mainly used to get informations "
+                 "but can also do some simple actions."))
+parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
+parser.add_argument('--host','-H', type=str, 
+                    default=os.environ.get('MSS_AGENT_HOST', "localhost")
+                    ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
 parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=10,help="Between 10 (DEBUG) and 50 (ERROR)")
@@ -214,49 +224,43 @@ subparsers = parser.add_subparsers(help='<subcommand>')
 parser_status = subparsers.add_parser('status', help='Show status of agent.')
 parser_status.set_defaults(func=cmd_status)
 
-parser_lifecycle = subparsers.add_parser('lifecycle', help='List available lifecycles.')
+parser_lifecycle = subparsers.add_parser('lifecycle', help='List lifecycles.')
 parser_lifecycle.add_argument("xpath" , type=str, 
                           default="//*[@ressource='lifecycle']", nargs="?", 
                           help="A xpath. Default is '%(default)s' which matches all lifecycles.")
-parser_lifecycle.add_argument('--long-description','-l',action='store_true',help="Show long description")
+parser_lifecycle.add_argument('--long-description','-l',action='store_true',help="Show long description.")
 parser_lifecycle.set_defaults(func=cmd_lifecycle)
 
 parser_xpath = subparsers.add_parser('xpath', help='Get xpath')
 parser_xpath.add_argument('xpath' , type=str, help='an xpath')
-parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associated to ressources that match the xpath ")
+parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associated to ressources that match the xpath.")
 parser_xpath.set_defaults(func=cmd_xpath)
 
-parser_state = subparsers.add_parser('state', help='List available states of a module')
+parser_state = subparsers.add_parser('state', help='List states.')
 parser_state.add_argument("xpath" , type=str, 
                           default="//*[@ressource='state']", nargs="?", 
                           help="A xpath. Default is '%(default)s' which matches all states.")
-parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description")
+parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description.")
+parser_state.add_argument('--path','-p',action='store_true',help="Show state path to go to these states.")
+parser_state.add_argument('--requires-list','-r',action='store_true',help="List Requires to go to these states.")
+
 parser_state.set_defaults(func=cmd_state)
 
-parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module')
+parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module.')
 parser_state_current.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_state_current.set_defaults(func=cmd_state_current)
 
-parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module')
-parser_state_goto.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_state_goto.add_argument('state' , type=str, help='a state').completer = StateCompleter
-parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'")
-parser_state_goto.add_argument('--dryrun','-n',action='store_true',help="Dryrun mode")
-parser_state_goto.add_argument('--list-requires','-l',action='store_true',help="List Requires to go to this path")
+parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module.')
+parser_state_goto.add_argument('xpath' , type=str, help='a xpath that correspond to a unique state.').completer = StateCompleter
+parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'.")
 parser_state_goto.set_defaults(func=cmd_state_goto)
 
 
-parser_provide = subparsers.add_parser('provide', help='List all provide of a module')
+parser_provide = subparsers.add_parser('provide', help='List provides.')
 parser_provide.add_argument('xpath' , type=str, help='a xpath')
 parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
+parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
 parser_provide.set_defaults(func=cmd_provide)
-
-parser_provide_show = subparsers.add_parser('provide-show', help='Show arguments of a provide.')
-parser_provide_show.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
-parser_provide_show.add_argument('-p', '--provide' , type=str, nargs='?', default=None, help='a provide').completer = ProvideCompleter
-parser_provide_show.add_argument('--path','-P',action='store_true',help="print path to call this provide")
-parser_provide_show.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
-parser_provide_show.set_defaults(func=cmd_provide_show)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
