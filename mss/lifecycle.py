@@ -823,23 +823,29 @@ class LifecycleManager(object):
             raise LifecycleNotExist("%s is not loaded" % lf_name)
 
     @expose
-    def state_list(self, lf_name=None, doc=False, reachable=False, xpath=None):
-        """Return all available states of the lifecycle object
+    def state(self, xpath, doc=False):
+        """Return state accordgin to the xpath.
 
-        :param lf_name: The name of the lifecycle object
         :param doc: Add state documentation
-        :param reachable: Only reachable states from current states
-        :type lf_name: str
-        :type verbose: bool
-        :rtype: list of strings (states names)"""
-        if xpath != None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-
-        states = self._get_by_name(lf_name).state_list(reachable=reachable)
-        if doc:
-            return [{'name': s.name, 'doc': s.__doc__, 'os-type': s.supported_os_type} for s in states]
-        else:
-            return [s.name for s in states]
+        :param xpath: A xpath that match state ressources
+        :type xpath: str
+        :rtype: list of strings (states xpath) or list of dict (if doc is True)"""
+        elts = XmlRegister.find_all_elts(xpath)
+        acc = []
+        for e in elts:
+            print e
+            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            state_name = XmlRegister.get_ressource(e, "state")
+            state = self._get_by_name(lf_name)._get_state_class(state_name)
+            if doc:
+                acc.append({'lf_name': lf_name, 
+                            'name': state.name, 
+                            'doc': state.__doc__, 
+                            'xpath': e,
+                            'os-type': state.supported_os_type})
+            else:
+                acc.append(e)
+        return acc
 
     @expose
     def state_current(self, lf_name):
