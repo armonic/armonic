@@ -833,16 +833,11 @@ class LifecycleManager(object):
         elts = XmlRegister.find_all_elts(xpath)
         acc = []
         for e in elts:
-            print e
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
             state = self._get_by_name(lf_name)._get_state_class(state_name)
             if doc:
-                acc.append({'lf_name': lf_name, 
-                            'name': state.name, 
-                            'doc': state.__doc__, 
-                            'xpath': e,
-                            'os-type': state.supported_os_type})
+                acc.append(state.to_primitive())
             else:
                 acc.append(e)
         return acc
@@ -893,23 +888,6 @@ class LifecycleManager(object):
         logger.debug("state-goto %s %s %s" % (
                 lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
-
-    @expose
-    def state_show(self, lf_name=None, state_name=None, xpath=None):
-        """From the current state go to state.
-
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param state_name: The name of the state to go to
-        :type state_name: str"""
-        if xpath != None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(xpath, "state")
-        logger.debug("state-show %s %s" % (
-                lf_name, state_name))
-            
-        return self._get_by_name(lf_name)._get_state_class(state_name).to_primitive()
-
 
     @expose
     def provide(self, xpath):
