@@ -778,20 +778,23 @@ class LifecycleManager(object):
         return {"os-type": mss.utils.OS_TYPE.name, "os-release": mss.utils.OS_TYPE.release}
 
     @expose
-    def lf_list(self):
+    def lifecycle(self, xpath, doc=False):
         """List loaded lifecycle objects
 
         :rtype: list of strings (lifecycle objects names)
         """
-        return self.lf.keys()
-
-    @expose
-    def lf_info(self,lf_name):
-        """List loaded lifecycle objects
-
-        :rtype: list of strings (lifecycle objects names)
-        """
-        return self._get_by_name(lf_name).__class__.__doc__
+        elts = XmlRegister.find_all_elts(xpath)
+        acc = []
+        for e in elts:
+            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            lf = self._get_by_name(lf_name)
+            if doc:
+                acc.append({"name": lf_name, 
+                            "doc": lf.__class__.__doc__, 
+                            "xpath": lf.get_xpath()})
+            else:
+                acc.append(lf_name)
+        return acc
 
     def load(self, lf_name=None):
         """Load a lifecycle object in the manager.
