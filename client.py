@@ -63,7 +63,7 @@ def require_to_table(requires):
     for r in requires:
         x.add_row([r.name , r.type,"","","",""])
         if r.type in ['simple', 'user']:
-            variables=r.variables
+            variables=r.variables()
         else:
             variables=r.provide_args + r.provide_ret
         for a in variables:
@@ -78,17 +78,29 @@ def state_to_table(state):
     x = PrettyTable(["Property","Value"])
     x.align = "l"
     x.add_row(["Name",state['name']])
-    x.add_row(["Uri",state['uri']])
+    x.add_row(["Xpath",state['xpath']])
     x.add_row(["Supported OS","\n".join(map(str,state['supported_os_type']))])
     x.add_row(["Provides","\n".join([p['name'] for p in state['provides']])])
     x.add_row(["Entry Requires","\n".join([p['name'] for p in state['requires_entry']['require_list']])])
     print x
 
+def dict_to_table(dct):
+    x = PrettyTable(["Property","Value"])
+    x.align = "l"
+    for k, v in dct.items():
+        x.add_row([k,v])
+    print x
+
 def cmd_status(args):
     pass
-def cmd_module(args):
-    for m in client.call('lf_list'):
-        print m
+
+def cmd_lifecycle(args):
+    if args.long_description:
+        for m in client.call('lifecycle', xpath = args.xpath, doc = True):
+            dict_to_table(m)
+    else:
+        for m in client.call('lifecycle', xpath = args.xpath, doc = False):
+            print m
 
 def cmd_xpath(args):
     if args.uri:
@@ -97,29 +109,16 @@ def cmd_xpath(args):
         for r in client.call('xpath', args.xpath):
             print r
 
-
-def cmd_module_show(args):
-    print client.call('lf_info',args.module)
-
 def cmd_state(args):
     if args.long_description:
-        x = PrettyTable(["State name", "Os-type", "Documentation"])
-        x.align["State name"] = "l"
-        x.align["Documentation"] = "l"
-        x.padding_width = 1 # One space between column edges and contents (default)
-        ret=client.call('state_list', args.module,doc=True,reachable=args.reachable,xpath=args.xpath)
-        for r in ret:
-            x.add_row([r['name'],r['os-type'],r['doc']])
-        print x
+        for r in client.call('state', xpath=args.xpath, doc=True):
+            state_to_table(r)
     else:
-        for s in client.call('state_list',args.module,reachable=args.reachable, xpath=args.xpath):
+        for s in client.call('state', xpath=args.xpath, doc=False):
             print s
 
 def cmd_state_current(args):
     print client.call('state_current', args.module)
-def cmd_state_show(args):
-    state = client.call('state_show', args.module, args.state, args.xpath)
-    state_to_table(state)
 
 def cmd_state_goto(args):
     if args.list_requires:
@@ -215,37 +214,28 @@ subparsers = parser.add_subparsers(help='<subcommand>')
 parser_status = subparsers.add_parser('status', help='Show status of agent.')
 parser_status.set_defaults(func=cmd_status)
 
-
-parser_module = subparsers.add_parser('module', help='List available modules.')
-parser_module.set_defaults(func=cmd_module)
-
-parser_module_show = subparsers.add_parser('module-show', help='Show a module.')
-parser_module_show.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
-parser_module_show.set_defaults(func=cmd_module_show)
+parser_lifecycle = subparsers.add_parser('lifecycle', help='List available lifecycles.')
+parser_lifecycle.add_argument("xpath" , type=str, 
+                          default="//*[@ressource='lifecycle']", nargs="?", 
+                          help="A xpath. Default is '%(default)s' which matches all lifecycles.")
+parser_lifecycle.add_argument('--long-description','-l',action='store_true',help="Show long description")
+parser_lifecycle.set_defaults(func=cmd_lifecycle)
 
 parser_xpath = subparsers.add_parser('xpath', help='Get xpath')
 parser_xpath.add_argument('xpath' , type=str, help='an xpath')
 parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associated to ressources that match the xpath ")
 parser_xpath.set_defaults(func=cmd_xpath)
 
-
 parser_state = subparsers.add_parser('state', help='List available states of a module')
-parser_state.add_argument('-m',"--module" , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
-parser_state.add_argument('-x',"--xpath" , type=str, nargs='?', default=None, help='a xpath')
+parser_state.add_argument("xpath" , type=str, 
+                          default="//*[@ressource='state']", nargs="?", 
+                          help="A xpath. Default is '%(default)s' which matches all states.")
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description")
-parser_state.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_state.set_defaults(func=cmd_state)
 
 parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module')
 parser_state_current.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_state_current.set_defaults(func=cmd_state_current)
-
-parser_state_show = subparsers.add_parser('state-show', help='Show a state of a module')
-parser_state_show.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
-parser_state_show.add_argument('-s', '--state' , type=str, nargs='?', default=None, help='a state').completer = StateCompleter
-parser_state_show.add_argument('-x', '--xpath' , type=str, nargs='?', default=None, help='a xpath')
-
-parser_state_show.set_defaults(func=cmd_state_show)
 
 parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module')
 parser_state_goto.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
