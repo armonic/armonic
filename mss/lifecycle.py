@@ -856,7 +856,7 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).state_current().name
 
     @expose
-    def state_goto_path(self, lf_name, state_name):
+    def state_goto_path(self, xpath):
         """From the current state, return the path to goto the state of the
         lifecycle object.
 
@@ -865,29 +865,43 @@ class LifecycleManager(object):
         :param state_name: The name of the state
         :type state_name: str
         :rtype: list of transitions"""
-        return [(i[0].name, i[1]) for i in self._get_by_name(lf_name).state_goto_path(state_name)]
+        elts = XmlRegister.find_all_elts(xpath)
+        acc = []
+        for e in elts:
+            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            state_name = XmlRegister.get_ressource(e, "state")
+            state = self._get_by_name(lf_name)._get_state_class(state_name)
+            acc.append({'xpath': e,
+                        'actions': [(i[0].name, i[1]) for i in self._get_by_name(lf_name).state_goto_path(state_name)]})
+        return acc
 
     @expose
-    def state_goto_requires(self, lf_name, state_name):
+    def state_goto_requires(self, xpath):
         """Get the lifecycle state's requires
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param state_name: The name of the state
-        :type state_name: str
+        :param xpath: A xpath that match states
+        :type xpath: str
         :rtype: dict of requires"""
-        return self._get_by_name(lf_name).state_goto_requires(state_name)
+        elts = XmlRegister.find_all_elts(xpath)
+        acc = []
+        for e in elts:
+            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            state_name = XmlRegister.get_ressource(e, "state")
+            state = self._get_by_name(lf_name)._get_state_class(state_name)
+            acc.append({'xpath': e,
+                        'requires': self._get_by_name(lf_name).state_goto_requires(state_name)})
+        return acc
 
     @expose
-    def state_goto(self, lf_name, state_name, requires={}):
+    def state_goto(self, xpath, requires={}):
         """From the current state go to state.
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param state_name: The name of the state to go to
-        :type state_name: str
+        :param xpath: The xpath of a state. Must be unique.
+        :type xpath: str
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
+        lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+        state_name = XmlRegister.get_ressource(xpath, "state")
         logger.debug("state-goto %s %s %s" % (
                 lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
@@ -897,10 +911,9 @@ class LifecycleManager(object):
         """If in_stack is True, just returns provides available in
         stack. Otherwise, returns all provides of this lf_name.
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param in_stack: True or False (default)
-        :type in_stack: bool"""
+        :param xpath: The xpath of a provide.
+        :type xpath: str
+        """
         matches = mss.xml_register.XmlRegister.find_all_elts(xpath)
         acc = []
         for m in matches:
