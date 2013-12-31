@@ -90,8 +90,12 @@ def cmd_module(args):
     for m in client.call('lf_list'):
         print m
 
-def cmd_uri(args):
-    pprint.pprint(client.call('uri', args.xpath))
+def cmd_xpath(args):
+    if args.uri:
+        pprint.pprint(client.call('uri', args.xpath))
+    else:
+        for r in client.call('xpath', args.xpath):
+            print r
 
 
 def cmd_module_show(args):
@@ -159,7 +163,7 @@ def cmd_plot(args):
     elif args.T == 'automaton':
         raise NotImplementedError
     elif args.T == 'xml':
-        print(client.call('to_xml'))
+        print(client.call('to_xml', args.module))
 
 
 def ModuleCompleter(prefix, parsed_args, **kwargs):
@@ -219,9 +223,10 @@ parser_module_show = subparsers.add_parser('module-show', help='Show a module.')
 parser_module_show.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
 parser_module_show.set_defaults(func=cmd_module_show)
 
-parser_uri = subparsers.add_parser('uri', help='Get uri')
-parser_uri.add_argument('xpath' , type=str, help='an xpath')
-parser_uri.set_defaults(func=cmd_uri)
+parser_xpath = subparsers.add_parser('xpath', help='Get xpath')
+parser_xpath.add_argument('xpath' , type=str, help='an xpath')
+parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associated to ressources that match the xpath ")
+parser_xpath.set_defaults(func=cmd_xpath)
 
 
 parser_state = subparsers.add_parser('state', help='List available states of a module')
