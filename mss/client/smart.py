@@ -277,6 +277,7 @@ class RequireSmartWithProvide(RequireSmart):
     def _provide_call(self):
         provide = self.build_provide_class()(xpath=self.xpath,
                                              requirer=self.provide_caller,
+                                             requirer_type=self.type,
                                              suggested_args=self.provide_args,
                                              depth=self.depth+1)
         # Maybe, we don't want to call the proposed require. Moreover,
@@ -315,6 +316,7 @@ class RequireLocal(mss.require.RequireLocal, RequireSmartWithProvide):
     def _provide_call(self):
         provide = self.build_provide_class()(xpath=self.xpath,
                                              requirer=self.provide_caller,
+                                             requirer_type=self.type,
                                              suggested_args=self.provide_args,
                                              depth=self.depth+1,
                                              host=self.provide_caller.host)
@@ -364,6 +366,8 @@ class Provide(object):
     :type host: String
     :param requirer: Provide that has called this one.
     :type requirer: Subclass of :class:`Provide`
+    :param requirer_type: The type of the require that calls this provide.
+    :type requirer_type: str
     :param suggested_args: Suggested args provided by the caller. This\
     corresponds to the require (that expect this provide) variables.
     :type suggested_args: List of Variable.
@@ -382,6 +386,7 @@ class Provide(object):
     _Variables = []
 
     def __init__(self, xpath, host=None, requirer=None,
+                 requirer_type=None,
                  suggested_args=[], depth=0):
         self.xpath = xpath
         # This describes the xpath that will be really called.
@@ -395,6 +400,7 @@ class Provide(object):
         self.host = host
         self.depth = depth
         self.requirer = requirer
+        self.requirer_type = requirer_type
 
         # This is filled by self.call(). This contains the dict of
         # returned value by this provide.
@@ -449,6 +455,10 @@ class Provide(object):
         :rtype: logging.Handler
         """
         return []
+
+    def helper_requirer_type(self):
+        """Return the type of the requirer that has called this provide."""
+        return self.requirer_type
 
     def helper_used_xpath(self):
         """Return the xpath that is used, ie. the xpath that the user has
