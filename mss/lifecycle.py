@@ -940,19 +940,25 @@ class LifecycleManager(object):
         return self._get_by_name(lf_name).provide_call_args(state_name, provide_name)
 
     @expose
-    def provide_call_path(self, lf_name=None, provide_name=None, xpath=None):
+    def provide_call_path(self, xpath=None):
         """From a provide_name, return the path to the state of the lifecycle that
         provides the "provide".
 
-        :param lf_name: The name of the lifecycle object
+        :param xpath: The xpath of provides
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        if xpath != None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(xpath, "state")
-            provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name)]
+        matches = mss.xml_register.XmlRegister.find_all_elts(xpath)
+        acc = []
+        for m in matches:
+            if XmlRegister.is_ressource(m, "provide"):
+                provide_name = XmlRegister.get_ressource(m, "provide")
+                if provide_name not in STATE_RESERVED_METHODS:
+                    lf_name = XmlRegister.get_ressource(m, "lifecycle")
+                    state_name = XmlRegister.get_ressource(m, "state")
+                    acc.append({"xpath": m,
+                                "actions": [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name)]})
+        return acc
 
     @expose
     def provide_call(self, lf_name=None, provide_name=None, xpath=None, requires={}, provide_args={}):
