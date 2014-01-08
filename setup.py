@@ -21,13 +21,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='mss',
-    version = '3.0.1',
-    description = "Mandriva Server Setup",
-    author = "Jean-Philippe Braun",
-    author_email = "jpbraun@mandriva.com",
-    maintainer = "Jean-Philippe Braun",
-    maintainer_email = "jpbraun@mandriva.com",
-    url = "http://www.mandriva.com",
-    packages = find_packages(),
-    include_package_data = True
+    version='3.0.1',
+    description="Mandriva Server Setup",
+    author="Jean-Philippe Braun",
+    author_email="jpbraun@mandriva.com",
+    maintainer="Jean-Philippe Braun",
+    maintainer_email="jpbraun@mandriva.com",
+    url="http://www.mandriva.com",
+    packages=find_packages(),
+    include_package_data=True
 )

@@ -5,38 +5,49 @@ import mss.state
 
 import mss.common
 import logging
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-class NotInstalled(State):pass
+
+class NotInstalled(State):
+    pass
+
+
 class Configured(mss.state.RunScript):
-    script_name="setup.sh"
+    script_name = "setup.sh"
 
     def require_to_script_args(self):
-        hosts=[v.host.value for v in self.requires_entry.get('backend').variables(all=True)]
+        hosts = [v.host.value for v in
+                 self.requires_entry.get('backend').variables(all=True)]
         return [",".join(hosts),
                 str(self.requires_entry.conf.variables().port.value)]
 
     @Require('conf', [Port("port", default=80)])
-    @RequireExternal('backend', "//get_website", nargs = '*')
+    @RequireExternal('backend', "//get_website", nargs='*')
     def entry(self):
         mss.state.RunScript.entry(self)
         for v in self.requires_entry.get('backend').variables(all=True):
-            logger.event({"lifecycle":self.lf_name,"event":"binding","target":v.host.value})
-        logger.event({"lifecycle":self.lf_name,"event":"listening","port":self.requires_entry.conf.variables().port.value})
+            logger.event({"lifecycle": self.lf_name,
+                          "event": "binding",
+                          "target": v.host.value})
+        logger.event({"lifecycle": self.lf_name,
+                      "event": "listening",
+                      "port": self.requires_entry.conf.variables().port.value})
 
 
 class Active(mss.state.ActiveWithSystemd):
-    services=["varnish"]
+    services = ["varnish"]
+
 
 class Installed(mss.state.InstallPackagesUrpm):
-    packages=["varnish"]
+    packages = ["varnish"]
+
 
 class Varnish(Lifecycle):
-    transitions=[
-        Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()    ,Configured()),
-        Transition(Configured()      ,Active()),
+    transitions = [
+        Transition(NotInstalled(), Installed()),
+        Transition(Installed(), Configured()),
+        Transition(Configured(), Active()),
         ]
 
     def __init__(self):
-        self.init(NotInstalled(),{})
+        self.init(NotInstalled(), {})

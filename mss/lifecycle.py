@@ -122,14 +122,18 @@ class TransitionNotAllowed(Exception):
     pass
 
 
-def Transition(s,d):
-    return (s,d,)
+def Transition(s, d):
+    return (s, d,)
 
 
 class ProvideNotExist(Exception):
     pass
+
+
 class ProvideNotInStack(Exception):
     pass
+
+
 class ProvideAmbigous(Exception):
     pass
 
@@ -138,11 +142,13 @@ def flags(flags):
     """Decorator to add flags to a function."""
     def wrapper(func):
         args = inspect.getargspec(func)
-        if not hasattr(func,"_requires"):
-            setattr(func,"_requires",[])
+        if not hasattr(func, "_requires"):
+            setattr(func, "_requires", [])
         func._flags = flags
         return func
     return wrapper
+
+
 def provide():
     """Decorator to say that a method is a provide"""
     # Should be improved: Each provide method should have a
@@ -150,10 +156,15 @@ def provide():
     # _requires attr
     return flags({})
 
-class RequireHasNotFuncArgs(Exception):pass
+
+class RequireHasNotFuncArgs(Exception):
+    pass
+
 
 class StateNotApply(Exception):
     pass
+
+
 class StateNotExist(Exception):
     pass
 
@@ -190,14 +201,13 @@ class State(XmlRegister):
                         r = Requires(f.__name__, f._requires)
                         setattr(cls, "requires_%s" % f.__name__, r)
                     else:
-                        flags = f._flags if hasattr(f,'_flags') else {}
+                        flags = f._flags if hasattr(f, '_flags') else {}
                         r = Requires(f.__name__, f._requires, flags)
                         cls.provides.append(r)
 
                     logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
 
         return cls._instance
-
 
     def _xml_tag(self):
         return self.name
@@ -236,8 +246,10 @@ class State(XmlRegister):
     def safe_entry(self, primitive):
         """Check if all state requires are satisfated.
 
-        :param primitive: values for all requires of the State. See :py:meth:`Requires.build_from_primivitive` for more informations.
-        :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
+        :param primitive: values for all requires of the State.
+        See :py:meth:`Requires.build_from_primivitive` for more informations.
+        :type primitive: {require1: {variable1: value, variable2: value},
+            require2: ...}
         """
         self.requires_entry.build_from_primitive(primitive)
         return self.entry()
@@ -285,7 +297,8 @@ class State(XmlRegister):
         for p in cls.get_provides():
             if p.name == provide_name:
                 return p
-        raise ProvideNotExist("%s doesn't exist in state %s" % (provide_name, cls.__name__))
+        raise ProvideNotExist("%s doesn't exist in state %s" %
+                              (provide_name, cls.__name__))
 
     @classmethod
     def get_provide_args(cls, provide_name):
@@ -303,9 +316,12 @@ class State(XmlRegister):
     def to_primitive(self):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
-                "supported_os_type": [t.to_primitive() for t in self.supported_os_type],
-                "provides": [r.to_primitive() for r in self.__class__.get_provides()],
+                "supported_os_type": [t.to_primitive() for t in
+                                      self.supported_os_type],
+                "provides": [r.to_primitive() for r in
+                             self.__class__.get_provides()],
                 "requires_entry": self.requires_entry.to_primitive()}
+
 
 class MetaState(State):
     """Set by state.__new__ to add implementation of this metastate."""
@@ -323,7 +339,8 @@ class Lifecycle(XmlRegister):
 
     * :py:meth:`Lifecycle.state_list` to list available states,
     * :py:meth:`Lifecycle.state_current` to know the current state,
-    * :py:meth:`Lifecycle.state_goto` to go from current state to another state.
+    * :py:meth:`Lifecycle.state_goto` to go from current state to another
+                state.
     * :py:meth:`Lifecycle.provide_call` to call a provide.
 
     All :class:`Lifecycle` method arguments 'state' can be a
@@ -335,14 +352,16 @@ class Lifecycle(XmlRegister):
 
     """
     _initialized = False
+
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
             cls)
-        #Update transitions to manage MetaState
+        # Update transitions to manage MetaState
         for ms in instance._state_list():
             # For each MetaState ms
-            if isinstance(ms,MetaState):
-                transitions = [(s,i) for (s,i) in instance.transitions if i == ms]
+            if isinstance(ms, MetaState):
+                transitions = [(s, i) for (s, i) in
+                               instance.transitions if i == ms]
                 states = ms.implementations
 
                 # We create new state suffixed by metaclass name This
@@ -350,20 +369,20 @@ class Lifecycle(XmlRegister):
                 # has same implementation, we need to create special
                 # implementations for each metastate.
                 created_states = [type(
-                    '%s.%s'%(ms.__class__.__name__,s.__name__),
+                    '%s.%s' % (ms.__class__.__name__, s.__name__),
                     (s,),
                     {}) for s in ms.implementations]
                 for s in created_states:
-                    logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name)) 
+                    logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name))
                 # For each transtion to MetaState ms
                 for t in transitions:
                     update_transitions = []
                     # And for each state implementations
                     for d in created_states:
                         # We create transition to this implementation
-                        update_transitions+=[(t[0],d())]
+                        update_transitions += [(t[0], d())]
                         # And from this implementation to metastate
-                        update_transitions+=[(d(),ms)]
+                        update_transitions += [(d(), ms)]
                     # Finally, we remove useless transitions and add new ones.
                     if update_transitions != []:
                         instance.transitions.remove(t)
@@ -425,11 +444,12 @@ class Lifecycle(XmlRegister):
         else:
             return self._stack[len(self._stack) - 1]
 
-    def _is_state_in_stack(self,state):
+    def _is_state_in_stack(self, state):
         return self._get_state_class(state) in self._stack
 
     def _is_transition_allowed(self, s, d):
-        """A transition is allowed if src and dst state support current os type."""
+        """A transition is allowed if src and dst state support current os
+        type."""
         return (mss.utils.OS_TYPE in d.supported_os_type
                 and mss.utils.OS_TYPE in s.supported_os_type
                 and (s, d) in self.transitions)
@@ -444,10 +464,14 @@ class Lifecycle(XmlRegister):
             if not self._is_transition_allowed(cstate, state):
                 raise TransitionNotAllowed("from %s to %s" % (cstate, state))
         state.lf_name = self.name
-        logger.event({'event': 'state_appling', 'state': state.name, 'lifecycle': self.name})
+        logger.event({'event': 'state_appling',
+                      'state': state.name,
+                      'lifecycle': self.name})
         ret = state.safe_entry(requires)
         self._stack.append(state)
-        logger.event({'event': 'state_applied', 'state': state.name, 'lifecycle': self.name})
+        logger.event({'event': 'state_applied',
+                      'state': state.name,
+                      'lifecycle': self.name})
         logger.debug("push state '%s'" % state.get_xpath())
         return ret
 
@@ -456,24 +480,28 @@ class Lifecycle(XmlRegister):
             t = self._stack.pop()
             print t.leave()
 
-    def _get_from_state_path(self, from_state, to_state, used_states=[], go_back=True):
+    def _get_from_state_path(self,
+                             from_state,
+                             to_state,
+                             used_states=[],
+                             go_back=True):
         """From from_state state, return the path to go to the to_state
         state. Path is a list of 2-uple (state, "entry" or "leave")
 
         :param go_back: to allow state leaving
         """
         if from_state == to_state:
-            return [] # It's not THE stop condition. Shity hack : FIXME !
+            return []  # It's not THE stop condition. Shity hack : FIXME !
 
-        a = [(d, d, "entry") for (s, d) in self.transitions if self._is_transition_allowed(s,d) and s == from_state and d not in used_states]
+        a = [(d, d, "entry") for (s, d) in self.transitions if self._is_transition_allowed(s, d) and s == from_state and d not in used_states]
         if go_back:
-            a += [(s, d, "leave") for (s, d) in self.transitions if self._is_transition_allowed(s,d) and d == from_state and s not in used_states]
+            a += [(s, d, "leave") for (s, d) in self.transitions if self._is_transition_allowed(s, d) and d == from_state and s not in used_states]
         # a = [( nextState , get_current_state , actionOnCurrentState )]
         for s in a:
             if s[0] == to_state:
                 return [(s[1], s[2])]
             r = self._get_from_state_path(s[0], to_state, used_states + [s[0]])
-            if r != [] and r[0][0] != s[1]: # To avoid [(S1,entry),(S1,leave),...]
+            if r != [] and r[0][0] != s[1]:  # To avoid [(S1,entry),(S1,leave),...]
                 return [(s[1], s[2])] + r
         return []
 
@@ -483,9 +511,11 @@ class Lifecycle(XmlRegister):
         :py:meth:`State.leave` of intermediate states are called
         depending of the presence of states in stack.
 
-        :param requires: A dict of requires name and values. Value is a list of dict of variable_name:value ::
+        :param requires: A dict of requires name and values. Value is a list of
+        dict of variable_name:value ::
 
-            {req1: [{variable1: value1, variable2: value2,...}, {variable1: value3, variable2: value4,...},...], req2: ...}
+            {req1: [{variable1: value1, variable2: value2,...},
+            {variable1: value3, variable2: value4,...},...], req2: ...}
 
         :rtype: list of (state,["entry"|"leave"])
 
@@ -503,7 +533,8 @@ class Lifecycle(XmlRegister):
                     raise StateNotApply(self.state_current())
 
     def _get_state_class(self, state):
-        """From a string state name or a state class, try to find the state object.
+        """From a string state name or a state class, try to find the state
+        object.
 
         :rtype: the corresponding state class
         If state is not found, raise StateNotExist.
@@ -531,20 +562,22 @@ class Lifecycle(XmlRegister):
             if s.name == name:
                 return s
 
-    def has_state(self,state):
+    def has_state(self, state):
         """To know if state_name is a state of self."""
         self._get_state_class(state)
         return True
 
-
     def state_goto_path(self, state, fct=None, go_back=True):
         """From the current state, return the path to goto the state.
         If fct is not None, fct is applied on each state on the path.
-        state arg is preprocessed by _get_state_class method. It then can be a str or a class.
+        state arg is preprocessed by _get_state_class method. It then can be a
+        str or a class.
         """
         state = self._get_state_class(state)
         logger.debug("get_state_path state '%s'" % state)
-        r = self._get_from_state_path(self.state_current(), state, go_back=go_back)
+        r = self._get_from_state_path(self.state_current(),
+                                      state,
+                                      go_back=go_back)
         if fct != None:
             for state in r:
                 fct(state[0])
@@ -565,12 +598,14 @@ class Lifecycle(XmlRegister):
 
     def provide_list_in_stack(self):
         """:rtype: the list of states and provides for the current stack."""
-        return [(s, s.get_provides()) for s in self._stack if s.get_provides() != []]
+        return [(s, s.get_provides()) for s in
+                self._stack if s.get_provides() != []]
 
     def provide_list(self):
         """Return the list of all tuple which contain states and provides.
         :rtype: [(State, [Requires])]"""
-        return [(s, s.get_provides()) for s in self.state_list() if s.get_provides() != []]
+        return [(s, s.get_provides()) for s in
+                self.state_list() if s.get_provides() != []]
 
     def _get_state_from_provide(self, provide_name):
         """
@@ -578,11 +613,12 @@ class Lifecycle(XmlRegister):
         From a provide_name, return a tuple of (state, provide_name).
         provide_name can be fully qualified, ie. state.provide_name.
 
-        :param provide_name: the name of a provide (can be fully qualified or not)
+        :param provide_name: the name of a provide (can be fully qualified or
+            not)
         :rtype: (state, provide_name)
         """
         p = provide_name.split(".")
-        if len(p) == 1: # Simple provide name
+        if len(p) == 1:  # Simple provide name
             sp = []
             for (s, ps) in self.provide_list():
                 for p in ps:
@@ -594,10 +630,10 @@ class Lifecycle(XmlRegister):
                 raise ProvideAmbigous("You should full qualify it!")
             elif len(sp) == 1:
                 return (sp[0])
-        elif len(p) == 2: # Fully qualified provide name
+        elif len(p) == 2:  # Fully qualified provide name
             s = self._get_state_class(p[0])
             s.provide_by_name(p[1])
-            return (s,p[1])
+            return (s, p[1])
 
     def provide_call_requires(self, state_name):
         """From a provide_name, return the list of "requires" needed to
@@ -635,9 +671,12 @@ class Lifecycle(XmlRegister):
     def provide_call(self, state_name, provide_name, requires, provide_args):
         """Call a provide and go to provider state if needed.
 
-        :param provide_name: The name (simple or fully qualified) of the provide
-        :param requires: Requires needed to reach the state that provides this provide.
-                         See :py:meth:`Lifecycle.state_goto` for more informations
+        :param provide_name: The name (simple or fully qualified) of the
+            provide
+        :param requires: Requires needed to reach the state that provides this
+            provide.
+                         See :py:meth:`Lifecycle.state_goto` for more
+                         informations
         :param provide_args: Args needed by this provide
 
         """
@@ -656,24 +695,28 @@ class Lifecycle(XmlRegister):
         sidx = self._stack.index(state)
         p = state.provide_by_name(provide_name)
         sfct = state.__getattribute__(p.name)
-        #args = p.build_args_from_primitive(provide_args)
+        # args = p.build_args_from_primitive(provide_args)
         p.build_from_primitive(provide_args)
         ret = sfct(p)
-        logger.debug("Provide %s returns values %s"%(
+        logger.debug("Provide %s returns values %s" % (
             p.name, ret))
         for i in self._stack[sidx:]:
             i.cross(**(p.flags))
         return ret
 
-    def to_dot(self,cross=False, enter_doc=False, leave_doc=False, reachable=False):
+    def to_dot(self, cross=False,
+               enter_doc=False,
+               leave_doc=False,
+               reachable=False):
         """Return a dot string of lifecycle."""
 
-        def dotify(string): # To remove illegal character
+        def dotify(string):  # To remove illegal character
             if string != None:
-                tmp = string.replace("{","").replace("}","").replace(":","").replace("\n","\l")
+                tmp = string.replace("{", "").replace("}", "").replace(":", "").replace("\n", "\l")
                 tmp += '\l'
                 return tmp
-            else : return string
+            else:
+                return string
 
         def list_to_table(l):
             if l == []:
@@ -688,21 +731,23 @@ class Lifecycle(XmlRegister):
         def dot_provide(provide):
             if provide != []:
                 return "%s | {%s}" % (
-                    dotify(provide.name) , list_to_table([r.name for r in provide]))
-            else : 
+                    dotify(provide.name),
+                    list_to_table([r.name for r in provide]))
+            else:
                 return ""
 
         acc = ""
         acc += "digraph finite_state_machine {\n"
         acc += "node [shape = ellipse];\n"
-        state_list = self.state_list(reachable = reachable)
+        state_list = self.state_list(reachable=reachable)
         for s in state_list:
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
             requires = ""
-            provides = list_to_table([(p.name, p.flags) for p in s.get_provides()])
+            provides = list_to_table([(p.name, p.flags) for p in
+                                      s.get_provides()])
             # Begin of label
-            acc += 'label = "{%s | %s ' %(
+            acc += 'label = "{%s | %s ' % (
                 s.name,
                 dotify(s.__doc__),
             )
@@ -717,13 +762,14 @@ class Lifecycle(XmlRegister):
                     dotify(s.cross.__doc__),
                     inspect.getargspec(s.cross).args[1:])
             # Enter Requires
-            acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in s.get_requires()])
+            acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in
+                                                          s.get_requires()])
             for p in s.get_provides():
-                acc +=" | { %s }" % dot_provide(p)
+                acc += " | { %s }" % dot_provide(p)
             # End of label
             acc += '}"\n'
             acc += "];\n"
-        for (s, d) in self.transitions :
+        for (s, d) in self.transitions:
             if s in state_list and d in state_list:
                 acc += '"%s" -> "%s";\n' % (s.name, d.name)
         acc += "}\n"
@@ -732,13 +778,14 @@ class Lifecycle(XmlRegister):
     def __repr__(self):
         return "<Lifecycle:%s>" % self.name
 
-                
-    def to_primitive(self, reachable = False):
-        state_list = self.state_list(reachable = reachable)
+    def to_primitive(self, reachable=False):
+        state_list = self.state_list(reachable=reachable)
         return {'name': self.name,
-                'xpath' : self.get_xpath_relative(),
-                'states':[s.to_primitive() for s in state_list],
-                "transitions": [(s.name,d.name) for (s,d) in self.transitions if s in state_list and d in state_list]}
+                'xpath': self.get_xpath_relative(),
+                'states': [s.to_primitive() for s in state_list],
+                "transitions": [(s.name, d.name) for (s, d) in
+                                self.transitions if s in
+                                    state_list and d in state_list]}
 
 
 class LifecycleNotExist(Exception):
@@ -761,7 +808,8 @@ class LifecycleManager(object):
             self.load(lf.__name__)
 
     def _dispatch(self, method, *args, **kwargs):
-        """Method used by the agent to query :py:class:`LifecycleManager` methods.
+        """Method used by the agent to query :py:class:`LifecycleManager`
+        methods.
         Only exposed methods are available through the agent.
         """
         func = getattr(self, method)
@@ -775,7 +823,8 @@ class LifecycleManager(object):
 
         :rtype: list of strings (lifecycle objects names)
         """
-        return {"os-type": mss.utils.OS_TYPE.name, "os-release": mss.utils.OS_TYPE.release}
+        return {"os-type": mss.utils.OS_TYPE.name,
+                "os-release": mss.utils.OS_TYPE.release}
 
     @expose
     def lifecycle(self, xpath, doc=False):
@@ -789,8 +838,8 @@ class LifecycleManager(object):
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             lf = self._get_by_name(lf_name)
             if doc:
-                acc.append({"name": lf_name, 
-                            "doc": lf.__class__.__doc__, 
+                acc.append({"name": lf_name,
+                            "doc": lf.__class__.__doc__,
                             "xpath": lf.get_xpath()})
             else:
                 acc.append(lf_name)
@@ -808,7 +857,8 @@ class LifecycleManager(object):
             try:
                 lf = self.lf[lf_name]()
             except KeyError:
-                raise LifecycleNotExist("Lifecycle '%s' doesn't exist!" % lf_name)
+                raise LifecycleNotExist("Lifecycle '%s' doesn't exist!" %
+                                        lf_name)
             self.lf_loaded.update({lf_name: lf})
             return [lf.name]
         else:
@@ -832,7 +882,8 @@ class LifecycleManager(object):
         :param doc: Add state documentation
         :param xpath: A xpath that match state ressources
         :type xpath: str
-        :rtype: list of strings (states xpath) or list of dict (if doc is True)"""
+        :rtype: list of strings (states xpath) or list of dict (if doc is True)
+        """
         elts = XmlRegister.find_all_elts(xpath)
         acc = []
         for e in elts:
@@ -926,7 +977,10 @@ class LifecycleManager(object):
         return acc
 
     @expose
-    def provide_call_requires(self, lf_name=None, provide_name=None, xpath=None):
+    def provide_call_requires(self,
+                              lf_name=None,
+                              provide_name=None,
+                              xpath=None):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
 
@@ -950,12 +1004,13 @@ class LifecycleManager(object):
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
             state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
-        return self._get_by_name(lf_name).provide_call_args(state_name, provide_name)
+        return self._get_by_name(lf_name).provide_call_args(state_name,
+                                                            provide_name)
 
     @expose
     def provide_call_path(self, xpath=None):
-        """From a provide_name, return the path to the state of the lifecycle that
-        provides the "provide".
+        """From a provide_name, return the path to the state of the lifecycle
+        that provides the "provide".
 
         :param xpath: The xpath of provides
         :type lf_name: str
@@ -974,15 +1029,22 @@ class LifecycleManager(object):
         return acc
 
     @expose
-    def provide_call(self, lf_name=None, provide_name=None, xpath=None, requires={}, provide_args={}):
+    def provide_call(self,
+                     lf_name=None,
+                     provide_name=None,
+                     xpath=None,
+                     requires={},
+                     provide_args={}):
         """Call a provide of a lifecycle and go to provider state if needed
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :param provide_name: The name of the provide to go to
         :type provide_name: str
-        :param requires: Requires needed to reach the state that provides this provide
-                         See :py:meth:`Lifecycle.state_goto` for more information
+        :param requires: Requires needed to reach the state that provides this
+                         provide
+                         See :py:meth:`Lifecycle.state_goto` for more
+                         information
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
@@ -992,28 +1054,31 @@ class LifecycleManager(object):
             provide_name = XmlRegister.get_ressource(xpath, "provide")
         logger.debug("provide-call %s %s %s %s" % (
                 lf_name, provide_name, requires, provide_args))
-        return self._get_by_name(lf_name).provide_call(state_name, provide_name, requires, provide_args)
+        return self._get_by_name(lf_name).provide_call(state_name,
+                                                       provide_name,
+                                                       requires,
+                                                       provide_args)
 
     @expose
-    def to_dot(self, lf_name, reachable = False):
+    def to_dot(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_dot(reachable = reachable)
+        return self._get_by_name(lf_name).to_dot(reachable=reachable)
 
     @expose
-    def to_primitive(self, lf_name, reachable = False):
+    def to_primitive(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_primitive(reachable = reachable)
+        return self._get_by_name(lf_name).to_primitive(reachable=reachable)
 
     @expose
-    def uri(self, xpath = "//"):
+    def uri(self, xpath="//"):
         """Return the list of uri that match this xpath.
 
         :param xpath: an xpath string
@@ -1026,6 +1091,6 @@ class LifecycleManager(object):
         return mss.xml_register.XmlRegister.xpath(xpath)
 
     @expose
-    def to_xml(self, xpath = None):
+    def to_xml(self, xpath=None):
         """Return the xml representation of agent."""
         return mss.xml_register.XmlRegister.to_string(xpath)

@@ -16,14 +16,21 @@ from mss.require import Require
 
 logger = logging.getLogger(__name__)
 
+
 class CopyTemplate(mss.lifecycle.State):
     """Copy a file from src to dst"""
-    src=""
-    dst=""
+    src = ""
+    dst = ""
+
     def entry(self):
-        logger.info("Copying template file from '%s' to '%s' ...", self.src, self.dst)
-        copyfile(self.src,self.dst)
-        logger.info("Copying template file from '%s' to '%s': done.", self.src, self.dst)
+        logger.info("Copying template file from '%s' to '%s' ...",
+                    self.src,
+                    self.dst)
+        copyfile(self.src, self.dst)
+        logger.info("Copying template file from '%s' to '%s': done.",
+                    self.src,
+                    self.dst)
+
 
 class RunScript(mss.lifecycle.State):
     """This state permit to run a shell script. To convert require to
@@ -37,14 +44,16 @@ class RunScript(mss.lifecycle.State):
         return []
 
     def entry(self):
-        script_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), self.script_name)
+        script_path = os.path.join(os.path.dirname(inspect.getfile(
+                                            self.__class__)), self.script_name)
         script_dir = os.path.dirname(script_path)
         script_args = self.require_to_script_args()
         logger.info("Running script '%s' with args '%s' ..." % (
-            self.script_name, 
+            self.script_name,
             script_args))
         thread = process.ProcessThread("/bin/bash", None, "test",
-                                       ["/bin/bash", script_path] + script_args,
+                                       ["/bin/bash",
+                                        script_path] + script_args,
                                        script_dir, None, None, None)
         thread.start()
         thread.join()
@@ -52,18 +61,23 @@ class RunScript(mss.lifecycle.State):
             logger.info("Running script '%s': done." % script_path)
         else:
             logger.info("Running script '%s': failed!" % script_path)
-            logger.debug("%s",thread.output)
+            logger.debug("%s", thread.output)
+
 
 class PackageInstallationError(Exception):
     pass
+
+
 class UrpmiError(PackageInstallationError):
     pass
+
+
 class InstallPackagesUrpm(mss.lifecycle.State):
     packages = []
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     def _xml_add_property(self):
-        return ([("repository", "mbs")] + 
+        return ([("repository", "mbs")] +
                 [('package', p) for p in self.packages] +
                 mss.lifecycle.State._xml_add_property(self))
 
@@ -72,7 +86,9 @@ class InstallPackagesUrpm(mss.lifecycle.State):
         logger.info("Installing packages '%s' ..." % (pkgs))
         for p in self.packages:
             thread = process.ProcessThread("/bin/rpm", None, "test",
-                                           ["/bin/rpm", "-q", "%s" % p],
+                                           ["/bin/rpm",
+                                            "-q",
+                                            "%s" % p],
                                            None, None, None, None)
             thread.start()
             thread.join()
@@ -81,7 +97,10 @@ class InstallPackagesUrpm(mss.lifecycle.State):
             else:
                 logger.info("Package '%s' is installing..." % p)
                 thread = process.ProcessThread("/usr/sbin/urpmi", None, "test",
-                                               ["/usr/sbin/urpmi","--auto", "--no-suggests","%s" % p],
+                                               ["/usr/sbin/urpmi",
+                                                "--auto",
+                                                "--no-suggests",
+                                                "%s" % p],
                                                None, None, None, None)
                 thread.start()
                 thread.join()
@@ -93,25 +112,34 @@ class InstallPackagesUrpm(mss.lifecycle.State):
         logger.info("Installing packages '%s': done." % (pkgs))
 
     def leave(self):
-        logger.info("%s.%-10s: urpme %s" % (self.lf_name, self.name, " ".join(self.packages)))
+        logger.info("%s.%-10s: urpme %s" %
+                    (self.lf_name, self.name, " ".join(self.packages)))
+
 
 class AptGetInstallError(PackageInstallationError):
     pass
+
+
 class InstallPackagesApt(mss.lifecycle.State):
     packages = []
     supported_os_type = [mss.utils.OsTypeDebian()]
 
     def _xml_add_property(self):
-        return ([("repository", "debian")] + 
+        return ([("repository", "debian")] +
                 [('package', p) for p in self.packages] +
                 mss.lifecycle.State._xml_add_property(self))
 
     def entry(self, requires={}):
         pkgs = " ".join(self.packages)
-        logger.info("%s.%s apt-get install %s ...", self.lf_name, self.name, pkgs)
+        logger.info("%s.%s apt-get install %s ...",
+                    self.lf_name,
+                    self.name,
+                    pkgs)
         for p in self.packages:
             thread = process.ProcessThread("/usr/bin/dpkg", None, "test",
-                                           ["/usr/bin/dpkg", "--status", "%s" % p],
+                                           ["/usr/bin/dpkg",
+                                            "--status",
+                                            "%s" % p],
                                            None, None, None, None)
             thread.start()
             thread.join()
@@ -119,20 +147,28 @@ class InstallPackagesApt(mss.lifecycle.State):
                 logger.info("package %s is already installed" % p)
             else:
                 logger.info("package %s is installing..." % p)
-                thread = process.ProcessThread("/usr/bin/apt-get", None, "test",
-                                               ["/usr/bin/apt-get", "install", "--assume-yes", "%s" % p],
-                                               None, None, None, {"DEBIAN_FRONTEND":"noninteractive"})
+                thread = process.ProcessThread("/usr/bin/apt-get",
+                                               None,
+                                               "test",
+                                               ["/usr/bin/apt-get",
+                                                "install",
+                                                "--assume-yes",
+                                                "%s" % p],
+                                               None, None, None,
+                                               {"DEBIAN_FRONTEND": "noninteractive"})
                 thread.start()
                 thread.join()
                 if thread.code == 0:
-                    logger.info("%s.%s apt-get install %s done." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s apt-get install %s done." %
+                                (self.lf_name, self.name, p))
                 else:
-                    logger.info("%s.%s apt-get install %s failed." % (self.lf_name, self.name, p))
+                    logger.info("%s.%s apt-get install %s failed." %
+                                (self.lf_name, self.name, p))
                     raise AptGetInstallError()
 
     def leave(self):
-        logger.info("%s.%-10s: urpme %s" % (self.lf_name, self.name, " ".join(self.packages)))
-
+        logger.info("%s.%-10s: urpme %s" %
+                    (self.lf_name, self.name, " ".join(self.packages)))
 
 
 class ErrorSystemd(Exception):
@@ -143,22 +179,33 @@ class ActiveWithSystemd(mss.lifecycle.State):
     """If systemctl returns a code != 0, systemctl status 'service' is
     called and exception ErrorSystemd is raised"""
     services = []
-    supported_os_type=[mss.utils.OsTypeMBS()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
 
     def __systemctl(self, action):
         for service in self.services:
             logger.info("systemctl %s %s.service ..." % (action, service))
-            thread = process.ProcessThread("systemctl %s %s.service" % (action, service), None, "test",
-                                           ["/bin/systemctl", action, "%s.service" % service],
+            thread = process.ProcessThread("systemctl %s %s.service" %
+                                           (action, service),
+                                           None,
+                                           "test",
+                                           ["/bin/systemctl",
+                                            action,
+                                            "%s.service" % service],
                                            None, None, None, None)
             thread.start()
             thread.join()
             if thread.code == 0:
-                logger.info("systemctl %s %s.service: done." % (action, service))
+                logger.info("systemctl %s %s.service: done." %
+                            (action, service))
             else:
-                logger.info("systemctl %s %s.service: failed!" % (action, service))
-                thread = process.ProcessThread("systemctl status %s.service" % service, None, "test",
-                                               ["/bin/systemctl", "status", "%s.service" % service],
+                logger.info("systemctl %s %s.service: failed!" %
+                            (action, service))
+                thread = process.ProcessThread("systemctl status %s.service" % service,
+                                               None,
+                                               "test",
+                                               ["/bin/systemctl",
+                                                "status",
+                                                "%s.service" % service],
                                                None, None, None, None)
                 thread.start()
                 thread.join()
@@ -167,9 +214,8 @@ class ActiveWithSystemd(mss.lifecycle.State):
     def entry(self):
         logger.info("Starting services '%s' ..." % self.services)
         self.__systemctl("start")
-        logger.event({"lifecycle":self.lf_name,"is_active":"true"})
+        logger.event({"lifecycle": self.lf_name, "is_active": "true"})
         logger.info("Starting services '%s': done." % self.services)
-
 
     def leave(self):
         self.__systemctl("stop")
@@ -181,49 +227,57 @@ class ActiveWithSystemd(mss.lifecycle.State):
             logger.info("Restarting services '%s': done." % self.services)
 
     @mss.lifecycle.provide()
-    def start(self,requires):
+    def start(self, requires):
         logger.info("Start (via provide) services '%s': done." % self.services)
 
 
 class ActiveWithSystemV(mss.lifecycle.State):
     """Lauch the service via SysV."""
     services = []
-    supported_os_type=[mss.utils.OsTypeDebian()]
+    supported_os_type = [mss.utils.OsTypeDebian()]
 
     def entry(self):
         for service in self.services:
-            thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
-                                           ["/etc/init.d/%s" % service, "status"],
+            thread = process.ProcessThread("/etc/init.d/%s" % service, None,
+                                           "test",
+                                           ["/etc/init.d/%s" % service,
+                                            "status"],
                                            None, None, None, None)
             thread.start()
             thread.join()
             if thread.code != 0:
-                logger.info("%s.%s /etc/init.d/%s start ..." % (self.lf_name, self.name, service))
-                thread = process.ProcessThread("/etc/init.d/%s" % service, None, "test",
-                                               ["/etc/init.d/%s" % service, "start"],
+                logger.info("%s.%s /etc/init.d/%s start ..." %
+                            (self.lf_name, self.name, service))
+                thread = process.ProcessThread("/etc/init.d/%s" % service,
+                                               None,
+                                               "test",
+                                               ["/etc/init.d/%s" % service,
+                                                "start"],
                                                None, None, None, None)
                 thread.start()
                 thread.join()
             else:
-                logger.info("%s.%s service %s is already started ..." % (self.lf_name, self.name, service))
-            logger.event("%s.%s /etc/init.d/%s start done" % (self.lf_name, self.name, service))
+                logger.info("%s.%s service %s is already started ..." %
+                            (self.lf_name, self.name, service))
+            logger.event("%s.%s /etc/init.d/%s start done" %
+                         (self.lf_name, self.name, service))
 
     def leave(self):
         for service in self.services:
-            logger.info("%s.%-10s: /etc/init.d/%s stop" % (self.lf_name, self.name, service))
-
+            logger.info("%s.%-10s: /etc/init.d/%s stop" %
+                        (self.lf_name, self.name, service))
 
     def cross(self, restart=False):
         if restart:
             for service in self.services:
-                logger.info("%s.%-10s: /etc/init.d/%s reload" % (self.lf_name, self.name, service))
+                logger.info("%s.%-10s: /etc/init.d/%s reload" %
+                            (self.lf_name, self.name, service))
 
-
-                #@mss.lifecycle.provide()
+                # @mss.lifecycle.provide()
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))
 
-class InitialState(mss.lifecycle.State):
-    supported_os_type=[mss.utils.OsTypeAll()]
 
+class InitialState(mss.lifecycle.State):
+    supported_os_type = [mss.utils.OsTypeAll()]

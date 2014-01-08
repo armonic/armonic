@@ -1,5 +1,6 @@
-""" A :class:`Require` permits to a module developper to specify what type of value
-it must provide to go to a state. They are specified in :py:class:`mss.lifecycle.State`.
+""" A :class:`Require` permits to a module developper to specify what type of
+value it must provide to go to a state. They are specified in
+:py:class:`mss.lifecycle.State`.
 
 Two subclasses of :class:`Require` can be used if value can be
 provided by a lifecycle provider, namely :class:`RequireLocal` and
@@ -21,24 +22,27 @@ types to fill values of a require.
 import logging
 
 from mss.common import IterContainer, DoesNotExist, ValidationError
-from mss.variable import VariableNotSet , VString
+from mss.variable import VariableNotSet, VString
 import copy
 
 from mss.xml_register import XmlRegister
 
 logger = logging.getLogger(__name__)
 
+
 class RequireNotFilled(Exception):
     """Raise if the value of variable is None."""
-    def __init__(self,require_name, variable_name):
+    def __init__(self, require_name, variable_name):
         self.variable_name = variable_name
         self.require_name = require_name
-        
+
     def __repr__(self):
-        return "Variable %s in require %s is not filled" % (self.variable_name, self.require_name)
+        return "Variable %s in require %s is not filled" % (self.variable_name,
+                                                            self.require_name)
 
     def __str__(self):
         return self.__repr__()
+
 
 class MissingRequire(Exception):
     def __init__(self, variable="", state=None):
@@ -46,33 +50,35 @@ class MissingRequire(Exception):
         self.state = state
 
     def __str__(self):
-        return "Require '%s' of state '%s' is missing" % (self.variable, self.state)
+        return "Require '%s' of state '%s' is missing" % (self.variable,
+                                                          self.state)
 
     def __repr__(self):
         return "Missing require %s" % self.variable
 
+
 class RequireDefinitionError(Exception):
     """This is raised when the definition of a require is not correct."""
     pass
+
 
 class Requires(IterContainer, XmlRegister):
     """Basically, this describes a list of :py:class:`Require`."""
     def __init__(self, name, require_list=[], flags=None):
         self.name = name
         IterContainer.__init__(self, *require_list)
-        self.flags = flags # Should not be in Requires ...
-
+        self.flags = flags  # Should not be in Requires ...
 
     def get_values(self):
-        acc={}
+        acc = {}
         for r in self:
-            acc.update({r.name:r.get_values()})
+            acc.update({r.name: r.get_values()})
         return acc
 
     def get_default_values(self):
-        acc={}
+        acc = {}
         for r in self:
-            acc.update({r.name:r.get_default_values()})
+            acc.update({r.name: r.get_default_values()})
         return acc
 
     def _xml_tag(self):
@@ -84,22 +90,23 @@ class Requires(IterContainer, XmlRegister):
     def _xml_ressource_name(self):
         return "provide"
 
-    def build_args_from_primitive(self,primitive):
+    def build_args_from_primitive(self, primitive):
         self.build_from_primitive(primitive)
-        args={}
+        args = {}
         for a in self.func_args:
             for r in self:
-                try :
-                    args.update({a:r.variables().get(a).value})
+                try:
+                    args.update({a: r.variables().get(a).value})
                 except DoesNotExist:
                     pass
         return args
 
-    def build_from_primitive(self,primitive):
+    def build_from_primitive(self, primitive):
         """From primitive, fill and validate this requires.
 
         :param primitive: values for all requires.
-        :type primitive: {require1: {variable1: value, variable2: value}, require2: ...}
+        :type primitive: {require1: {variable1: value, variable2: value},
+            require2: ...}
         """
         # Fill requires values first
         for require_name, variables_values in primitive.items():
@@ -108,7 +115,8 @@ class Requires(IterContainer, XmlRegister):
                 logger.debug("Setting %s in %s" % (variables_values, require))
                 require.fill(variables_values)
             except DoesNotExist:
-                logger.warning("Require %s not found in %s, ignoring" % (require_name, self))
+                logger.warning("Require %s not found in %s, ignoring" %
+                               (require_name, self))
                 pass
         # Validate each require
         for require in self:
@@ -119,11 +127,10 @@ class Requires(IterContainer, XmlRegister):
                 e.require_name = require.name
                 raise e
 
-
     def has_variable(self, variable_name):
         """Return True if variable_name is specified by this requires."""
         for r in self:
-            try :
+            try:
                 r.variables().get(variable_name)
                 return True
             except DoesNotExist:
@@ -131,7 +138,7 @@ class Requires(IterContainer, XmlRegister):
         return False
 
     def get_all_variables(self):
-        acc=[]
+        acc = []
         for r in self:
             for v in r._variables:
                 acc.append(v.name)
@@ -140,12 +147,13 @@ class Requires(IterContainer, XmlRegister):
     def to_primitive(self):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
-                "require_list":[r.to_primitive() for r in self] , 
+                "require_list": [r.to_primitive() for r in self],
                 "flags": self.flags}
 
     def __repr__(self):
-        return "<Requires:%s(%s,%s)>" % (self.name, IterContainer.__repr__(self) , self.flags)
-
+        return "<Requires:%s(%s,%s)>" % (self.name,
+                                         IterContainer.__repr__(self),
+                                         self.flags)
 
 
 class Require(XmlRegister):
@@ -166,10 +174,10 @@ class Require(XmlRegister):
         self.name = name
         self.type = "simple"
 
-        if nargs not in ["1","?","*"]:
-            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)"%nargs)
+        if nargs not in ["1", "?", "*"]:
+            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)" %
+                            nargs)
         self.nargs = nargs
-
 
         self._variables = IterContainer(*variables)
 
@@ -185,7 +193,7 @@ class Require(XmlRegister):
     def _xml_children(self):
         acc = []
         for vs in self._variables:
-            acc+=vs
+            acc += vs
         return acc
 
     def _xml_ressource_name(self):
@@ -194,10 +202,10 @@ class Require(XmlRegister):
     def _xml_add_property(self):
         return [("nargs", self.nargs)]
 
-        
     def __call__(self, func):
         """
-        Used as a method decorator to define Require on :py:class:`State` methods
+        Used as a method decorator to define Require on :py:class:`State`
+        methods
         Permit to directly use Require constructor as a decorator.
         """
         has_requires = hasattr(func, '_requires')
@@ -218,24 +226,23 @@ class Require(XmlRegister):
             try:
                 iterContainer.get(variable_name).fill(variable_value)
             except DoesNotExist:
-                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
+                logger.warning("Variable %s not found in %s, ignoring." %
+                               (variable_name, self))
                 pass
             except VariableNotSet:
                 raise RequireNotFilled(self.name, variable_name)
         return True
 
-
     def factory_variable(self):
         """Return an Itercontainer of variable based on variable
         skeleton.
 
-        :rtype: IterContainer of Variable 
+        :rtype: IterContainer of Variable
         """
         tmp_vars = copy.deepcopy(self._variables_skel)
         return IterContainer(*tmp_vars)
-        
 
-    def fill(self,primitives=[]):
+    def fill(self, primitives=[]):
         """Fill variables from a list of primitive.
 
         NotImplementedYet: We must check if provided primitive
@@ -244,10 +251,10 @@ class Require(XmlRegister):
         if primitives != []:
             # To avoid vaiables append on multiple calls
             self._variables = [IterContainer(*self._variables_skel)]
-            self._fill(self._variables[0],primitives[0])
+            self._fill(self._variables[0], primitives[0])
             for primitive in primitives[1:]:
                 tmp = self.factory_variable()
-                self._fill(tmp,primitive)
+                self._fill(tmp, primitive)
                 self._variables.append(tmp)
             self._xml_register_children()
         return True
@@ -267,11 +274,11 @@ class Require(XmlRegister):
                     value = values[variable.name]
                 except KeyError:
                     raise ValidationError(
-                        variable_name = variable.name,
-                        msg = "Submitted value doen't contain key %s" % variable.name)
-                    
+                        variable_name=variable.name,
+                        msg="Submitted value doen't contain key %s" % variable.name)
+
             variable._validate(value)
-                
+
         return True
 
     def validate(self, values=[]):
@@ -288,21 +295,20 @@ class Require(XmlRegister):
                     raise ValidationError(
                         "Values must contains as much element"
                         " as variables set elements.")
-                self.validate_one_set(vs,v)
+                self.validate_one_set(vs, v)
             else:
                 self.validate_one_set(vs)
         return True
 
     def to_primitive(self):
-        return {"name": self.name, 
+        return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
                 "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "simple"}
 
-
     def variables(self, index=0, all=False):
         """Return variables of given index.
-        
+
         TODO: Check if index respect nargs.
         :param index: index of a variable set.
         :param all: if true returns all variables
@@ -312,17 +318,17 @@ class Require(XmlRegister):
             return self._variables
         else:
             return self._variables[index]
-    
+
     def get_values(self):
         """ FIXME This jsut return the first element"""
-        return [reduce(lambda a , x : 
-                       dict(a.items() + {x.name : x.value}.items()),
+        return [reduce(lambda a, x:
+                       dict(a.items() + {x.name: x.value}.items()),
                        vs, {}) for vs in self._variables]
 
     def get_default_values(self):
         """ FIXME This jsut return the first element"""
-        return [reduce(lambda a , x : 
-                       dict(a.items() + {x.name : x.default}.items()),
+        return [reduce(lambda a, x:
+                       dict(a.items() + {x.name: x.default}.items()),
                        vs, {}) for vs in self._variables]
 
     def generate_args(self, dct={}):
@@ -343,7 +349,8 @@ class Require(XmlRegister):
         return ret
 
     def __repr__(self):
-        return "<Require(name=%s, variables=%s)>" % (self.name, self._variables)
+        return "<Require(name=%s, variables=%s)>" % (self.name,
+                                                     self._variables)
 
 
 class RequireUser(Require):
@@ -351,11 +358,13 @@ class RequireUser(Require):
     instance, mysql password is just know by user who must remember
     it."""
     def __init__(self, name, provided_by, variables):
-        Require.__init__(self,name, variables)
+        Require.__init__(self, name, variables)
         self.type = "user"
         self.provided_by = provided_by
+
     def __repr__(self):
-        return "<RequireUser(name=%s, variables=%s)>" % (self.name, self._variables)
+        return "<RequireUser(name=%s, variables=%s)>" % (self.name,
+                                                         self._variables)
 
     def to_primitive(self):
         return {"name": self.name,
@@ -376,8 +385,12 @@ class RequireLocal(Require):
     :param nargs: occurence number of variables.
     :type nargs: ["1","?","*"].
     """
-    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
-        _variables=provide_args + provide_ret
+    def __init__(self, name,
+                 xpath,
+                 provide_args=[],
+                 provide_ret=[],
+                 nargs="1"):
+        _variables = provide_args + provide_ret
         Require.__init__(self, name, _variables, nargs=nargs)
         self.xpath = xpath
         self.lf_name = None
@@ -392,8 +405,6 @@ class RequireLocal(Require):
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
         self._variables = [IterContainer(*_variables)]
-
-
 
     def to_primitive(self):
         return {"name": self.name,
@@ -429,7 +440,6 @@ class RequireLocal(Require):
         return self.generate_args(dct)
 
 
-
 class RequireVhost(VString):
     pass
 
@@ -440,18 +450,25 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
+    def __init__(self, name,
+                 xpath,
+                 provide_args=[],
+                 provide_ret=[],
+                 nargs="1"):
         for v in provide_args:
             if v.name == 'host':
                 raise RequireDefinitionError(
                     "Variable name 'host' can not be use because it is a"
                     " reserved variable name for External require.")
 
-        RequireLocal.__init__(self, name, xpath, provide_args + [VString('host')], provide_ret, nargs)
+        RequireLocal.__init__(self, name,
+                              xpath,
+                              provide_args + [VString('host')],
+                              provide_ret, nargs)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):
-        ret = ({},[])
+        ret = ({}, [])
         for a in self.provide_args:
             if a.name == 'host':
                 continue

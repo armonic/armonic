@@ -5,7 +5,10 @@ import re
 from types import MethodType
 from mss.xml_register import XmlRegister
 
-class VariableNotSet(Exception):pass
+
+class VariableNotSet(Exception):
+    pass
+
 
 class Variable(XmlRegister):
     """A object :py:class:`Variable` is a container for a value used by a
@@ -17,21 +20,26 @@ class Variable(XmlRegister):
     when the value is set. The value of a variable can be validate by
     hand with validate method.
 
-    About from_xpath parameter. The goal it to reuse a value already provided. We
-    can not directly use the value because at init time, it is not
+    About from_xpath parameter. The goal it to reuse a value already provided.
+    We can not directly use the value because at init time, it is not
     been filled yet. So, another way is to use a lamdba but in this case
     we must go to a state state per state if we want to know the value
-    before using it. Indeed, if 
+    before using it. Indeed, if
 
     :param from_xpath: If this parameter is set, the client can reuse
     a value already used by the varaible targeted by this xpath.
 
-    """ 
+    """
 
     type = 'variable'
     _value = None
 
-    def __init__(self, name, default=None, required=True, help="", from_xpath=None):
+    def __init__(self,
+                 name,
+                 default=None,
+                 required=True,
+                 help="",
+                 from_xpath=None):
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
@@ -44,13 +52,15 @@ class Variable(XmlRegister):
 
     def _xml_tag(self):
         return self.name
+
     def _xml_ressource_name(self):
         return "variable"
 
     def to_primitive(self):
-        return {'name':self.name, 
-                'xpath':self.get_xpath_relative(), 
-                'type':self.type, 'default': self.default}
+        return {'name': self.name,
+                'xpath': self.get_xpath_relative(),
+                'type': self.type,
+                'default': self.default}
 
     @property
     def value(self):
@@ -59,7 +69,7 @@ class Variable(XmlRegister):
     @value.setter
     def value(self, value):
         self._value = value
-        #self._value = self._validate_type(value)
+        # self._value = self._validate_type(value)
 
     def fill(self, value):
         self.value = value
@@ -71,7 +81,7 @@ class Variable(XmlRegister):
 #            raise TypeError("value can't be empty")
         return value
 
-    def _validate(self, value = None):
+    def _validate(self, value=None):
         """Validate value or self.value if value is not set.
         If values is specified, they are
         used to validate the require variables. Otherwise, you must
@@ -81,7 +91,8 @@ class Variable(XmlRegister):
             value = self.value
 
         if not value and self.required:
-            raise ValidationError(variable_name=self.name , msg="%s is required" % self.name)
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s is required" % self.name)
 
     def validate(self):
         """Override for custom validation.
@@ -95,15 +106,17 @@ class Variable(XmlRegister):
         return str(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__, self.name, self.value, self.default)
+        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__,
+                                                   self.name, self.value,
+                                                   self.default)
 
 
 class VList(Variable):
     """
     :class:`VList` provide a list container for :class:`Variable` instances.
 
-    Running the validation on :class:`VList` will recursively run the validation
-    for all contained instances.
+    Running the validation on :class:`VList` will recursively run the
+    validation for all contained instances.
     """
 
     type = 'list'
@@ -156,36 +169,46 @@ class VList(Variable):
         return iter(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__, self.name, self.value, self.default)
+        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__,
+                                                   self.name,
+                                                   self.value,
+                                                   self.default)
 
 
-#class VDict(Variable):
-    #type = 'dict'
+# class VDict(Variable):
+    # type = 'dict'
 
-    #def __getitem__(self, item):
-        #return self.value[item]
+    # def __getitem__(self, item):
+        # return self.value[item]
 
-    #def _validate_type(self, value):
-        #Variable._validate_type(self, value)
-        #if not type(value) == dict:
-            #raise TypeError("value must be a dict")
-        #return value
+    # def _validate_type(self, value):
+        # Variable._validate_type(self, value)
+        # if not type(value) == dict:
+            # raise TypeError("value must be a dict")
+        # return value
 
-    #def _validate(self):
-        #Variable._validate(self)
-        #for key, value in self.value.items():
-            #if isinstance(value, Variable):
-                #value._validate()
-        #return self.validate()
+    # def _validate(self):
+        # Variable._validate(self)
+        # for key, value in self.value.items():
+            # if isinstance(value, Variable):
+                # value._validate()
+        # return self.validate()
 
 
 class VString(Variable):
-    """:param modifier: a format string with one string arg which will be the value."""
+    """:param modifier: a format string with one string arg which will be the
+    value."""
     type = 'str'
     pattern = None
     pattern_error = None
 
-    def __init__(self, name, default=None, required=True, help="", from_xpath=None, modifier="%s"):
+    def __init__(self,
+                 name,
+                 default=None,
+                 required=True,
+                 help="",
+                 from_xpath=None,
+                 modifier="%s"):
         Variable.__init__(self, name, default, required, help, from_xpath)
         self._modifier = modifier
 
@@ -200,13 +223,14 @@ class VString(Variable):
     def value(self, value):
         self._value = value
 
-    def _validate(self, value = None):
+    def _validate(self, value=None):
         if not value:
             value = self.value
 
         Variable._validate(self, value)
         if self.pattern and not re.match(self.pattern, value):
-            raise ValidationError(variable_name=self.name , msg=self.pattern_error)
+            raise ValidationError(variable_name=self.name,
+                                  msg=self.pattern_error)
         return self.validate()
 
     def _validate_type(self, value):
@@ -221,32 +245,35 @@ class VInt(Variable):
     min_val = None
     max_val = None
 
-    def _validate(self, value = None):
+    def _validate(self, value=None):
         if not value:
             value = self.value
-            
+
         Variable._validate(self, value)
         if self.min_val and value < self.min_val:
-            raise ValidationError(variable_name=self.name , msg="%s value must be greater than %s" % (self.name, self.min_val))
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s value must be greater than %s" %
+                                  (self.name, self.min_val))
         if self.max_val and value > self.max_val:
-            raise ValidationError(variable_name=self.name , msg="%s value must be lower than %s" % (self.name, self.max_val))
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s value must be lower than %s" %
+                                  (self.name, self.max_val))
         return self.validate()
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
         if not type(value) == int:
-            raise TypeError("value must be an int (instead %s)"%type(value))
+            raise TypeError("value must be an int (instead %s)" % type(value))
         return value
 
     def __int__(self):
         return self.value
 
 
-    
-
 class Host(VString):
     pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
     pattern_error = 'Incorrect host (pattern: %s)' % pattern
+
 
 class Hostname(VString):
     pattern = '^[a-z]+[a-z0-9]*$'
@@ -257,12 +284,15 @@ class Port(VInt):
     min_val = 0
     max_val = 65535
 
+
 class Password(VString):
     pass
 
 
 import urllib2
 import tempfile
+
+
 class VUrl(VString):
     def get_file(self):
         """

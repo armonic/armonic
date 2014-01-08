@@ -10,34 +10,38 @@ import mss.configuration_augeas as augeas
 
 import mss.common
 import logging
-logger=logging.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 
 
 class Options(augeas.Nodes):
     label = "option"
     cls = augeas.Node
 
+
 class Client(augeas.Node):
     options = Options
+
 
 class Clients(augeas.Nodes):
     label = "client"
     cls = Client
 
+
 class Dir(augeas.Node):
     clients = Clients
+
 
 class Dirs(augeas.Nodes):
     label = "dir"
     baseXpath = "/files/etc/exports"
     cls = Dir
 
+
 class Configuration(augeas.Configuration):
-    lenses={"Exports":["/etc/exports"]}
+    lenses = {"Exports": ["/etc/exports"]}
     dirs = Dirs
 
-    def add_dir(self, directory, client_addr, options = []):
+    def add_dir(self, directory, client_addr, options=[]):
         """This add a new dir in /etc/exports. It tries to update the dir if
         it already exists."""
         dir = None
@@ -48,7 +52,7 @@ class Configuration(augeas.Configuration):
             dir = Dir()
             dir.value = directory
             self.dirs.append(dir)
-            
+
         client = None
         for c in dir.clients:
             if c.value == client_addr:
@@ -57,9 +61,9 @@ class Configuration(augeas.Configuration):
             client = Client()
             client.value = client_addr
             dir.clients.append(client)
-        
+
         for o in options:
-            if o not in [ tmp.value for tmp in client.options]:
+            if o not in [tmp.value for tmp in client.options]:
                 option = augeas.Node()
                 option.value = o
                 client.options.append(option)
@@ -75,18 +79,24 @@ class Configuration(augeas.Configuration):
                         d.rm()
                         return
 
-class NotInstalled(State):pass
+
+class NotInstalled(State):
+    pass
+
+
 class Installed(mss.state.InstallPackagesUrpm):
-    packages=["nfs-utils"]
+    packages = ["nfs-utils"]
+
+
 class Configured(State):
-    
+
     @Require("export", variables=[VString("name"), Host("client")])
-    @flags({'restart':True})
+    @flags({'restart': True})
     def get_dir(self, requires):
         conf = Configuration()
         name = requires.get("export").variables().get("name").value
         client = requires.get("export").variables().get("client").value
-        
+
         dir = "/var/mss/nfs/%s" % name
         if not os.path.exists(dir):
             logger.debug("Directory %s has been created" % dir)
@@ -94,21 +104,22 @@ class Configured(State):
         conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
         remotetarget = "%s:%s" % (mss.utils.get_ip(), dir)
-        return {'remotetarget':remotetarget}
+        return {'remotetarget': remotetarget}
+
 
 class Active(mss.state.ActiveWithSystemd):
-    services=["nfs-common", "nfs-server"]
-    
-    # This should be useless because we shoyuld call it in state
+    services = ["nfs-common", "nfs-server"]
+
+    # This should be useless because we should call it in state
     # Configuration and the n call start provide. But Zephyrus is
     # currently not able to call two provide...
     @Require("export", variables=[VString("name"), Host("client")])
-    @flags({'restart':True})
+    @flags({'restart': True})
     def get_dir(self, requires):
         conf = Configuration()
         name = requires.get("export").variables().get("name").value
         client = requires.get("export").variables().get("client").value
-        
+
         dir = "/var/mss/nfs/%s" % name
         if not os.path.exists(dir):
             logger.debug("Directory %s has been created" % dir)
@@ -116,15 +127,15 @@ class Active(mss.state.ActiveWithSystemd):
         conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
         remotetarget = "%s:%s" % (mss.utils.get_ip(), dir)
-        return {'remotetarget':remotetarget}
+        return {'remotetarget': remotetarget}
 
 
 class Nfs_server(Lifecycle):
-    transitions=[
-        Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()    ,Configured()),
-        Transition(Configured()      ,Active()),
+    transitions = [
+        Transition(NotInstalled(), Installed()),
+        Transition(Installed(), Configured()),
+        Transition(Configured(), Active()),
         ]
 
     def __init__(self):
-        self.init(NotInstalled(),{})
+        self.init(NotInstalled(), {})

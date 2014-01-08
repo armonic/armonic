@@ -7,6 +7,7 @@ import traceback
 
 from mss.utils import ethernet_ifs
 
+
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
     useful if we simultaneous use several agents.
@@ -21,6 +22,7 @@ class NetworkFilter(logging.Filter):
             record.ip = ""
         return True
 
+
 class XpathFilter(logging.Filter):
     """Use this filter to add xpath of object that emit the log.
 
@@ -29,8 +31,8 @@ class XpathFilter(logging.Filter):
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
         f = logging.currentframe()
-        #On some versions of IronPython, currentframe() returns None if
-        #IronPython isn't run with -X:Frames.
+        # On some versions of IronPython, currentframe() returns None if
+        # IronPython isn't run with -X:Frames.
         if f is not None:
             f = f.f_back
         while hasattr(f, "f_code"):
@@ -51,6 +53,8 @@ logger = logging.getLogger(__name__)
 
 EVENT_LEVELV_NUM = 25
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
+
+
 def event(self, kws):
     # This level is used in mss to log an event.
     self._log(EVENT_LEVELV_NUM, kws, [], extra={"event_data": kws})
@@ -59,22 +63,24 @@ logging.Logger.event = event
 
 PROCESS_LEVELV_NUM = 24
 logging.addLevelName(PROCESS_LEVELV_NUM, "PROCESS")
+
+
 def process(self, dct, *args, **kws):
     """This level permits to log the output of processes. In fact, the
     message is transmitted only if it contains a '\n' otherwise, it is
     buffered until the next '\n'."""
-    if not hasattr(self,"_processline"):
+    if not hasattr(self, "_processline"):
         self._processline = ""
     t = dct.split("\n")
     if len(t) == 1:
-        self._processline+=t[0]
+        self._processline += t[0]
     elif len(t) > 1:
         self._log(PROCESS_LEVELV_NUM, self._processline + t[0], args, **kws)
         for i in t[1:-1]:
             self._log(PROCESS_LEVELV_NUM, i, args, **kws)
         if t[-1] != '':
             self._processline = t[-1]
-        else :
+        else:
             self._processline = ""
 logging.Logger.process = process
 
@@ -90,7 +96,7 @@ def is_exposed(f):
     return getattr(f, 'exposed', False)
 
 
-def load_lifecycles(dir,include_modules=None):
+def load_lifecycles(dir, include_modules=None):
     """Import Lifecycle modules from dir"""
     if os.path.exists(os.path.join(dir, '__init__.py')):
         sys.path.insert(0, dir)
@@ -105,9 +111,9 @@ def load_lifecycles(dir,include_modules=None):
                 except ImportError as e:
                     logger.info("Module %s can not be imported" % module)
                     logger.debug("Exception on import module %s:" % module)
-                    tb=traceback.format_exc().split("\n")
+                    tb = traceback.format_exc().split("\n")
                     for l in tb:
-                        logger.debug("  %s"%l)
+                        logger.debug("  %s" % l)
 
 
 class DoesNotExist(Exception):
@@ -116,12 +122,12 @@ class DoesNotExist(Exception):
 
 class ValidationError(Exception):
     def __init__(self, msg, require_name=None, variable_name=None):
-        Exception.__init__(self,msg)
+        Exception.__init__(self, msg)
         self.variable_name = variable_name
         self.require_name = require_name
         self.msg = msg
 
-    def __setstate__(self,dict):
+    def __setstate__(self, dict):
         self.variable_name = dict['variable_name']
         self.require_name = dict['require_name']
         self.msg = dict['msg']
@@ -133,17 +139,20 @@ class ValidationError(Exception):
     def __str__(self):
         return self.__repr__()
 
+
 class ProvideError(Exception):
     def __init__(self, lf_name, state_name, provide_name, msg):
-        self.lf_name=lf_name
-        self.state_name=state_name
-        self.provide_name=provide_name
-        self.msg=msg
-        Exception.__init__(self, "%s.%s.%s : %s" % (lf_name, state_name, provide_name, msg))
+        self.lf_name = lf_name
+        self.state_name = state_name
+        self.provide_name = provide_name
+        self.msg = msg
+        Exception.__init__(self, "%s.%s.%s : %s" %
+                           (lf_name, state_name, provide_name, msg))
 
     def __reduce__(self):
         """We need to override it to support pickle. Must be FIXED."""
-        return (ProvideError, (self.lf_name, self.state_name, self.provide_name, self.msg, ))
+        return (ProvideError,
+                (self.lf_name, self.state_name, self.provide_name, self.msg,))
 
 
 class IterContainer(list):
@@ -175,5 +184,3 @@ class IterContainer(list):
         if hasattr(self, attr):
             return getattr(self, attr)
         raise DoesNotExist("%s does not exist" % attr)
-
-

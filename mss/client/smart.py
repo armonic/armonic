@@ -40,9 +40,9 @@ import types
 import logging
 logger = logging.getLogger()
 
-################################################################################
-#                                  REQUIRE CLASSES                             #
-################################################################################
+###############################################################################
+#                                  REQUIRE CLASSES                            #
+###############################################################################
 
 import mss.require
 
@@ -162,7 +162,8 @@ class RequireSmart(object):
 
         while (self.nargs in ['?', '*']
                or len(require_values) < int(self.nargs)):
-            if (require_values == [] or self.handle_many_requires(len(require_values))):
+            if (require_values == [] or
+                self.handle_many_requires(len(require_values))):
                 pass
             else:
                 break
@@ -216,7 +217,8 @@ class RequireSmart(object):
 
         For instance, suppose that we have a external require::
 
-          RequireExternal("external", xpath=/a_provide, variables[VString("variable_name",default=value)])
+          RequireExternal("external", xpath=/a_provide,
+                          variables[VString("variable_name",default=value)])
 
         This require can generate a provide call.
         Suppose the provide 'a_provide' have the require::
@@ -279,7 +281,7 @@ class RequireSmartWithProvide(RequireSmart):
                                              requirer=self.provide_caller,
                                              requirer_type=self.type,
                                              suggested_args=self.provide_args,
-                                             depth=self.depth+1)
+                                             depth=self.depth + 1)
         # Maybe, we don't want to call the proposed require. Moreover,
         # we have to choose the provide host.
         provide.call()
@@ -288,7 +290,7 @@ class RequireSmartWithProvide(RequireSmart):
     def _build_one(self):
         provide = self._provide_call()
         self._provide_current = provide
-        if not hasattr(self,"provides"):
+        if not hasattr(self, "provides"):
             self.provides = []
         self.provides.append(provide)
 
@@ -318,7 +320,7 @@ class RequireLocal(mss.require.RequireLocal, RequireSmartWithProvide):
                                              requirer=self.provide_caller,
                                              requirer_type=self.type,
                                              suggested_args=self.provide_args,
-                                             depth=self.depth+1,
+                                             depth=self.depth + 1,
                                              host=self.provide_caller.host)
         # Maybe, we don't want to call the proposed require. Moreover,
         # we have to choose the provide host.
@@ -382,7 +384,8 @@ class Provide(object):
                         "simple": Require,
                         "user": RequireUser}
 
-    # Class variable that contains all xpath and value filled for the main provide.
+    # Class variable that contains all xpath and value filled for the main
+    #provide.
     _Variables = []
 
     def __init__(self, xpath, host=None, requirer=None,
@@ -601,16 +604,16 @@ def _xml_register_children(require):
     if len(require.variables(all=True)) > 1:
         for idx, vs in enumerate(require.variables(all=True)):
             for v in vs:
-                xpath_relative = v.get_xpath_relative()+"[%s]" % (idx+1)
-                xpath = v.get_xpath()+"[%s]" % (idx+1)
+                xpath_relative = v.get_xpath_relative() + "[%s]" % (idx + 1)
+                xpath = v.get_xpath() + "[%s]" % (idx + 1)
 
                 v._xpath_relative = xpath_relative
                 v._xpath = xpath
 
 
-################################################################################
-#                            HELPERS                                           #
-################################################################################
+###############################################################################
+#                            HELPERS                                          #
+###############################################################################
 
 def update_empty(origin, *dcts):
     """Take a origin dict with some values equal to None. Fill these

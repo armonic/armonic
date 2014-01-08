@@ -5,15 +5,18 @@ import logging
 
 PACKET_INFO_SIZE = 5
 
+
 class AgentException(Exception):
     pass
+
 
 class ConnectionError(Exception):
     pass
 
+
 class ClientSocket(object):
     """A simple socket client for mss agent.
-    
+
     Logs emit by agent are forwarded to this client. To use them, add
     a logging handler with :py:meth:`add_logging_handler`
     or they can be specified as arguments at init time.
@@ -64,10 +67,10 @@ class ClientSocket(object):
             raise
         last = packer.unpack(p)[1]
         ret = self._socket.recv(size)
-        recv_size=len(ret)
+        recv_size = len(ret)
         while recv_size < size:
-            ret += self._socket.recv(size-recv_size)
-            recv_size=len(ret)
+            ret += self._socket.recv(size - recv_size)
+            recv_size = len(ret)
         ret = pickle.loads(ret)
         return (last, ret)
 
@@ -75,7 +78,7 @@ class ClientSocket(object):
         self._connect()
         self._socket.sendall(pickle.dumps(request))
         ret = self._receive()
-        pRet =  ret #pickle.loads(ret)
+        pRet = ret  # pickle.loads(ret)
         self._socket.close()
         if "exception" in pRet:
             raise pRet['exception']

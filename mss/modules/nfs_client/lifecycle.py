@@ -14,27 +14,32 @@ import os
 
 import mss.common
 import logging
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-class NotInstalled(State):pass
+
+class NotInstalled(State):
+    pass
+
+
 class Installed(mss.state.InstallPackagesUrpm):
-    packages=["nfs-utils-clients"]
+    packages = ["nfs-utils-clients"]
 
 
 class Active(State):
-    services=["nfs-utils-clients"]
-    
+    services = ["nfs-utils-clients"]
+
     @RequireExternal(
-        'nfs', 
-        "//Nfs_server/Active/get_dir", 
-        provide_args= [
+        'nfs',
+        "//Nfs_server/Active/get_dir",
+        provide_args=[
                        Host("client", default=ethernet_ifs()[0][1])],
-        provide_ret = [VString("remotetarget")])
+        provide_ret=[VString("remotetarget")])
     @Require('mountpoint', [VString("path")])
-#    @RequireExternal('nfs-start', 
+#    @RequireExternal('nfs-start',
 #                     '//Nfs_server/Active/start')
     def mount(self, requires):
-        """Mount remotetarget on mountpoint. If it is already mounted, it does nothing."""
+        """Mount remotetarget on mountpoint. If it is already mounted,
+        it does nothing."""
         mountpoint = requires.get("mountpoint").variables().path.value
         remotetarget = requires.get("nfs").variables().remotetarget.value
 
@@ -43,12 +48,12 @@ class Active(State):
             dir = line.split(" ")[1]
             if dir == mountpoint:
                 if device == remotetarget:
-                    logger.info("Device %s is already mounted in %s" %(
+                    logger.info("Device %s is already mounted in %s" % (
                         remotetarget, mountpoint))
                     return
                 else:
                     raise Exception("Directory %s is used by %s."
-                                    "Can not mount nfs share %s"%(
+                                    "Can not mount nfs share %s" % (
                                         mountpoint,
                                         device,
                                         remotetarget))
@@ -65,24 +70,26 @@ class Active(State):
             shutil.move(path, path_bak)
             os.makedirs(mountpoint)
             already_exist = True
-            
+
         logging.info("mount.nfs %s %s" % (remotetarget, mountpoint))
         thread = ProcessThread("mount.nfs", None, "test",
-                               ["/sbin/mount.nfs", 
+                               ["/sbin/mount.nfs",
                                 remotetarget, mountpoint])
         if not thread.launch():
             logger.warning("Error during mount.nfs")
             raise Exception("Error during mount.nfs")
 
         if already_exist:
-            logging.info("Files from %s/ are copied to %s/." % (path_bak, path))
+            logging.info("Files from %s/ are copied to %s/." %
+                         (path_bak, path))
             shutil.copytree("%s/" % path_bak, "%s/" % path)
 
+
 class Nfs_client(Lifecycle):
-    transitions=[
-        Transition(NotInstalled()    ,Installed()),
-        Transition(Installed()      ,Active()),
+    transitions = [
+        Transition(NotInstalled(), Installed()),
+        Transition(Installed(), Active()),
         ]
 
     def __init__(self):
-        self.init(NotInstalled(),{})
+        self.init(NotInstalled(), {})

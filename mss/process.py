@@ -27,10 +27,19 @@ from subprocess import Popen, PIPE, STDOUT
 
 logger = logging.getLogger(__name__)
 
+
 class ProcessThread(threading.Thread):
     """ Base class for running tasks """
 
-    def __init__(self, type, status, module, command, cwd=None, callback=None, shell=None, env=None):
+    def __init__(self,
+                 type,
+                 status,
+                 module,
+                 command,
+                 cwd=None,
+                 callback=None,
+                 shell=None,
+                 env=None):
         self.process = None
         self._code = 2000
         self._output = ""
@@ -56,7 +65,9 @@ class ProcessThread(threading.Thread):
         self.stop()
 
     def __repr__(self):
-        return "<%s(%s, %s)>" % (self.__class__.__name__, self.module, self.command)
+        return "<%s(%s, %s)>" % (self.__class__.__name__,
+                                 self.module,
+                                 self.command)
 
     def launch(self):
         """Thread is started and joined. This is a blocking method.
@@ -133,6 +144,7 @@ class ProcessThread(threading.Thread):
                 self._code = self.process.returncode
                 if self.callback:
                     self.callback(self.module, self._code, self._output)
-                logger.process("Finished `%s` command\n"% " ".join(self.command))
+                logger.process("Finished `%s` command\n" %
+                               " ".join(self.command))
                 logger.debug("Finished `%s` command" % " ".join(self.command))
                 break

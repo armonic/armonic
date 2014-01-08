@@ -4,23 +4,31 @@ from platform import uname
 import logging
 logger = logging.getLogger(__name__)
 
-RESSOURCE_ATTR="ressource"
+RESSOURCE_ATTR = "ressource"
+
 
 class XpathNotMatch(Exception):
     pass
+
+
 class XpathMultipleMatch(Exception):
     pass
+
+
 class XpathHaveNotRessource(Exception):
     pass
+
+
 class XpathInvalidExpression(Exception):
     pass
+
 
 class XmlRegister(object):
     """
     This add an xpath path to subclasses instance.
 
-    If you use these objects via pickle, get_xpath() and get_xpath_relative() methods is the only
-    one that is managed.
+    If you use these objects via pickle, get_xpath() and get_xpath_relative()
+    methods is the only one that is managed.
     """
     _xml_elt = None
     _xml_root = None
@@ -46,36 +54,36 @@ class XmlRegister(object):
 
         :rtype: a list of tuple (property_name, value)"""
         return []
-                   
 
     def _xml_register(self, parent=None):
         # The root node is the hostname
         if XmlRegister._xml_root == None:
-            XmlRegister._xml_root = Element(uname()[1], attrib={"ressource":"location"})
+            XmlRegister._xml_root = Element(uname()[1],
+                                            attrib={"ressource": "location"})
             XmlRegister._xml_root_tree = ElementTree(XmlRegister._xml_root)
 
-        attributes = {RESSOURCE_ATTR : self._xml_ressource_name()}
+        attributes = {RESSOURCE_ATTR: self._xml_ressource_name()}
         attributes.update(self._xml_attributes())
         if parent == None:
-            self._xml_elt = SubElement(XmlRegister._xml_root, 
-                                       self._xml_tag(), 
-                                       attrib = attributes)
-        else:
-            self._xml_elt = SubElement(parent._xml_elt, 
+            self._xml_elt = SubElement(XmlRegister._xml_root,
                                        self._xml_tag(),
-                                       attrib = attributes)
+                                       attrib=attributes)
+        else:
+            self._xml_elt = SubElement(parent._xml_elt,
+                                       self._xml_tag(),
+                                       attrib=attributes)
 
         self._xpath = XmlRegister._xml_root_tree.getpath(self._xml_elt)
-        self._xpath_relative = self._xpath.split("/",2)[2]
+        self._xpath_relative = self._xpath.split("/", 2)[2]
 
         self._xml_register_children()
 
         for (prop, value) in self._xml_add_property():
-            logger.debug("Add property %s:%s on node with tag %s" %(
+            logger.debug("Add property %s:%s on node with tag %s" % (
                 prop, value, self._xml_tag()))
             sub = SubElement(self._xml_elt,
                              prop,
-                             attrib={'ressource':'property'})
+                             attrib={'ressource': 'property'})
             sub.text = value
 
     def _xml_register_children(self):
@@ -85,10 +93,9 @@ class XmlRegister(object):
 
         for c in self._xml_children():
             c._xml_register(self)
-        
-        
+
     @classmethod
-    def to_string(cls, xpath = None):
+    def to_string(cls, xpath=None):
         if xpath is not None:
             elt = cls._find_one(xpath)
         else:
@@ -96,7 +103,8 @@ class XmlRegister(object):
         return tostring(elt)
 
     def get_xpath(self):
-        return self._xpath 
+        return self._xpath
+
     def get_xpath_relative(self):
         """Get a relatvie xpath, ie. without host.
         This can be useful when a client wants to mix hostname and ip addr."""
@@ -117,7 +125,7 @@ class XmlRegister(object):
         """
         :rtype: [str]
         """
-        acc=[]
+        acc = []
         try:
             request = cls._xml_root_tree.xpath(xpath)
             if type(request) != list:
@@ -135,7 +143,8 @@ class XmlRegister(object):
     @classmethod
     def find_all_elts(cls, xpath):
         try:
-            return [XmlRegister._xml_root_tree.getpath(e) for e in cls._xml_root_tree.xpath(xpath)]
+            return [XmlRegister._xml_root_tree.getpath(e) for e in
+                    cls._xml_root_tree.xpath(xpath)]
         except XPathEvalError:
             raise XpathInvalidExpression("xpath '%s' is not valid!" % xpath)
 
@@ -170,6 +179,5 @@ class XmlRegister(object):
         for e in ressource.iterancestors():
             if e.get(RESSOURCE_ATTR) == ressource_name:
                 return e.tag
-        raise XpathHaveNotRessource("%s have not ressource %s!" % (xpath, ressource_name))
-
-
+        raise XpathHaveNotRessource("%s have not ressource %s!" %
+                                    (xpath, ressource_name))
