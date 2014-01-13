@@ -32,7 +32,7 @@ class TestVariable(unittest.TestCase):
         self.assertEqual(t.value, 30)
 
     def test_VList(self):
-        t=VList("list1", inner=VString)
+        t = VList("list1", inner=VString)
         # Type of a inner value is verified
         with self.assertRaises(TypeError):
             t.value = [1]
@@ -62,14 +62,12 @@ class TestVariable(unittest.TestCase):
         self.assertEqual(t.value[2].value[0].value, "str4")
 
     def test_required(self):
-        t=VString("str")
+        t = VString("str")
         with self.assertRaises(ValidationError):
             t._validate()
-        t=Port("port")
+        t = Port("port")
         with self.assertRaises(ValidationError):
             t._validate()
-        
-        
 
 
 if __name__ == '__main__':
