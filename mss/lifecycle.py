@@ -965,8 +965,7 @@ class LifecycleManager(object):
 
     @expose
     def provide(self, xpath):
-        """If in_stack is True, just returns provides available in
-        stack. Otherwise, returns all provides of this lf_name.
+        """Returns all provides of this lf_name.
 
         :param xpath: The xpath of a provide.
         :type xpath: str

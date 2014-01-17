@@ -155,6 +155,8 @@ def cmd_provide(args):
         print provide.get_xpath()
         if args.long_description:
             provide_to_table(provide)
+            req=client.call('provide_call_requires', xpath=args.xpath)
+            require_to_table(req)
             print ""
 
 def cmd_provide_call(args):
