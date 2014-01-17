@@ -132,7 +132,8 @@ def cmd_state(args):
             print s
 
 def cmd_state_current(args):
-    print client.call('state_current', args.module)
+    for r in client.call('state_current', args.xpath):
+        dict_to_table(r)
 
 def cmd_state_goto(args):
     pprint.pprint(client.call('state_goto', args.xpath, parseArgs(args.require)))
@@ -157,7 +158,7 @@ def cmd_provide(args):
             print ""
 
 def cmd_provide_call(args):
-    pprint.pprint(client.call('provide_call', args.module, args.provide, args.xpath, parseArgs(args.require), parseArgs(args.args)))
+    pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require), parseArgs(args.args)))
 
 def cmd_plot(args):
     if args.T == 'dot':
@@ -250,11 +251,11 @@ parser_state.add_argument('--requires-list','-r',action='store_true',help="List 
 parser_state.set_defaults(func=cmd_state)
 
 parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module.')
-parser_state_current.add_argument('module' , type=str, help='a module').completer = ModuleCompleter
+parser_state_current.add_argument('xpath' , type=str, help='a xpath that correspond to lifecycles.')
 parser_state_current.set_defaults(func=cmd_state_current)
 
 parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module.')
-parser_state_goto.add_argument('xpath' , type=str, help='a xpath that correspond to a unique state.').completer = StateCompleter
+parser_state_goto.add_argument('xpath' , type=str, help='a xpath that correspond to a unique state.')
 parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'.")
 parser_state_goto.set_defaults(func=cmd_state_goto)
 
@@ -266,9 +267,7 @@ parser_provide.add_argument('--path','-p',action='store_true',help="Show the pat
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
-parser_provide_call.add_argument('-m', '--module' , type=str, nargs='?', default=None, help='a module').completer = ModuleCompleter
-parser_provide_call.add_argument('-p', '--provide' , type=str, nargs='?', default=None, help='a provide').completer = ProvideCompleter
-parser_provide_call.add_argument('-x', "--xpath" , type=str, nargs='?', default=None, help='a xpath')
+parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
 parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
 parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)

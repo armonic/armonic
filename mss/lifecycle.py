@@ -897,15 +897,21 @@ class LifecycleManager(object):
         return acc
 
     @expose
-    def state_current(self, lf_name):
+    def state_current(self, xpath):
         """Get the current state name of the lifecycle object
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: name of the state
         """
-        return self._get_by_name(lf_name).state_current().name
-
+        elts = XmlRegister.find_all_elts(xpath)
+        acc = []
+        for e in elts:
+            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            lf = self._get_by_name(lf_name)
+            acc.append({"xpath": e, "state": lf.state_current().name})
+        return acc
+        
     @expose
     def state_goto_path(self, xpath):
         """From the current state, return the path to goto the state of the
@@ -1030,17 +1036,13 @@ class LifecycleManager(object):
 
     @expose
     def provide_call(self,
-                     lf_name=None,
-                     provide_name=None,
-                     xpath=None,
+                     xpath,
                      requires={},
                      provide_args={}):
         """Call a provide of a lifecycle and go to provider state if needed
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param provide_name: The name of the provide to go to
-        :type provide_name: str
+        :param xpath: The xpath of provides
+        :type xpath: str
         :param requires: Requires needed to reach the state that provides this
                          provide
                          See :py:meth:`Lifecycle.state_goto` for more
@@ -1048,10 +1050,9 @@ class LifecycleManager(object):
         :type requires: dict
         :param provide_args: Args needed by this provide
         :type provide_args: dict"""
-        if xpath != None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(xpath, "state")
-            provide_name = XmlRegister.get_ressource(xpath, "provide")
+        lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
+        state_name = XmlRegister.get_ressource(xpath, "state")
+        provide_name = XmlRegister.get_ressource(xpath, "provide")
         logger.debug("provide-call %s %s %s %s" % (
                 lf_name, provide_name, requires, provide_args))
         return self._get_by_name(lf_name).provide_call(state_name,
