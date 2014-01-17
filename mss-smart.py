@@ -5,6 +5,7 @@ import mss.client.smart
 import mss.require
 import readline
 from itertools import repeat
+import termcolor
 
 import sys
 import argparse
@@ -121,23 +122,27 @@ class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, Show
         except KeyError :
             value = None
         if err_variable == 'host':
-            prefill = self._provide_current.host
+            values.update({'host': self._provide_current.host})
         else:
             prefill = ""
-        msg = ("Variable '%s' of require '%s' of provide '%s' has "
-               "been set with wrong value.\n'%s' = '%s'\nPlease change it:")%(
-                   err_variable, 
-                   self.name, 
-                   self._provide_current.requirer.used_xpath,
-                   err_variable, value)
-        values.update(user_input_variable(
-            variable_name = err_variable, 
-            prefix=self.sep(), 
-            message = msg, 
-            prefill = prefill))
+            msg = ("Variable '%s' of require '%s' of provide '%s' has "
+                   "been set with wrong value.\n'%s' = '%s'\nPlease change it:")%(
+                       err_variable, 
+                       self.name, 
+                       self._provide_current.requirer.used_xpath,
+                       err_variable, value)
+            values.update(user_input_variable(
+                variable_name = err_variable, 
+                prefix=self.sep(), 
+                message = msg, 
+                prefill = prefill))
         return values
 
 
+class ColorFormatter(logging.Formatter):
+    def format(self,record):
+        ret = logging.Formatter.format(self, record)
+        return termcolor.colored(ret, 'grey')
 
 class MyProvide(Provide, ShowAble):
     
@@ -151,9 +156,12 @@ class MyProvide(Provide, ShowAble):
         :rtype: bool. Return True if the provide must be called, false otherwise.
         """
         self.show("Preparing the call of provide %s ..." % (self.used_xpath))
-        msg = "Where do you want to call it?"
-        ret = user_input_variable(prefix=self.sep(), variable_name = 'host', message = msg, prefill = self.requirer.host)
-        host = ret['host']
+        if self.requirer_type == 'external':
+            msg = "Where do you want to call it?"
+            ret = user_input_variable(prefix=self.sep(), variable_name = 'host', message = msg, prefill = self.requirer.host)
+            host = ret['host']
+        else:
+            host = self.requirer.host
         self.host = host
         msg = ("Do you really want to call %s on '%s' ?" % (
                 self.used_xpath,
@@ -173,8 +181,8 @@ class MyProvide(Provide, ShowAble):
 
     def set_logging_handlers(self):
         handler = logging.StreamHandler(sys.stdout)
-        format = '%(levelname)6s %(ip)15s - %(message)s'
-        handler.setFormatter(logging.Formatter(format))
+        format = '%(levelname)5s %(ip)15s - %(message)s'
+        handler.setFormatter(ColorFormatter(format))
         return [handler]
 
 MyProvide.set_require_class("external",RequireExternal)
