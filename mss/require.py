@@ -199,7 +199,7 @@ class Require(XmlRegister):
     def _xml_ressource_name(self):
         return "require"
 
-    def _xml_add_property(self):
+    def _xml_add_properties_tuple(self):
         return [("nargs", self.nargs)]
 
     def __call__(self, func):

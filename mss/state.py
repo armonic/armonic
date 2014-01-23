@@ -76,11 +76,11 @@ class InstallPackagesUrpm(mss.lifecycle.State):
     packages = []
     supported_os_type = [mss.utils.OsTypeMBS()]
 
-    def _xml_add_property(self):
+    def _xml_add_properties_tuple(self):
         return ([("repository", "mbs")] +
                 [('package', p) for p in self.packages] +
-                mss.lifecycle.State._xml_add_property(self))
-
+                mss.lifecycle.State._xml_add_properties_tuple(self))
+        
     def entry(self):
         pkgs = " ".join(self.packages)
         logger.info("Installing packages '%s' ..." % (pkgs))
@@ -124,10 +124,10 @@ class InstallPackagesApt(mss.lifecycle.State):
     packages = []
     supported_os_type = [mss.utils.OsTypeDebian()]
 
-    def _xml_add_property(self):
-        return ([("repository", "debian")] +
-                [('package', p) for p in self.packages] +
-                mss.lifecycle.State._xml_add_property(self))
+#    def _xml_add_property(self):
+#        return ([("repository", "debian")] +
+#                [('package', p) for p in self.packages] +
+#                mss.lifecycle.State._xml_add_property(self))
 
     def entry(self, requires={}):
         pkgs = " ".join(self.packages)

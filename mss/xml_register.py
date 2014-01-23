@@ -49,7 +49,13 @@ class XmlRegister(object):
     def _xml_children(self):
         return []
 
-    def _xml_add_property(self):
+    def _xml_add_properties(self):
+        """Redefine it to add property nodes to this node.
+
+        :rtype: a list etree.Element"""
+        return []
+
+    def _xml_add_properties_tuple(self):
         """Redefine it to add property nodes to this node.
 
         :rtype: a list of tuple (property_name, value)"""
@@ -57,14 +63,14 @@ class XmlRegister(object):
 
     def _xml_register(self, parent=None):
         # The root node is the hostname
-        if XmlRegister._xml_root == None:
+        if XmlRegister._xml_root is None:
             XmlRegister._xml_root = Element(uname()[1],
                                             attrib={"ressource": "location"})
             XmlRegister._xml_root_tree = ElementTree(XmlRegister._xml_root)
 
         attributes = {RESSOURCE_ATTR: self._xml_ressource_name()}
         attributes.update(self._xml_attributes())
-        if parent == None:
+        if parent is None:
             self._xml_elt = SubElement(XmlRegister._xml_root,
                                        self._xml_tag(),
                                        attrib=attributes)
@@ -78,13 +84,22 @@ class XmlRegister(object):
 
         self._xml_register_children()
 
-        for (prop, value) in self._xml_add_property():
-            logger.debug("Add property %s:%s on node with tag %s" % (
-                prop, value, self._xml_tag()))
-            sub = SubElement(self._xml_elt,
-                             prop,
-                             attrib={'ressource': 'property'})
-            sub.text = value
+        if ((self._xml_add_properties() != []
+             or self._xml_add_properties_tuple() != [])):
+            properties_node = SubElement(self._xml_elt,
+                                         "properties")
+
+            for (prop, value) in self._xml_add_properties_tuple():
+                logger.debug("Add property '%s:%s' on node with tag %s" % (
+                    prop, value, self._xml_tag()))
+                sub = SubElement(properties_node,
+                                 prop)
+                sub.text = value
+
+            for elt in self._xml_add_properties():
+                logger.debug("Add property '%s' on node with tag %s" % (
+                    elt.tag, self._xml_tag()))
+                properties_node.append(elt)
 
     def _xml_register_children(self):
         """Be careful, this removes children before adding them."""

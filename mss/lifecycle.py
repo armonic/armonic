@@ -112,7 +112,7 @@ from mss.variable import VString
 import mss.utils
 import copy
 
-from xml_register import XmlRegister, XpathHaveNotRessource
+from xml_register import XmlRegister, XpathHaveNotRessource, Element, SubElement
 
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
@@ -224,7 +224,7 @@ class State(XmlRegister):
     def _xml_ressource_name(self):
         return "state"
 
-    def _xml_add_property(self):
+    def _xml_add_properties_tuple(self):
         return [("supported_os_type", str(o)) for o in self.supported_os_type]
 
     @property
@@ -407,6 +407,17 @@ class Lifecycle(XmlRegister):
 
     def _xml_ressource_name(self):
         return "lifecycle"
+
+    def _xml_add_properties(self):
+        transitions = []
+        for (s, d) in self.transitions:
+            t = Element("transition")
+            src = SubElement(t, "source")
+            src.text = s.name
+            dst = SubElement(t, "destination")
+            dst.text = d.name
+            transitions.append(t)
+        return transitions
 
     @property
     def name(self):
