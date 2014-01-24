@@ -476,7 +476,16 @@ class Provide(object):
             self.host))
         self.lf_manager = ClientSocket(host=self.host,
                                        handlers=self.set_logging_handlers())
-        self.used_xpath = self.xpath
+
+        # We specialize the generic xpath
+        matches = self.lf_manager.call("uri", xpath=self.used_xpath)
+        # If the generic xpath matches several xpaths, 
+        # the user has to choose one
+        if len(matches) != 1:
+            self.used_xpath = self.handle_provide_xpath(
+                self.used_xpath, matches)
+        else:
+            self.used_xpath = matches[0]
         while True:
             try:
                 self.provide_goto_requires = self.lf_manager.call(
@@ -490,11 +499,6 @@ class Provide(object):
                     continue
                 else:
                     raise
-            except mss.xml_register.XpathMultipleMatch:
-                matches = self.lf_manager.call("uri", xpath=self.used_xpath)
-                self.used_xpath = self.handle_provide_xpath(
-                    self.used_xpath, matches)
-                continue
             break
         self.requires = self.provide_goto_requires + self.provide_requires
 
