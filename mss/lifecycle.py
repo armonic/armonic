@@ -224,8 +224,16 @@ class State(XmlRegister):
     def _xml_ressource_name(self):
         return "state"
 
-    def _xml_add_properties_tuple(self):
-        return [("supported_os_type", str(o)) for o in self.supported_os_type]
+    def _xml_add_properties(self):
+        acc = []
+        for s in self.supported_os_type:
+            t = Element("supported_os")
+            name = SubElement(t, "name")
+            name.text = s.name
+            r = SubElement(t, "release")
+            r.text = s.release
+            acc.append(t)
+        return acc
 
     @property
     def name(self):
