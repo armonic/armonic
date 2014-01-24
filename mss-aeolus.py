@@ -134,7 +134,7 @@ Provide.set_require_class("user",RequireUser)
 description=""" mss-zephyrus asks user what kind of provide he wants to call and
 construct input zephyrus files.  """
 
-parser = argparse.ArgumentParser(prog='mss3-zephyrus', description=description)
+parser = argparse.ArgumentParser(prog='mss3-aeolus', description=description)
 parser.add_argument('--host', type=str, required=True, help='Host where to call the provide')
 parser.add_argument('--xpath','-x', type=str, required=True, help='A provide Xpath')
 args = parser.parse_args()
