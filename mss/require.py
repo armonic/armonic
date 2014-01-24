@@ -200,7 +200,8 @@ class Require(XmlRegister):
         return "require"
 
     def _xml_add_properties_tuple(self):
-        return [("nargs", self.nargs)]
+        return [("nargs", self.nargs),
+                ("type", self.type)]
 
     def __call__(self, func):
         """
@@ -405,6 +406,10 @@ class RequireLocal(Require):
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
         self._variables = [IterContainer(*_variables)]
+
+    def _xml_add_properties_tuple(self):
+        return ([("xpath", self.xpath)] +
+                Require._xml_add_properties_tuple(self))
 
     def to_primitive(self):
         return {"name": self.name,
