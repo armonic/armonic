@@ -12,13 +12,20 @@
 import argparse
 
 import mss.client.smart
+from mss.client_socket import ClientSocket
 
 Zephyrus_components = []
 Zephyrus_implementations = []
 
 class Provide(mss.client.smart.Provide):
+    # This global variable is used to store all needed xpath
     _xpaths = {}
+    
+    # This will contain all used module by this deployment
+    _used_lifecycles = []
+
     def handle_call(self):
+        
         if self.host is None:
             self.host = self.requirer.host
         return True
@@ -30,11 +37,19 @@ class Provide(mss.client.smart.Provide):
         return self._xpaths[xpath]
 
     def confirm_call(self):
+        if self.xpath not in self._xpaths:
+            self._xpaths[self.xpath] = self.helper_used_xpath()
+
         provide_xpath = self.lf_manager.call("uri", self.helper_used_xpath())[0]
         
         xpath = (self.helper_used_xpath() + 
                  "/ancestor::node()[@ressource='lifecycle']//repository/..")
         name = self.lf_manager.call("xpath", "name(%s/../..)" % provide_xpath)[0]
+
+        # We add this lifecycle to the global used lifecycles array
+        if name not in self._used_lifecycles:
+            self._used_lifecycles.append(name)
+
         requires = []
         for r in self.requires:
             if r.nargs == '*':
@@ -57,7 +72,6 @@ class Provide(mss.client.smart.Provide):
             pkgs = self.lf_manager.call("xpath", "%s/package/text()" % u)
             implementations.append({"repository": repo, "packages": pkgs})
 
-#        self.helper_requirer_type == 'external':
         if self.helper_requirer_type() == 'external' or self.helper_requirer_type() is None:
             Zephyrus_components.append({"name": name,
                                         "provide": [[provide_xpath,["FiniteProvide", 1]]],
@@ -90,8 +104,6 @@ def user_input_choose_amongst(choices, prefix=''):
 class Require(object):
     def build_values(self):
         return {}
-#    def build_provide_class(self):
-#        return Provide
 
     def handle_validation_error(self):
         return False
@@ -112,10 +124,6 @@ class Require(object):
             self._used_nargs = int(answer)
         return False
         
-            
-
-
-
 class RequireExternal(Require, mss.client.smart.RequireExternal):
     pass
 class RequireLocal(Require, mss.client.smart.RequireLocal):
@@ -144,4 +152,101 @@ provide.call()
 
 import pprint
 pprint.pprint({"component_types": Zephyrus_components,
-               "implementation" : Zephyrus_implementations})
+               "implementation": Zephyrus_implementations,
+               "specialisation": Provide._xpaths})
+
+
+def compute_requires(provide_xml_elt):
+    """From a provide element in xml, this function return the list of all
+    requires xpath useful for Metis. In fact, we accumulate remote requires
+    of all provides and entry method.
+
+    This has to be discussed ...
+    """
+    requires = []
+    for require in provide_xml_elt:
+        if require.tag not in ["cross","leave"]:
+            rtype = require.find('properties/type')
+            if rtype is not None and rtype.text in ['external', 'local']:
+                requires.append(require.find('properties/xpath').text)
+    return requires
+
+def specialize_requires(requires_xpath, bindings):
+    """From a list of xpath, try to find a corresponding specialized xpath
+    that comes from user choice.
+    """
+    spec = []
+    for x in requires_xpath:
+        try:
+            spec.append(bindings[x])
+        except KeyError:
+            spec.append(x)
+    return spec
+
+def is_mbs_state(state_xml_elt):
+    """Hack to avoid state diamonds.
+    Return True is mbs compatbible"""
+    test = False
+    for os_name in state_xml_elt.findall("properties/supported_os/name"):
+        if os_name.text in ['Mandriva Business Server','all']:
+            test = True
+            break;
+    return test
+
+
+import lxml
+xml_data = ClientSocket(host=args.host).call("to_xml") 
+tree = lxml.etree.fromstring(xml_data)
+root = tree.getroottree()
+
+metis_json = []
+
+# For each used lifecycle by zephyrus,
+# we compute an automaton
+for lf_name in Provide._used_lifecycles:
+    lf_elt = tree.findall(lf_name)[0]
+    states = []
+
+    # For each state, we generate its successors, 
+    # requires and provides
+    for state_elt in lf_elt:
+        if state_elt.tag != "properties":
+
+            # Hack to avoid diamond
+            if not is_mbs_state(state_elt):
+                continue
+                
+            # We generate the remote requires of a state. Currently,
+            # we accumulate the remote requires of entry method and
+            # all provides.  
+            #
+            # In a second step, the provide xpath are
+            # specialized according with the xpaths used by zephyrus.
+            requires = []
+            for provide_elt in state_elt:
+                requires += specialize_requires(
+                    compute_requires(provide_elt),
+                    Provide._xpaths)
+     
+            states.append({
+                "u_name" : state_elt.tag,
+                "u_successors" : [e[1].text 
+                                  for e in lf_elt.findall("properties/transition") 
+                                  if ((e[0].text == state_elt.tag and
+                                       is_mbs_state(lf_elt.find(e[1].text))
+                                   ))
+                              ],
+                "u_provides" : [root.getpath(e)
+                                for e in state_elt
+                                if e.tag not in ["properties","entry","cross","leave"]],
+                "u_requires" : requires
+            })
+    metis_json.append({"u_cname": lf_name,
+                       "u_automaton": states})
+
+print
+print
+import json
+print json.dumps(metis_json)
+    
+    
