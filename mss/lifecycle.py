@@ -367,6 +367,10 @@ class Lifecycle(XmlRegister):
     automatically discovered but it is possible to overlap this
     attribute to manually specify one.
     """
+    abstract = False
+    """If the Lifecycle is abstract it won't be load in the LifecycleManager
+    and ine the XML registery.
+    """
 
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
@@ -403,8 +407,6 @@ class Lifecycle(XmlRegister):
                     if update_transitions != []:
                         instance.transitions.remove(t)
                         instance.transitions += update_transitions
-
-        instance._xml_register()
 
         return instance
 
@@ -845,9 +847,13 @@ class LifecycleManager(object):
         self.lf_loaded = {}
         self.lf = {}
         for lf in mss.utils.get_subclasses(Lifecycle):
-            logger.debug("Found Lifecycle %s" % lf)
-            self.lf.update({lf.__name__: lf})
-            self.load(lf.__name__)
+            if not lf.abstract:
+                logger.debug("Found Lifecycle %s" % lf)
+                self.lf.update({lf.__name__: lf})
+                self.load(lf.__name__)
+                lf()._xml_register()
+            else:
+                logger.debug("Ignoring abstract Lifecycle %s" % lf)
 
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager`
