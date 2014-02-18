@@ -362,9 +362,16 @@ class Lifecycle(XmlRegister):
     """
     _initialized = False
 
+    os_type = mss.utils.OS_TYPE
+    """To specify the current os_type. By default, os type is
+    automatically discovered but it is possible to overlap this
+    attribute to manually specify one.
+    """
+
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(
             cls)
+
         # Update transitions to manage MetaState
         for ms in instance._state_list():
             # For each MetaState ms
@@ -470,8 +477,8 @@ class Lifecycle(XmlRegister):
     def _is_transition_allowed(self, s, d):
         """A transition is allowed if src and dst state support current os
         type."""
-        return (mss.utils.OS_TYPE in d.supported_os_type
-                and mss.utils.OS_TYPE in s.supported_os_type
+        return (self.os_type in d.supported_os_type
+                and self.os_type in s.supported_os_type
                 and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):
@@ -820,15 +827,19 @@ class LifecycleManager(object):
     in order to be send over network.
 
     :param autoload: TODO
-    :modules_dir: the path of the modules root directory
-    :include_modules: the list of wanted modules
+    :param modules_dir: the path of the modules root directory
+    :param include_modules: the list of wanted modules
+    :param os_type: to specify which kind of os has to be used.\
+    If it is not specified, the os type is automatically discovered.
     """
-    def __init__(self, autoload=True, modules_dir=None, include_modules=None):
+    def __init__(self, autoload=True, modules_dir=None, include_modules=None, os_type=None):
         if autoload:
             if modules_dir is None:
                 raise TypeError("'modules_dir' could not be None")
             mss.common.load_lifecycles(os.path.abspath(modules_dir),
                                        include_modules=include_modules)
+
+        self.os_type = os_type
 
         self._autoload = autoload
         self.lf_loaded = {}
@@ -886,6 +897,8 @@ class LifecycleManager(object):
         if lf_name != None:
             try:
                 lf = self.lf[lf_name]()
+                if self.os_type is not None:
+                    lf.os_type = self.os_type
             except KeyError:
                 raise LifecycleNotExist("Lifecycle '%s' doesn't exist!" %
                                         lf_name)
