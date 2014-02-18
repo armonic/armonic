@@ -64,6 +64,10 @@ class ClientSocket(object):
                          xpath=xpath, 
                          requires=requires, 
                          provide_args=provide_args)
+        
+    def uri(self, xpath):
+        return self.call("uri", 
+                         xpath=xpath)
 
     def _receive_string(self):
         packer = struct.Struct("!I?")
