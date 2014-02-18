@@ -33,7 +33,7 @@ How it works on a example::
 """
 
 from mss.common import ValidationError
-from mss.client_socket import ClientSocket
+from mss.client.socket import ClientSocket
 
 import types
 
@@ -470,12 +470,16 @@ class Provide(object):
         :rtype: xpath (string)"""
         return self.used_xpath
 
+
+    def _lf_manager(self):
+        return ClientSocket(host=self.host,
+                            handlers=self.set_logging_handlers())
+
     def _get_requires(self):
         logger.debug("Requires needed to call provide '%s' on '%s':" % (
             self.used_xpath,
             self.host))
-        self.lf_manager = ClientSocket(host=self.host,
-                                       handlers=self.set_logging_handlers())
+        self.lf_manager = self._lf_manager()
 
         # We specialize the generic xpath
         matches = self.lf_manager.call("uri", xpath=self.used_xpath)
@@ -488,11 +492,11 @@ class Provide(object):
             self.used_xpath = matches[0]
         while True:
             try:
-                self.provide_goto_requires = self.lf_manager.call(
-                    "provide_call_requires", xpath=self.used_xpath)
+                self.provide_goto_requires = self.lf_manager.provide_call_requires(
+                    xpath=self.used_xpath)
 
-                self.provide_requires = self.lf_manager.call(
-                    "provide_call_args", xpath=self.used_xpath)
+                self.provide_requires = self.lf_manager.provide_call_args(
+                    xpath=self.used_xpath)
 
             except mss.client_socket.ConnectionError:
                 if self.handle_connection_error():
@@ -520,8 +524,7 @@ class Provide(object):
                     provide_requires_primitive,
                     provide_args_primitive))
 
-                self.provide_ret = self.lf_manager.call(
-                    "provide_call",
+                self.provide_ret = self.lf_manager.provide_call(
                     xpath=self.used_xpath,
                     requires=provide_requires_primitive,
                     provide_args=provide_args_primitive)
@@ -613,6 +616,16 @@ def _xml_register_children(require):
 
                 v._xpath_relative = xpath_relative
                 v._xpath = xpath
+
+
+class LocalProvide(Provide):
+    def __init__(self, xpath, requirer=None,
+                 requirer_type=None,
+                 suggested_args=[], depth=0):
+        Provide.__init__(self, xpath, host=None, requirer=requirer,
+                         requirer_type=requirer_type,
+                        suggested_args=suggested_args, depth=depth)
+
 
 
 ###############################################################################

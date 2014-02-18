@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import socket
 import pickle
 import struct
@@ -51,6 +52,18 @@ class ClientSocket(object):
         be called."""
         request = {'method': method, 'args': args, 'kwargs': kwargs}
         return self._send_and_receive(request)
+
+    def provide_call_requires(self, xpath):
+        return self.call("provide_call_requires", xpath=xpath)
+
+    def provide_call_args(self, xpath):
+        return self.call("provide_call_args", xpath=xpath)
+
+    def provide_call(self, xpath, requires, provide_args):
+        return self.call("provide_call", 
+                         xpath=xpath, 
+                         requires=requires, 
+                         provide_args=provide_args)
 
     def _receive_string(self):
         packer = struct.Struct("!I?")
