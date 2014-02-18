@@ -12,7 +12,7 @@ from prettytable import PrettyTable
 import argcomplete
 import json
 
-from mss.client_socket import ClientSocket
+from mss.client.socket import ClientSocket
 
 import os
 
@@ -294,7 +294,7 @@ if args.protocol == "xmlrpc":
         exit(1)
 
 elif args.protocol == "socket":
-    from mss.client_socket import ClientSocket
+    from mss.client.socket import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
     format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
