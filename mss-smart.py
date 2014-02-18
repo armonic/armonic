@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from mss.client.smart import Provide, update_empty
+from mss.client.smart import Provide, update_empty, LocalProvide
 import mss.client.smart
 import mss.require
 import readline
@@ -86,7 +86,7 @@ class RequireUser(mss.client.smart.RequireUser, ShowAble):
 
 class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
     def build_provide_class(self):
-        return MyProvide
+        return provide_cls
 
     def handle_many_requires(self, counter):
         msg = ("Do you want to call again %s (already called %s time(s))?" % (
@@ -185,10 +185,14 @@ class MyProvide(Provide, ShowAble):
         handler.setFormatter(ColorFormatter(format))
         return [handler]
 
-MyProvide.set_require_class("external",RequireExternal)
-MyProvide.set_require_class("simple",RequireSimple)
-MyProvide.set_require_class("local",RequireLocal)
-MyProvide.set_require_class("user",RequireUser)
+
+class MyLocalProvide(LocalProvide, MyProvide):
+    def _lf_manager(self):
+        if args.os_type is not None:
+            os_type = mss.utils.OsType(args.os_type)
+        else :
+            os_type = None
+        return mss.lifecycle.LifecycleManager(modules_dir="mss/modules", os_type=os_type)
 
 
 
@@ -241,7 +245,9 @@ does it recursively.
 parser = argparse.ArgumentParser(prog='mss3-smart', description=description)
 parser.add_argument('--host', type=str, default=None,help='Host where to call the provide')
 parser.add_argument('--xpath','-x', type=str, required=True, help='A provide Xpath')
+parser.add_argument('--os-type','-o', type=str, default=None, help='The os type to use')
 args = parser.parse_args()
+
 
 class ProvideInit(object):
     host = args.host
@@ -249,8 +255,21 @@ class ProvideInit(object):
     suggested_args = []
     xpath = "Init"
 
-p = MyProvide(xpath=args.xpath, requirer=ProvideInit())
+
+
+if args.host is None:
+    provide_cls = MyLocalProvide
+else:
+    provide_cls = MyProvide
+
+provide_cls.set_require_class("external",RequireExternal)
+provide_cls.set_require_class("simple",RequireSimple)
+provide_cls.set_require_class("local",RequireLocal)
+provide_cls.set_require_class("user",RequireUser)
+
+p = provide_cls(xpath=args.xpath, requirer=ProvideInit())
 print p.call()
+
 
 print "Filled variables during this deployment:"
 for v in Variables:

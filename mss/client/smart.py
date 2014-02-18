@@ -34,6 +34,7 @@ How it works on a example::
 
 from mss.common import ValidationError
 from mss.client.socket import ClientSocket
+import mss.lifecycle 
 
 import types
 
@@ -482,7 +483,7 @@ class Provide(object):
         self.lf_manager = self._lf_manager()
 
         # We specialize the generic xpath
-        matches = self.lf_manager.call("uri", xpath=self.used_xpath)
+        matches = self.lf_manager.uri(xpath=self.used_xpath)
         # If the generic xpath matches several xpaths, 
         # the user has to choose one
         if len(matches) != 1:
@@ -498,7 +499,7 @@ class Provide(object):
                 self.provide_requires = self.lf_manager.provide_call_args(
                     xpath=self.used_xpath)
 
-            except mss.client_socket.ConnectionError:
+            except mss.client.socket.ConnectionError:
                 if self.handle_connection_error():
                     continue
                 else:
@@ -510,8 +511,8 @@ class Provide(object):
         if self.handle_call():
             self.on_provide_call_begin()
 
-            if self.host is None:
-                raise TypeError("host can not be 'None'")
+            #if self.host is None:
+            #    raise TypeError("host can not be 'None'")
             self._build_requires()
 
             if self.confirm_call():
@@ -626,7 +627,8 @@ class LocalProvide(Provide):
                          requirer_type=requirer_type,
                         suggested_args=suggested_args, depth=depth)
 
-
+    def _lf_manager(self):
+        return mss.lifecycle.LifecycleManager()
 
 ###############################################################################
 #                            HELPERS                                          #
