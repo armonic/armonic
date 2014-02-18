@@ -844,7 +844,8 @@ class LifecycleManager(object):
         self._autoload = autoload
         self.lf_loaded = {}
         self.lf = {}
-        for lf in Lifecycle.__subclasses__():
+        for lf in mss.utils.get_subclasses(Lifecycle):
+            logger.debug("Found Lifecycle %s" % lf)
             self.lf.update({lf.__name__: lf})
             self.load(lf.__name__)
 
@@ -954,7 +955,7 @@ class LifecycleManager(object):
             lf = self._get_by_name(lf_name)
             acc.append({"xpath": e, "state": lf.state_current().name})
         return acc
-        
+
     @expose
     def state_goto_path(self, xpath):
         """From the current state, return the path to goto the state of the
