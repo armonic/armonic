@@ -105,6 +105,7 @@ method of Httpd active state.
 
 import inspect
 import logging
+import os
 
 from mss.common import is_exposed, expose, IterContainer, DoesNotExist
 from mss.require import Requires, Require
@@ -817,8 +818,18 @@ class LifecycleManager(object):
 
     All methods of this class takes and returns primitive types (ie str)
     in order to be send over network.
+
+    :param autoload: TODO
+    :modules_dir: the path of the modules root directory
+    :include_modules: the list of wanted modules
     """
-    def __init__(self, autoload=True):
+    def __init__(self, autoload=True, modules_dir=None, include_modules=None):
+        if autoload:
+            if modules_dir is None:
+                raise TypeError("'modules_dir' could not be None")
+            mss.common.load_lifecycles(os.path.abspath(modules_dir),
+                                       include_modules=include_modules)
+
         self._autoload = autoload
         self.lf_loaded = {}
         self.lf = {}

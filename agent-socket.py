@@ -139,8 +139,9 @@ if __name__ == "__main__":
     parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
 
     args = parser.parse_args()
-    mss.common.load_lifecycles(os.path.abspath(args.modules_dir),include_modules=args.module)
-    lfm = mss.lifecycle.LifecycleManager()
+    lfm = mss.lifecycle.LifecycleManager(
+        modules_dir=args.modules_dir,
+        include_modules=args.module)
 
     print "Server listening on %s:%d" % (args.host, args.port)
     print "Using modules from %s " % args.modules_dir
