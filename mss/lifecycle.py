@@ -105,13 +105,14 @@ method of Httpd active state.
 
 import inspect
 import logging
+import pprint
 import os
+import copy
 
 from mss.common import is_exposed, expose, IterContainer, DoesNotExist
 from mss.require import Requires, Require
 from mss.variable import VString
 import mss.utils
-import copy
 
 from xml_register import XmlRegister, XpathHaveNotRessource, Element, SubElement
 
@@ -461,7 +462,8 @@ class Lifecycle(XmlRegister):
         if reachable:
             acc = []
             for s in states:
-                if self._get_from_state_path(self.state_current(), s, go_back=True) != [] or s == self.state_current():
+                if (self._get_from_state_paths(self.state_current(), s) != [] or
+                        s == self.state_current()):
                     acc.append(s)
             states = acc
         return states
@@ -509,32 +511,56 @@ class Lifecycle(XmlRegister):
             t = self._stack.pop()
             print t.leave()
 
-    def _get_from_state_path(self,
-                             from_state,
-                             to_state,
-                             used_states=[],
-                             go_back=True):
-        """From from_state state, return the path to go to the to_state
-        state. Path is a list of 2-uple (state, "entry" or "leave")
+    def _get_from_state_paths(self, from_state, to_state):
+        logger.debug("Find paths from %s to %s" % (from_state, to_state))
+        paths = []
 
-        :param go_back: to allow state leaving
-        """
-        if from_state == to_state:
-            return []  # It's not THE stop condition. Shity hack : FIXME !
+        def _find_prev_state(state, paths, path):
+            for (src, dst) in self.transitions:
+                if dst == state:
+                    new_path = copy.copy(path)
+                    new_path.append(src)
+                    paths.append(new_path)
+                    # remove old path
+                    for i, p in enumerate(paths):
+                        if p == path:
+                            del paths[i]
+                    # end of our path
+                    if src == from_state:
+                        return
+                    # continue our path
+                    else:
+                        _find_prev_state(src, paths, new_path)
 
-        a = [(d, d, "entry") for (s, d) in self.transitions if self._is_transition_allowed(s, d) and s == from_state and d not in used_states]
-        if go_back:
-            a += [(s, d, "leave") for (s, d) in self.transitions if self._is_transition_allowed(s, d) and d == from_state and s not in used_states]
-        # a = [( nextState , get_current_state , actionOnCurrentState )]
-        for s in a:
-            if s[0] == to_state:
-                return [(s[1], s[2])]
-            r = self._get_from_state_path(s[0], to_state, used_states + [s[0]])
-            if r != [] and r[0][0] != s[1]:  # To avoid [(S1,entry),(S1,leave),...]
-                return [(s[1], s[2])] + r
-        return []
+        # trying to find a path from "to_state" to "from_state"
+        # meaning we are going forward in the state machine
+        _find_prev_state(to_state, paths, path=[to_state])
+        if len(paths) > 0:
+            # ok we found some paths !
+            paths = [list(reversed(path)) for path in paths]
+            # setup state methods
+            for path in paths:
+                for i, state in enumerate(path):
+                    if i == 0:
+                        path[i] = (state, "leave")
+                    else:
+                        path[i] = (state, "entry")
+        # no path found, trying to go backwards in the state machine
+        # from "from_state" to "to_state"
+        else:
+            _find_prev_state(from_state, paths, path=[from_state])
+            # setup state methods
+            for path in paths:
+                for i, state in enumerate(path):
+                    if i == (len(path) - 1):
+                        path[i] = (state, "entry")
+                    else:
+                        path[i] = (state, "leave")
 
-    def state_goto(self, state, requires, go_back=True):
+        logger.debug("Found paths:\n%s" % pprint.pformat(paths))
+        return paths
+
+    def state_goto(self, state, requires, path_index=0):
         """From current state, go to state. To know 'requires', call
         :py:meth:`Lifecycle.state_goto_requires`.  :py:meth:`State.entry` or
         :py:meth:`State.leave` of intermediate states are called
@@ -549,9 +575,8 @@ class Lifecycle(XmlRegister):
         :rtype: list of (state,["entry"|"leave"])
 
         """
-        path = self.state_goto_path(state, go_back=go_back)
-        if path == []:
-            raise StateNotApply()
+        logger.debug("Goto state %s using path %i" % (state, path_index))
+        path = self.state_goto_path(state, path_index=path_index)
         for s in path:
             if s[1] == "entry":
                 self._push_state(s[0], requires)
@@ -596,33 +621,39 @@ class Lifecycle(XmlRegister):
         self._get_state_class(state)
         return True
 
-    def state_goto_path(self, state, fct=None, go_back=True):
+    def state_goto_path_list(self, state):
+        """From the current state return the list of paths to go to the state.
+        """
+        state = self._get_state_class(state)
+        logger.debug("Get paths to go to state %s" % state)
+        return self._get_from_state_paths(self.state_current(), state)
+
+    def state_goto_path(self, state, fct=None, path_index=0):
         """From the current state, return the path to goto the state.
         If fct is not None, fct is applied on each state on the path.
         state arg is preprocessed by _get_state_class method. It then can be a
         str or a class.
         """
-        state = self._get_state_class(state)
-        logger.debug("get_state_path state '%s'" % state)
-        r = self._get_from_state_path(self.state_current(),
-                                      state,
-                                      go_back=go_back)
-        if fct != None:
-            for state in r:
+        try:
+            path = self.state_goto_path_list(state)[path_index]
+        except IndexError:
+            raise StateNotApply()
+        if fct is not None:
+            for state in path:
                 fct(state[0])
-        return r
+        return path
 
-    def state_goto_requires(self, state, go_back=True):
+    def state_goto_requires(self, state, path_index=0):
         """Return all requires needed to go from current state to state.
         :param state: The state where we want to goto
         :type state: a state name or a state class
         :rtype: [Require]
         """
         acc = []
-        for s in self.state_goto_path(state, go_back=go_back):
+        for s in self.state_goto_path(state, path_index=path_index):
             if s[1] == "entry":
                 r = s[0].get_requires()
-                acc += r if r != None else []
+                acc += r if r is not None else []
         return acc
 
     def provide_list_in_stack(self):
