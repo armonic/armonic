@@ -521,16 +521,15 @@ class Lifecycle(XmlRegister):
                     new_path = copy.copy(path)
                     new_path.append(src)
                     paths.append(new_path)
-                    # remove old path
-                    for i, p in enumerate(paths):
-                        if p == path:
-                            del paths[i]
-                    # end of our path
-                    if src == from_state:
-                        return
-                    # continue our path
-                    else:
+                    if not src == from_state:
                         _find_prev_state(src, paths, new_path)
+            # we can't go further
+            # should we keep this path ?
+            if not (path[0] == from_state and path[-1] == to_state):
+                # seems not! delete it
+                for i, p in enumerate(paths):
+                    if p == path:
+                        del paths[i]
 
         # trying to find a path from "to_state" to "from_state"
         # meaning we are going forward in the state machine
