@@ -56,6 +56,8 @@ class TestPathGeneration(unittest.TestCase):
                          [[(d(), 'leave'), (c(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
         self.assertEqual(lf._get_from_state_paths(c(), a()),
                          [[(c(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
+        self.assertEqual(lf._get_from_state_paths(a(), a()),
+                         [])
 
     def test02(self):
         """
@@ -112,6 +114,8 @@ class TestPathGeneration(unittest.TestCase):
                          [[(c(), 'leave'), (d(), 'entry'), (e(), 'entry'), (g(), 'entry')]])
         self.assertEqual(lf._get_from_state_paths(g(), a()),
                          [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
+        self.assertEqual(lf._get_from_state_paths(g(), c()),
+                         [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (c(), 'entry')]])
 
 if __name__ == '__main__':
     unittest.main()
