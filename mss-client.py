@@ -147,7 +147,7 @@ def cmd_provide(args):
         for r in ret:
             print r['xpath']
             for a in r['actions']:
-                print "\t", a
+                print "  ", "%5s " % a[1], a[0]
         return
         
     ret=client.call('provide', args.xpath)
@@ -224,7 +224,7 @@ parser.add_argument('--host','-H', type=str,
                     ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
 parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
-parser.add_argument('--verbose',"-v", type=int,default=10,help="Between 10 (DEBUG) and 50 (ERROR)")
+parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
 
 parser_status = subparsers.add_parser('status', help='Show status of agent.')
