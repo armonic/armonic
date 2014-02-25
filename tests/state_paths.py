@@ -1,5 +1,6 @@
 import unittest
 
+
 from mss.lifecycle import Lifecycle, State, Transition
 
 
@@ -49,13 +50,15 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), d()),
-                         [[(a(), 'leave'), (b(), 'entry'), (c(), 'entry'), (d(), 'entry')]])
+                         [[(b(), 'entry'), (c(), 'entry'), (d(), 'entry')]])
         self.assertEqual(lf._get_from_state_paths(b(), c()),
-                         [[(b(), 'leave'), (c(), 'entry')]])
+                         [[(c(), 'entry')]])
+        lf.state_goto(d(), {})
         self.assertEqual(lf._get_from_state_paths(d(), a()),
-                         [[(d(), 'leave'), (c(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
+                         [[(d(), 'leave'), (c(), 'leave'), (b(), 'leave')]])
+        lf.state_goto(c(), {})
         self.assertEqual(lf._get_from_state_paths(c(), a()),
-                         [[(c(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
+                         [[(c(), 'leave'), (b(), 'leave')]])
         self.assertEqual(lf._get_from_state_paths(a(), a()),
                          [])
 
@@ -80,13 +83,17 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
-                         [[(a(), 'leave'), (b(), 'entry'), (e(), 'entry'), (f(), 'entry')],
-                          [(a(), 'leave'), (c(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
+                         [[(b(), 'entry'), (e(), 'entry'), (f(), 'entry')],
+                          [(c(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
         self.assertEqual(lf._get_from_state_paths(a(), d()),
-                         [[(a(), 'leave'), (c(), 'entry'), (d(), 'entry')]])
-        self.assertEqual(lf._get_from_state_paths(e(), a()),
-                         [[(e(), 'leave'), (b(), 'leave'), (a(), 'entry')],
-                          [(e(), 'leave'), (d(), 'leave'), (c(), 'leave'), (a(), 'entry')]])
+                         [[(c(), 'entry'), (d(), 'entry')]])
+        lf.state_goto(f(), {}, 1)
+        self.assertEqual(lf._get_from_state_paths(f(), a()),
+                         [[(f(), 'leave'), (e(), 'leave'), (d(), 'leave'), (c(), 'leave')]])
+        lf.state_goto(a(), {})
+        lf.state_goto(f(), {}, 0)
+        self.assertEqual(lf._get_from_state_paths(f(), a()),
+                         [[(f(), 'leave'), (e(), 'leave'), (b(), 'leave')]])
 
     def test03(self):
         """
@@ -109,13 +116,16 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
-                         [[(a(), 'leave'), (b(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
+                         [[(b(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
         self.assertEqual(lf._get_from_state_paths(c(), g()),
-                         [[(c(), 'leave'), (d(), 'entry'), (e(), 'entry'), (g(), 'entry')]])
+                         [[(d(), 'entry'), (e(), 'entry'), (g(), 'entry')]])
+        lf.state_goto(g(), {})
         self.assertEqual(lf._get_from_state_paths(g(), a()),
-                         [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (b(), 'leave'), (a(), 'entry')]])
-        self.assertEqual(lf._get_from_state_paths(g(), c()),
-                         [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (c(), 'entry')]])
+                         [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (b(), 'leave')]])
+        # NOT SUPPORTED
+        #lf.state_goto(g(), {})
+        #self.assertEqual(lf._get_from_state_paths(g(), c()),
+                         #[[(g(), 'leave'), (e(), 'leave'), (d(), 'leave')]])
 
 if __name__ == '__main__':
     unittest.main()

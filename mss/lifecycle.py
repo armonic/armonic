@@ -476,7 +476,7 @@ class Lifecycle(XmlRegister):
         if self._stack == []:
             return None
         else:
-            return self._stack[len(self._stack) - 1]
+            return self._stack[-1]
 
     def _is_state_in_stack(self, state):
         return self._get_state_class(state) in self._stack
@@ -494,9 +494,8 @@ class Lifecycle(XmlRegister):
         You should never use this method. Use goto_state instead.
         """
         if self._stack != []:
-            cstate = self._stack[len(self._stack) - 1]
-            if not self._is_transition_allowed(cstate, state):
-                raise TransitionNotAllowed("from %s to %s" % (cstate, state))
+            if not self._is_transition_allowed(self.state_current(), state):
+                raise TransitionNotAllowed("from %s to %s" % (self.state_current(), state))
         state.lf_name = self.name
         logger.event({'event': 'state_appling',
                       'state': state.name,
@@ -518,46 +517,37 @@ class Lifecycle(XmlRegister):
         logger.debug("Find paths from %s to %s" % (from_state, to_state))
         paths = []
 
-        def _find_prev_state(state, paths, path):
+        def _find_next_state(state, paths, path=[]):
             for (src, dst) in self.transitions:
-                if dst == state:
+                if src == state:
                     new_path = copy.copy(path)
-                    new_path.append(src)
+                    new_path.append((dst, 'entry'))
                     paths.append(new_path)
-                    if not src == from_state:
-                        _find_prev_state(src, paths, new_path)
+                    if not dst == to_state:
+                        _find_next_state(dst, paths, new_path)
             # we can't go further
             # should we keep this path ?
-            if not (path[0] == from_state and path[-1] == to_state):
+            if path and not (path[0] == from_state and path[-1] == to_state):
                 # seems not! delete it
                 for i, p in enumerate(paths):
                     if p == path:
                         del paths[i]
 
+        # Check if we are going back in the stack
+        # take the same path we took to go to to_state to go back to from_state
+        if to_state in self._stack and from_state == self.state_current():
+            logger.debug("Using same path to go back to state %s" % to_state)
+            rewind_path = []
+            for state in reversed(self._stack[:]):
+                if state == to_state:
+                    break
+                else:
+                    rewind_path.append((state, "leave"))
+            paths.append(rewind_path)
         # trying to find a path from "to_state" to "from_state"
         # meaning we are going forward in the state machine
-        _find_prev_state(to_state, paths, path=[to_state])
-        if len(paths) > 0:
-            # ok we found some paths !
-            paths = [list(reversed(path)) for path in paths]
-            # setup state methods
-            for path in paths:
-                for i, state in enumerate(path):
-                    if i == 0:
-                        path[i] = (state, "leave")
-                    else:
-                        path[i] = (state, "entry")
-        # no path found, trying to go backwards in the state machine
-        # from "from_state" to "to_state"
         else:
-            _find_prev_state(from_state, paths, path=[from_state])
-            # setup state methods
-            for path in paths:
-                for i, state in enumerate(path):
-                    if i == (len(path) - 1):
-                        path[i] = (state, "entry")
-                    else:
-                        path[i] = (state, "leave")
+            _find_next_state(from_state, paths)
 
         logger.debug("Found paths:\n%s" % pprint.pformat(paths))
         return paths
