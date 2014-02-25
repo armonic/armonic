@@ -192,20 +192,20 @@ class State(XmlRegister):
             cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
 
             # init requires
-            cls.provides = []
+            cls._provides = []
             for method in STATE_RESERVED_METHODS:
-                setattr(cls, "requires_%s" % method, Requires(method, []))
+                setattr(cls, "_requires_%s" % method, Requires(method, []))
 
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
                 if hasattr(f, '_requires'):
                     if f.__name__ in STATE_RESERVED_METHODS:
                         r = Requires(f.__name__, f._requires)
-                        setattr(cls, "requires_%s" % f.__name__, r)
+                        setattr(cls, "_requires_%s" % f.__name__, r)
                     else:
                         flags = f._flags if hasattr(f, '_flags') else {}
                         r = Requires(f.__name__, f._requires, flags)
-                        cls.provides.append(r)
+                        cls._provides.append(r)
 
                     logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
 
@@ -217,7 +217,7 @@ class State(XmlRegister):
     def _xml_children(self):
         acc = []
         for method in STATE_RESERVED_METHODS:
-            require = getattr(self, "requires_%s" % method)
+            require = getattr(self, "_requires_%s" % method)
             if require is not None:
                 acc.append(require)
 
@@ -285,40 +285,53 @@ class State(XmlRegister):
         """
         return self.entry.__doc__
 
-    @classmethod
-    def get_requires(cls):
+    @property
+    def requires_entry(self):
         """
+        Requires to enter the state
+
         :rtype: Requires
         """
-        return cls.requires_entry
+        return self._requires_entry
 
-    @classmethod
-    def get_provides(cls):
+    @property
+    def requires_leave(self):
         """
+        Requires to leave the state
+
+        :rtype: Requires
+        """
+        return self._requires_leave
+
+    @property
+    def requires_cross(self):
+        """
+        Requires to cross the state
+
+        :rtype: Requires
+        """
+        return self._requires_cross
+
+    @property
+    def provides(self):
+        """
+        Requires for all provides
+
         :rtype: [Requires]
         """
-        return cls.provides
+        return self._provides
 
-    @classmethod
-    def _provide_by_name(cls, provide_name):
+    def provide_args(self, provide_name):
         """
+        Requires for the provide
+
         :rtype: Requires
         """
-        for p in cls.get_provides():
+        for p in self.provides:
             if p.name == provide_name:
                 return p
         raise ProvideNotExist("%s doesn't exist in state %s" %
-                              (provide_name, cls.__name__))
-
-    @classmethod
-    def get_provide_args(cls, provide_name):
-        return cls._provide_by_name(provide_name)
-
-    def provide_by_name(self, provide_name):
-        """
-        :rtype: Requires
-        """
-        return self.__class__._provide_by_name(provide_name)
+                              (provide_name, self.__name__))
 
     def __repr__(self):
         return "<State:%s>" % self.name
@@ -328,8 +341,7 @@ class State(XmlRegister):
                 "xpath": self.get_xpath_relative(),
                 "supported_os_type": [t.to_primitive() for t in
                                       self.supported_os_type],
-                "provides": [r.to_primitive() for r in
-                             self.__class__.get_provides()],
+                "provides": [r.to_primitive() for r in self.provides],
                 "requires_entry": self.requires_entry.to_primitive()}
 
 
@@ -651,20 +663,20 @@ class Lifecycle(XmlRegister):
         acc = []
         for s in self.state_goto_path(state, path_index=path_index):
             if s[1] == "entry":
-                r = s[0].get_requires()
+                r = s[0].requires_entry
                 acc += r if r is not None else []
         return acc
 
     def provide_list_in_stack(self):
         """:rtype: the list of states and provides for the current stack."""
-        return [(s, s.get_provides()) for s in
-                self._stack if s.get_provides() != []]
+        return [(s, s.provides) for s in
+                self._stack if s.provides != []]
 
     def provide_list(self):
         """Return the list of all tuple which contain states and provides.
         :rtype: [(State, [Requires])]"""
-        return [(s, s.get_provides()) for s in
-                self.state_list() if s.get_provides() != []]
+        return [(s, s.provides) for s in
+                self.state_list() if s.provides != []]
 
     def _get_state_from_provide(self, provide_name):
         """
@@ -691,7 +703,7 @@ class Lifecycle(XmlRegister):
                 return (sp[0])
         elif len(p) == 2:  # Fully qualified provide name
             s = self._get_state_class(p[0])
-            s.provide_by_name(p[1])
+            s.provide_args(p[1])
             return (s, p[1])
 
     def provide_call_requires(self, state_name):
@@ -711,8 +723,8 @@ class Lifecycle(XmlRegister):
         """From a provide_name, returns its needed arguments."""
         state = self._get_state_class(state_name)
         # To be sure that the provide exists
-        state.provide_by_name(provide_name)
-        return state.get_provide_args(provide_name)
+        state.provide_args(provide_name)
+        return state.provide_args(provide_name)
 
     def provide_call_path(self, state_name):
         """From a provide_name, return the path to the state that
@@ -741,7 +753,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state_name)
         # To be sure that the provide exists
-        state.provide_by_name(provide_name)
+        state.provide_args(provide_name)
         if not self._is_state_in_stack(state):
             self.state_goto(state, requires)
         return self.provide_call_in_stack(state, provide_name, provide_args)
@@ -752,7 +764,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state)
         sidx = self._stack.index(state)
-        p = state.provide_by_name(provide_name)
+        p = state.provide_args(provide_name)
         sfct = state.__getattribute__(p.name)
         # args = p.build_args_from_primitive(provide_args)
         p.build_from_primitive(provide_args)
@@ -822,7 +834,7 @@ class Lifecycle(XmlRegister):
                     inspect.getargspec(s.cross).args[1:])
             # Enter Requires
             acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in
-                                                          s.get_requires()])
+                                                          s.requires_entry])
             for p in s.get_provides():
                 acc += " | { %s }" % dot_provide(p)
             # End of label
@@ -1058,7 +1070,7 @@ class LifecycleManager(object):
                 if provide_name not in STATE_RESERVED_METHODS:
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
                     state_name = XmlRegister.get_ressource(m, "state")
-                    acc.append(self._get_by_name(lf_name).state_by_name(state_name).provide_by_name(provide_name))
+                    acc.append(self._get_by_name(lf_name).state_by_name(state_name).provide_args(provide_name))
         return acc
 
     @expose
