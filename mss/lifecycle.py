@@ -713,8 +713,6 @@ class Lifecycle(XmlRegister):
     def provide_call_args(self, state_name, provide_name):
         """From a provide_name, returns its needed arguments."""
         state = self._get_state_class(state_name)
-        # To be sure that the provide exists
-        state.provide_args(provide_name)
         return state.provide_args(provide_name)
 
     def provide_call_path(self, state_name):
