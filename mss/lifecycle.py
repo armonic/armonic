@@ -519,7 +519,7 @@ class Lifecycle(XmlRegister):
 
         def _find_next_state(state, paths, path=[]):
             for (src, dst) in self.transitions:
-                if src == state:
+                if src == state and self._is_transition_allowed(src, dst):
                     new_path = copy.copy(path)
                     new_path.append((dst, 'entry'))
                     paths.append(new_path)
