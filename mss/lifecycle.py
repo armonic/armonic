@@ -884,7 +884,6 @@ class LifecycleManager(object):
                 logger.debug("Found Lifecycle %s" % lf)
                 self.lf.update({lf.__name__: lf})
                 self.load(lf.__name__)
-                lf()._xml_register()
             else:
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
 
@@ -934,11 +933,12 @@ class LifecycleManager(object):
         :type lf_name: str
         :rtype: list of lifecycle objects names
         """
-        if lf_name != None:
+        if lf_name is not None:
             try:
                 lf = self.lf[lf_name]()
                 if self.os_type is not None:
                     lf.os_type = self.os_type
+                lf._xml_register()
             except KeyError:
                 raise LifecycleNotExist("Lifecycle '%s' doesn't exist!" %
                                         lf_name)
