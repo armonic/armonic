@@ -122,10 +122,8 @@ class TestPathGeneration(unittest.TestCase):
         lf.state_goto(g(), {})
         self.assertEqual(lf._get_from_state_paths(g(), a()),
                          [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (b(), 'leave')]])
-        # NOT SUPPORTED
-        #lf.state_goto(g(), {})
-        #self.assertEqual(lf._get_from_state_paths(g(), c()),
-                         #[[(g(), 'leave'), (e(), 'leave'), (d(), 'leave')]])
+        self.assertEqual(lf._get_from_state_paths(g(), c()),
+                         [])
 
 if __name__ == '__main__':
     unittest.main()
