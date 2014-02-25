@@ -166,20 +166,23 @@ class Require(XmlRegister):
     must be used. Then, method :py:meth:`validate` can be used to
     validate that values respect constraints defined by the require.
 
-    :param args: list of variables
-    :param name: name of the require (default: "local")
+    :param name: name of the require
+    :param variables: list of variables
+    :param nargs: variables occurences (1 or more, *, ?)
     """
 
     def __init__(self, name, variables, nargs='1'):
         self.name = name
         self.type = "simple"
 
-        if nargs not in ["1", "?", "*"]:
-            raise TypeError("nargs must be '1', '?' or '*' (instead of %s)" %
-                            nargs)
-        self.nargs = nargs
-
-        self._variables = IterContainer(*variables)
+        try:
+            if not int(nargs) > 0:
+                raise TypeError("nargs must be '1 or more', '?' or '*' (instead of %s)" % nargs)
+        except ValueError:
+            if not nargs in ["?", "*"]:
+                raise TypeError("nargs must be '1 or more', '?' or '*' (instead of %s)" % nargs)
+        finally:
+            self.nargs = str(nargs)
 
         self._variables_skel = variables
         # This will contain Variables. fill method will append
@@ -383,8 +386,11 @@ class RequireLocal(Require):
     provide. It can be '1', '?', '*' times. Then, variables is a list
     which will contains many values for each variables.
 
-    :param nargs: occurence number of variables.
-    :type nargs: ["1","?","*"].
+    :param name: name of the require
+    :param xpath: the path of the provide to call
+    :param provide_args: default values for the provide
+    :param provide_ret: provide return value
+    :param nargs: provide occurences (1 or more, *) or is optional (?)
     """
     def __init__(self, name,
                  xpath,
@@ -421,8 +427,8 @@ class RequireLocal(Require):
                 "provide_ret": [v.to_primitive() for v in self.provide_ret]}
 
     def __repr__(self):
-        return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
-                    (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
+            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -486,5 +492,5 @@ class RequireExternal(RequireLocal):
         return ret
 
     def __repr__(self):
-        return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" % \
-                    (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
+            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
