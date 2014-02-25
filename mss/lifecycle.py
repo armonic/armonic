@@ -453,13 +453,7 @@ class Lifecycle(XmlRegister):
 
     @classmethod
     def _state_list(cls):
-        acc = []
-        for (s, d) in cls.transitions:
-            if s not in acc:
-                acc += [s]
-            if d not in acc:
-                acc += [d]
-        return acc
+        return list(set([s for (s, d) in cls.transitions] + [d for (s, d) in cls.transitions]))
 
     def state_list(self, reachable=False):
         """To get all available states.
