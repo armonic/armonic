@@ -109,12 +109,11 @@ import pprint
 import os
 import copy
 
-from mss.common import is_exposed, expose, IterContainer, DoesNotExist
-from mss.require import Requires, Require
-from mss.variable import VString
+from mss.common import is_exposed, expose
+from mss.require import Requires
 import mss.utils
 
-from xml_register import XmlRegister, XpathHaveNotRessource, Element, SubElement
+from xml_register import XmlRegister, Element, SubElement
 
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
@@ -143,7 +142,7 @@ class ProvideAmbigous(Exception):
 def flags(flags):
     """Decorator to add flags to a function."""
     def wrapper(func):
-        args = inspect.getargspec(func)
+        #args = inspect.getargspec(func)
         if not hasattr(func, "_requires"):
             setattr(func, "_requires", [])
         func._flags = flags
@@ -184,7 +183,6 @@ class State(XmlRegister):
     """
     _lf_name = ""
     _instance = None
-
     supported_os_type = [mss.utils.OsTypeAll()]
 
     def __new__(cls, *args, **kwargs):
@@ -395,7 +393,6 @@ class Lifecycle(XmlRegister):
             if isinstance(ms, MetaState):
                 transitions = [(s, i) for (s, i) in
                                instance.transitions if i == ms]
-                states = ms.implementations
 
                 # We create new state suffixed by metaclass name This
                 # permits to create specical path.  If two metastate
@@ -782,7 +779,7 @@ class Lifecycle(XmlRegister):
         """Return a dot string of lifecycle."""
 
         def dotify(string):  # To remove illegal character
-            if string != None:
+            if string is not None:
                 tmp = string.replace("{", "").replace("}", "").replace(":", "").replace("\n", "\l")
                 tmp += '\l'
                 return tmp
@@ -814,9 +811,9 @@ class Lifecycle(XmlRegister):
         for s in state_list:
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
-            requires = ""
-            provides = list_to_table([(p.name, p.flags) for p in
-                                      s.get_provides()])
+            #requires = ""
+            #provides = list_to_table([(p.name, p.flags) for p in
+                                      #s.provides])
             # Begin of label
             acc += 'label = "{%s | %s ' % (
                 s.name,
@@ -856,7 +853,7 @@ class Lifecycle(XmlRegister):
                 'states': [s.to_primitive() for s in state_list],
                 "transitions": [(s.name, d.name) for (s, d) in
                                 self.transitions if s in
-                                    state_list and d in state_list]}
+                                state_list and d in state_list]}
 
 
 class LifecycleNotExist(Exception):
@@ -1019,7 +1016,6 @@ class LifecycleManager(object):
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
-            state = self._get_by_name(lf_name)._get_state_class(state_name)
             acc.append({'xpath': e,
                         'actions': [(i[0].name, i[1]) for i in self._get_by_name(lf_name).state_goto_path(state_name)]})
         return acc
@@ -1036,7 +1032,6 @@ class LifecycleManager(object):
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
-            state = self._get_by_name(lf_name)._get_state_class(state_name)
             acc.append({'xpath': e,
                         'requires': self._get_by_name(lf_name).state_goto_requires(state_name)})
         return acc
@@ -1052,7 +1047,7 @@ class LifecycleManager(object):
         lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
         state_name = XmlRegister.get_ressource(xpath, "state")
         logger.debug("state-goto %s %s %s" % (
-                lf_name, state_name, requires))
+                     lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
     @expose
@@ -1083,10 +1078,9 @@ class LifecycleManager(object):
 
         :param lf_name: The name of the lifecycle object
         :param provide_name: The name of the provide"""
-        if xpath != None:
+        if xpath is not None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
             state_name = XmlRegister.get_ressource(xpath, "state")
-            provide_name = XmlRegister.get_ressource(xpath, "provide")
         return self._get_by_name(lf_name).provide_call_requires(state_name)
 
     @expose
@@ -1097,7 +1091,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str"""
-        if xpath != None:
+        if xpath is not None:
             lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
             state_name = XmlRegister.get_ressource(xpath, "state")
             provide_name = XmlRegister.get_ressource(xpath, "provide")
@@ -1144,8 +1138,8 @@ class LifecycleManager(object):
         lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
         state_name = XmlRegister.get_ressource(xpath, "state")
         provide_name = XmlRegister.get_ressource(xpath, "provide")
-        logger.debug("provide-call %s %s %s %s" % (
-                lf_name, provide_name, requires, provide_args))
+        logger.debug("provide-call %s %s %s %s" %
+                     (lf_name, provide_name, requires, provide_args))
         return self._get_by_name(lf_name).provide_call(state_name,
                                                        provide_name,
                                                        requires,
