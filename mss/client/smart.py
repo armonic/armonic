@@ -167,7 +167,7 @@ class RequireSmart(object):
         while (self.nargs in ['?', '*']
                or len(require_values) < int(self.nargs)):
             if (require_values == [] or
-                self.handle_many_requires(len(require_values))):
+                    self.handle_many_requires(len(require_values))):
                 pass
             else:
                 break
@@ -481,7 +481,6 @@ class Provide(object):
         :rtype: xpath (string)"""
         return self.used_xpath
 
-
     def _lf_manager(self):
         return ClientSocket(host=self.host,
                             handlers=self.set_logging_handlers())
@@ -635,14 +634,16 @@ class LocalProvide(Provide):
                  suggested_args=[], depth=0):
         Provide.__init__(self, xpath, host=None, requirer=requirer,
                          requirer_type=requirer_type,
-                        suggested_args=suggested_args, depth=depth)
+                         suggested_args=suggested_args, depth=depth)
 
     def _lf_manager(self):
         return mss.lifecycle.LifecycleManager()
 
+
 ###############################################################################
 #                            HELPERS                                          #
 ###############################################################################
+
 
 def update_empty(origin, *dcts):
     """Take a origin dict with some values equal to None. Fill these
