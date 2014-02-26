@@ -17,6 +17,10 @@ class Transport(object):
         return func(*args, **kwargs)
 
     @expose
+    def info(self):
+        return self.lf_manager.info()
+
+    @expose
     def lifecycle(self, xpath, doc=False):
         lfs = self.lf_manager.lifecycle(xpath)
         return [l.name for l in lfs]
