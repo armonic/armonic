@@ -109,8 +109,7 @@ import pprint
 import os
 import copy
 
-from mss.common import is_exposed, expose
-from mss.require import Requires
+from mss.provide import Provide
 import mss.utils
 
 from xml_register import XmlRegister, Element, SubElement
@@ -192,20 +191,20 @@ class State(XmlRegister):
             # init requires
             cls._provides = []
             for method in STATE_RESERVED_METHODS:
-                setattr(cls, "_requires_%s" % method, Requires(method, []))
+                setattr(cls, "_requires_%s" % method, Provide(method, []))
 
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
                 if hasattr(f, '_requires'):
                     if f.__name__ in STATE_RESERVED_METHODS:
-                        r = Requires(f.__name__, f._requires)
+                        r = Provide(f.__name__, f._requires)
                         setattr(cls, "_requires_%s" % f.__name__, r)
                     else:
                         flags = f._flags if hasattr(f, '_flags') else {}
-                        r = Requires(f.__name__, f._requires, flags)
+                        r = Provide(f.__name__, f._requires, flags)
                         cls._provides.append(r)
 
-                    logger.debug("Create a Requires for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
+                    logger.debug("Create a Provide for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
 
         return cls._instance
 
@@ -255,7 +254,7 @@ class State(XmlRegister):
         """Check if all state requires are satisfated.
 
         :param primitive: values for all requires of the State.
-        See :py:meth:`Requires.build_from_primivitive` for more informations.
+        See :py:meth:`Provide.build_from_primivitive` for more informations.
         :type primitive: {require1: {variable1: value, variable2: value},
             require2: ...}
         """
@@ -655,7 +654,7 @@ class Lifecycle(XmlRegister):
 
     def provide_list(self):
         """Return the list of all tuple which contain states and provides.
-        :rtype: [(State, [Requires])]"""
+        :rtype: [(State, [Provide])]"""
         return [(s, s.provides) for s in
                 self.state_list() if s.provides != []]
 
@@ -875,7 +874,6 @@ class LifecycleManager(object):
             else:
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
 
-    @expose
     def info(self):
         """Get info of mss agent
 
