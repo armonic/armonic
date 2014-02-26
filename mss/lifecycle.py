@@ -662,7 +662,7 @@ class Lifecycle(XmlRegister):
         :type state: a state name or a state class
         :rtype: [Provide]
         """
-        acc = []
+        acc = IterContainer()
         for s in self.state_goto_path(state, path_index=path_index):
             if s[1] == "entry":
                 r = s[0].requires_entry
@@ -1046,7 +1046,7 @@ class LifecycleManager(object):
         :rtype: [:py:class:`Provide`]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
-        acc = []
+        acc = IterContainer()
         for m in matches:
             if XmlRegister.is_ressource(m, "provide"):
                 provide_name = XmlRegister.get_ressource(m, "provide")
