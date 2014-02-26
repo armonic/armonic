@@ -115,7 +115,7 @@ class XmlRegister(object):
             elt = cls._find_one(xpath)
         else:
             elt = cls._xml_root
-        return tostring(elt)
+        return tostring(elt, pretty_print=True)
 
     def get_xpath(self):
         return self._xpath
