@@ -193,7 +193,13 @@ class RequireSmart(object):
         self.fill(values)
 
         if self.handle_validation_error():
-            self.validate()
+            try:
+                self.validate()
+            except ValidationError as e:
+                for value in values:
+                    logger.error(e.msg)
+                    value = self.on_validation_error(e.variable_name, value)
+                self._build_validate(values)
 
     def _build_save_variables(self):
         for vs in self._variables:
