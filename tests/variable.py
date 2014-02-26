@@ -1,6 +1,7 @@
 import unittest
 
-from mss.variable import VList, VString, VInt
+from mss.variable import VList, VString, VInt, VBool, VFloat, Port, Hostname
+from mss.common import ValidationError
 
 
 class TestVariable(unittest.TestCase):
@@ -9,17 +10,17 @@ class TestVariable(unittest.TestCase):
         t = VString("str1", default="default1")
         self.assertEqual(t.value, "default1")
         self.assertEqual(str(t), "default1")
-        with self.assertRaises(TypeError):
-            t.value = 1
-        with self.assertRaises(TypeError):
-            t.fill(1)
+        t.value = 1
+        self.assertEqual(t.value, "1")
+        t.fill(45)
+        self.assertEqual(t.value, "45")
         t.value = "default2"
         self.assertEqual(t.value, "default2")
         t.fill("default3")
         self.assertEqual(t.value, "default3")
 
     def test_VInt(self):
-        t = VInt("int&", default=10)
+        t = VInt("int", default=10)
         self.assertEqual(t.value, 10)
         self.assertEqual(int(t), 10)
         with self.assertRaises(TypeError):
@@ -31,13 +32,40 @@ class TestVariable(unittest.TestCase):
         t.fill(30)
         self.assertEqual(t.value, 30)
 
+    def test_VFloat(self):
+        t = VFloat("float", default=10.2)
+        self.assertEqual(t.value, 10.2)
+        self.assertEqual(float(t), 10.2)
+        with self.assertRaises(TypeError):
+            t.value = "foo"
+        with self.assertRaises(TypeError):
+            t.fill("foo")
+        t.value = 20.4500
+        self.assertEqual(t.value, 20.45)
+        t.fill(30.4)
+        self.assertEqual(t.value, 30.4)
+
+    def test_VBool(self):
+        t = VBool("bool1", default=False)
+        with self.assertRaises(TypeError):
+            t.value = "foo"
+        with self.assertRaises(TypeError):
+            t.value = 10
+        t.value = True
+        self.assertTrue(t.value)
+        t.value = False
+        self.assertFalse(t.value)
+        t.fill(True)
+        self.assertTrue(t.value)
+        t.fill(False)
+        self.assertFalse(t.value)
+
     def test_VList(self):
         t = VList("list1", inner=VString)
-        # Type of a inner value is verified
-        with self.assertRaises(TypeError):
-            t.value = [1]
-        with self.assertRaises(TypeError):
-            t.fill([1])
+        t.value = [1]
+        self.assertEqual(t.value[0].value, "1")
+        t.fill([2])
+        self.assertEqual(t.value[0].value, "2")
         # A correct data type can be set
         t.value = ["default1"]
         self.assertEqual(t.value[0].value, "default1")
@@ -65,9 +93,23 @@ class TestVariable(unittest.TestCase):
         t = VString("str")
         with self.assertRaises(ValidationError):
             t._validate()
+
+    def test_max_min(self):
         t = Port("port")
+        t.value = 300000
         with self.assertRaises(ValidationError):
             t._validate()
+        t.value = -20
+        with self.assertRaises(ValidationError):
+            t._validate()
+
+    def test_pattern(self):
+        t = Hostname("host")
+        t.value = "45"
+        with self.assertRaises(ValidationError):
+            t._validate()
+        t.value = "test45"
+        self.assertTrue(t._validate())
 
 
 if __name__ == '__main__':

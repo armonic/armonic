@@ -22,12 +22,13 @@ types to fill values of a require.
 import logging
 
 from mss.common import IterContainer, DoesNotExist, ValidationError
-from mss.variable import VariableNotSet, VString
+from mss.variable import VariableNotSet, Host
 import copy
 
 from mss.xml_register import XmlRegister
 
 logger = logging.getLogger(__name__)
+
 
 class RequireNotFilled(Exception):
     """Raise if the value of variable is None."""
@@ -176,28 +177,28 @@ class Require(XmlRegister):
 
         :rtype: boolean"""
         for variable in iterContainer:
-            if values == {}:
-                value = None
-            else:
+            if values:
                 try:
                     value = values[variable.name]
                 except KeyError:
                     raise ValidationError(
                         variable_name=variable.name,
-                        msg="Submitted value doen't contain key %s" % variable.name)
+                        msg="Submitted value doesn't contain key %s" % variable.name)
+            else:
+                value = variable.value
 
-            variable._validate(value)
+            variable._validate(variable._validate_type(value))
 
         return True
 
     def validate(self, values=[]):
-        """Validate Require values.  If values is specified, they are
+        """Validate Require values. If values is specified, they are
         used to validate the require variables. Otherwise, you must
         already have fill it because filled values will be used.
 
         :rtype: boolean"""
         for (idx, vs) in enumerate(self._variables):
-            if values != []:
+            if values:
                 try:
                     v = values[idx]
                 except IndexError:
@@ -356,10 +357,6 @@ class RequireLocal(Require):
         return self.generate_args(dct)
 
 
-class RequireVhost(VString):
-    pass
-
-
 class RequireExternal(RequireLocal):
     """To specify a configuration variable which can be provided
     by a *provide* of a external module.
@@ -379,7 +376,7 @@ class RequireExternal(RequireLocal):
 
         RequireLocal.__init__(self, name,
                               xpath,
-                              provide_args + [VString('host')],
+                              provide_args + [Host('host')],
                               provide_ret, nargs)
         self.type = "external"
 

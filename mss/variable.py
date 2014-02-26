@@ -1,13 +1,17 @@
-from mss.common import ValidationError, IterContainer
-import copy
 import inspect
 import re
-from types import MethodType
+import tempfile
+import urllib2
+
+from mss.common import ValidationError
 from mss.xml_register import XmlRegister
 
 
 class VariableNotSet(Exception):
-    pass
+    def __init__(self, msg, variable_name=None):
+        Exception.__init__(self, msg)
+        self.variable_name = variable_name
+        self.msg = msg
 
 
 class Variable(XmlRegister):
@@ -31,7 +35,7 @@ class Variable(XmlRegister):
 
     """
 
-    type = 'variable'
+    type = None
     _value = None
 
     def __init__(self,
@@ -68,17 +72,15 @@ class Variable(XmlRegister):
 
     @value.setter
     def value(self, value):
-        self._value = value
-        # self._value = self._validate_type(value)
+        self._value = self._validate_type(value)
 
     def fill(self, value):
         self.value = value
 
     def _validate_type(self, value):
-        if value == None:
-            raise VariableNotSet("value can't be None")
-#        if not type(value) == int and len(value) == 0:
-#            raise TypeError("value can't be empty")
+        if value is None:
+            raise VariableNotSet(variable_name=self.name,
+                                 msg="%s value can't be None" % self.name)
         return value
 
     def _validate(self, value=None):
@@ -100,7 +102,7 @@ class Variable(XmlRegister):
         return True
 
     def has_default_value(self):
-        return self.default != None
+        return self.default is not None
 
     def __str__(self):
         return str(self.value)
@@ -134,7 +136,7 @@ class VList(Variable):
 
     @property
     def value(self):
-        return self.value
+        return self._value
 
     @value.setter
     def value(self, value):
@@ -143,15 +145,15 @@ class VList(Variable):
     def fill(self, primitive):
         self._validate_type(primitive)
         values = []
-        for key, value in enumerate(primitive):
+        for key, val in enumerate(primitive):
             if not self._inner_inner_class:
                 var = self._inner_class(key)
             else:
                 var = self._inner_class(key, self._inner_inner_class)
-            var.fill(value)
+            var.fill(val)
             values.append(var)
-        if not len(value) == 0:
-            self.value = values
+        if values:
+            self._value = values
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
@@ -173,26 +175,6 @@ class VList(Variable):
                                                    self.name,
                                                    self.value,
                                                    self.default)
-
-
-# class VDict(Variable):
-    # type = 'dict'
-
-    # def __getitem__(self, item):
-        # return self.value[item]
-
-    # def _validate_type(self, value):
-        # Variable._validate_type(self, value)
-        # if not type(value) == dict:
-            # raise TypeError("value must be a dict")
-        # return value
-
-    # def _validate(self):
-        # Variable._validate(self)
-        # for key, value in self.value.items():
-            # if isinstance(value, Variable):
-                # value._validate()
-        # return self.validate()
 
 
 class VString(Variable):
@@ -221,7 +203,7 @@ class VString(Variable):
 
     @value.setter
     def value(self, value):
-        self._value = value
+        self._value = self._validate_type(value)
 
     def _validate(self, value=None):
         if not value:
@@ -235,9 +217,7 @@ class VString(Variable):
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
-        if not isinstance(value, basestring):
-            raise TypeError("value must be a string")
-        return value
+        return str(value)
 
 
 class VInt(Variable):
@@ -250,11 +230,11 @@ class VInt(Variable):
             value = self.value
 
         Variable._validate(self, value)
-        if self.min_val and value < self.min_val:
+        if self.min_val is not None and value < self.min_val:
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be greater than %s" %
                                   (self.name, self.min_val))
-        if self.max_val and value > self.max_val:
+        if self.max_val is not None and value > self.max_val:
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be lower than %s" %
                                   (self.name, self.max_val))
@@ -262,12 +242,50 @@ class VInt(Variable):
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
-        if not type(value) == int:
-            raise TypeError("value must be an int (instead %s)" % type(value))
+        try:
+            value = int(value)
+        except ValueError:
+            raise TypeError("value must be an int")
         return value
 
     def __int__(self):
         return self.value
+
+
+class VFloat(VInt):
+    type = 'float'
+
+    def _validate_type(self, value):
+        Variable._validate_type(self, value)
+        try:
+            value = float(value)
+        except ValueError:
+            raise TypeError("value must be a float")
+        return value
+
+    def __float__(self):
+        return self.value
+
+
+class VBool(Variable):
+    type = 'bool'
+
+    def _validate(self, value=None):
+        Variable._validate(self, value)
+        if not (value is True or value is False):
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s value must be a boolen" % self.name)
+        return self.validate()
+
+    def _validate_type(self, value):
+        Variable._validate_type(self, value)
+        if value in ('True',):
+            value = True
+        if value in ('False',):
+            value = False
+        if not type(value) == bool:
+            raise TypeError("value must be a boolean")
+        return value
 
 
 class Host(VString):
@@ -285,19 +303,11 @@ class Port(VInt):
     max_val = 65535
 
 
-class Password(VString):
-    pass
-
-
-import urllib2
-import tempfile
-
-
 class VUrl(VString):
     def get_file(self):
         """
         :rtype: A local file name which contain uri object datas."""
-        u = urilib2.urlopen(self.value)
+        u = urllib2.urlopen(self.value)
         localFile = tempfile.NamedTemporaryFile(dir="/tmp", delete=False)
         localFile.write(u.read())
         localFile.close()

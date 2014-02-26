@@ -33,8 +33,9 @@ How it works on a example::
 """
 
 from mss.common import ValidationError
+from mss.variable import VariableNotSet
 from mss.client.socket import ClientSocket
-import mss.lifecycle 
+import mss.lifecycle
 
 import types
 
@@ -132,6 +133,8 @@ class RequireSmart(object):
         while self.handle_validation_error():
             try:
                 self.validate_one_set(self.factory_variable(), values)
+            except VariableNotSet as e:
+                values = self.on_require_not_filled_error(e.variable_name, values)
             except ValidationError as e:
                 logger.debug(
                     "Variable %s has not been validated." % e.variable_name)
@@ -188,6 +191,7 @@ class RequireSmart(object):
         if values is None:
             values = []
         self.fill(values)
+
         if self.handle_validation_error():
             self.validate()
 
@@ -484,7 +488,7 @@ class Provide(object):
 
         # We specialize the generic xpath
         matches = self.lf_manager.uri(xpath=self.used_xpath)
-        # If the generic xpath matches several xpaths, 
+        # If the generic xpath matches several xpaths,
         # the user has to choose one
         if len(matches) != 1:
             self.used_xpath = self.handle_provide_xpath(
