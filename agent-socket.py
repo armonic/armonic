@@ -23,7 +23,7 @@ import SocketServer
 import struct
 import argparse
 
-import mss.lifecycle
+import mss.transports
 import mss.common
 
 PACKET_INFO_SIZE = 5
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
 
     args = parser.parse_args()
-    lfm = mss.lifecycle.LifecycleManager(
+    lfm = mss.transports.Transport(
         modules_dir=args.modules_dir,
         include_modules=args.module)
 

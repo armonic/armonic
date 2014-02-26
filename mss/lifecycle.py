@@ -875,16 +875,6 @@ class LifecycleManager(object):
             else:
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
 
-    def _dispatch(self, method, *args, **kwargs):
-        """Method used by the agent to query :py:class:`LifecycleManager`
-        methods.
-        Only exposed methods are available through the agent.
-        """
-        func = getattr(self, method)
-        if not is_exposed(func):
-            raise Exception('Method "%s" is not supported' % method)
-        return func(*args, **kwargs)
-
     @expose
     def info(self):
         """Get info of mss agent
@@ -894,23 +884,18 @@ class LifecycleManager(object):
         return {"os-type": mss.utils.OS_TYPE.name,
                 "os-release": mss.utils.OS_TYPE.release}
 
-    @expose
-    def lifecycle(self, xpath, doc=False):
+    def lifecycle(self, lifecycle_xpath):
         """List loaded lifecycle objects
 
-        :rtype: list of strings (lifecycle objects names)
+        :param lifecycle_xpath: a xpath that matches lifecycles.
+        :rtype: [Lifecycle]
         """
-        elts = XmlRegister.find_all_elts(xpath)
+        elts = XmlRegister.find_all_elts(lifecycle_xpath)
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             lf = self._get_by_name(lf_name)
-            if doc:
-                acc.append({"name": lf_name,
-                            "doc": lf.__class__.__doc__,
-                            "xpath": lf.get_xpath()})
-            else:
-                acc.append(lf_name)
+            acc.append(lf)
         return acc
 
     def load(self, lf_name=None):
@@ -946,100 +931,84 @@ class LifecycleManager(object):
         except KeyError:
             raise LifecycleNotExist("%s is not loaded" % lf_name)
 
-    @expose
-    def state(self, xpath, doc=False):
+    def state(self, state_xpath):
         """Return state accordgin to the xpath.
 
-        :param doc: Add state documentation
-        :param xpath: A xpath that match state ressources
-        :type xpath: str
-        :rtype: list of strings (states xpath) or list of dict (if doc is True)
+        :param state_xpath: a xpath that matches states.
+        :rtype: [State]
         """
-        elts = XmlRegister.find_all_elts(xpath)
+        elts = XmlRegister.find_all_elts(state_xpath)
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
             state = self._get_by_name(lf_name)._get_state_class(state_name)
-            if doc:
-                acc.append(state.to_primitive())
-            else:
-                acc.append(e)
+            acc.append(state)
         return acc
 
-    @expose
-    def state_current(self, xpath):
-        """Get the current state name of the lifecycle object
+    def state_current(self, lifecycle_xpath):
+        """Get the current state name of matched lifecycles
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :rtype: name of the state
+        :rtype: [State]
         """
-        elts = XmlRegister.find_all_elts(xpath)
+        elts = XmlRegister.find_all_elts(lifecycle_xpath)
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             lf = self._get_by_name(lf_name)
-            acc.append({"xpath": e, "state": lf.state_current().name})
+            acc.append(lf.state_current())
         return acc
 
-    @expose
-    def state_goto_path(self, xpath):
+    def state_goto_path(self, state_xpath):
         """From the current state, return the path to goto the state of the
         lifecycle object.
 
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param state_name: The name of the state
-        :type state_name: str
-        :rtype: list of transitions"""
-        elts = XmlRegister.find_all_elts(xpath)
+        :rtype: [(state, paths)]"""
+        elts = XmlRegister.find_all_elts(state_xpath)
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
-            acc.append({'xpath': e,
-                        'actions': [(i[0].name, i[1]) for i in self._get_by_name(lf_name).state_goto_path(state_name)]})
+            state = self._get_by_name(lf_name)._get_state_class(state_name)
+            paths = self._get_by_name(lf_name).state_goto_path(state_name)
+            acc.append((state, paths))
         return acc
 
-    @expose
-    def state_goto_requires(self, xpath):
+    def state_goto_requires(self, state_xpath_uri, path_idx=0):
         """Get the lifecycle state's requires
 
         :param xpath: A xpath that match states
         :type xpath: str
-        :rtype: dict of requires"""
-        elts = XmlRegister.find_all_elts(xpath)
-        acc = []
-        for e in elts:
-            lf_name = XmlRegister.get_ressource(e, "lifecycle")
-            state_name = XmlRegister.get_ressource(e, "state")
-            acc.append({'xpath': e,
-                        'requires': self._get_by_name(lf_name).state_goto_requires(state_name)})
-        return acc
+        :rtype: (State, Requires)"""
+        lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
+        state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
+        lf = self._get_by_name(lf_name)
+        state = self._get_by_name(lf_name)._get_state_class(state_name)
+        return (state, 
+                lf.state_goto_requires(state_name))
 
-    @expose
-    def state_goto(self, xpath, requires={}):
+    def state_goto(self, state_xpath_uri, requires={}, path_idx=0):
         """From the current state go to state.
 
         :param xpath: The xpath of a state. Must be unique.
         :type xpath: str
         :param requires: Requires needed to go to the target state
         :type requires: dict"""
-        lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-        state_name = XmlRegister.get_ressource(xpath, "state")
+        lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
+        state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
                      lf_name, state_name, requires))
         return self._get_by_name(lf_name).state_goto(state_name, requires)
 
-    @expose
-    def provide(self, xpath):
+    def provide(self, provide_xpath):
         """Returns all provides of this lf_name.
+        
+        TODO: We have to introduce a Provide object.
 
         :param xpath: The xpath of a provide.
         :type xpath: str
         """
-        matches = mss.xml_register.XmlRegister.find_all_elts(xpath)
+        matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
         acc = []
         for m in matches:
             if XmlRegister.is_ressource(m, "provide"):
@@ -1050,46 +1019,43 @@ class LifecycleManager(object):
                     acc.append(self._get_by_name(lf_name).state_by_name(state_name).provide_args(provide_name))
         return acc
 
-    @expose
-    def provide_call_requires(self,
-                              lf_name=None,
-                              provide_name=None,
-                              xpath=None):
+    def provide_call_requires(self, provide_xpath_uri, path_idx=0):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
 
         :param lf_name: The name of the lifecycle object
         :param provide_name: The name of the provide"""
-        if xpath is not None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(xpath, "state")
+        lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
+        state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
         return self._get_by_name(lf_name).provide_call_requires(state_name)
 
-    @expose
-    def provide_call_args(self, lf_name=None, provide_name=None, xpath=None):
+    def provide_call_args(self, provide_xpath):
         """From a provide_name, returns its needed arguments.
 
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :param provide_name: The name of the provide
-        :type provide_name: str"""
-        if xpath is not None:
-            lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(xpath, "state")
-            provide_name = XmlRegister.get_ressource(xpath, "provide")
+        :type provide_name: str
+        :rtype: [ Requires ]
+        """
+        if provide_xpath is not None:
+            lf_name = XmlRegister.get_ressource(provide_xpath, "lifecycle")
+            state_name = XmlRegister.get_ressource(provide_xpath, "state")
+            provide_name = XmlRegister.get_ressource(provide_xpath, "provide")
         return self._get_by_name(lf_name).provide_call_args(state_name,
                                                             provide_name)
 
-    @expose
-    def provide_call_path(self, xpath=None):
+    def provide_call_path(self, provide_xpath):
         """From a provide_name, return the path to the state of the lifecycle
         that provides the "provide".
 
         :param xpath: The xpath of provides
         :type lf_name: str
         :param provide_name: The name of the provide
-        :type provide_name: str"""
-        matches = mss.xml_register.XmlRegister.find_all_elts(xpath)
+        :type provide_name: str
+        :rtype: [(xpath, paths)] but should be [(Provide, paths)]
+        """
+        matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
         acc = []
         for m in matches:
             if XmlRegister.is_ressource(m, "provide"):
@@ -1097,11 +1063,10 @@ class LifecycleManager(object):
                 if provide_name not in STATE_RESERVED_METHODS:
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
                     state_name = XmlRegister.get_ressource(m, "state")
-                    acc.append({"xpath": m,
-                                "actions": [(s.name, a) for (s, a) in self._get_by_name(lf_name).provide_call_path(state_name)]})
+                    lf = self._get_by_name(lf_name)
+                    acc.append((m, lf.provide_call_path(state_name)))
         return acc
 
-    @expose
     def provide_call(self,
                      xpath,
                      requires={},
@@ -1127,7 +1092,6 @@ class LifecycleManager(object):
                                                        requires,
                                                        provide_args)
 
-    @expose
     def to_dot(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
 
@@ -1136,7 +1100,6 @@ class LifecycleManager(object):
         :rtype: dot file string"""
         return self._get_by_name(lf_name).to_dot(reachable=reachable)
 
-    @expose
     def to_primitive(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
 
@@ -1145,7 +1108,6 @@ class LifecycleManager(object):
         :rtype: dot file string"""
         return self._get_by_name(lf_name).to_primitive(reachable=reachable)
 
-    @expose
     def uri(self, xpath="//"):
         """Return the list of uri that match this xpath.
 
@@ -1154,11 +1116,9 @@ class LifecycleManager(object):
         :rtype: [uri]"""
         return mss.xml_register.XmlRegister.find_all_elts(xpath)
 
-    @expose
     def xpath(self, xpath):
         return mss.xml_register.XmlRegister.xpath(xpath)
 
-    @expose
     def to_xml(self, xpath=None):
         """Return the xml representation of agent."""
         return mss.xml_register.XmlRegister.to_string(xpath)

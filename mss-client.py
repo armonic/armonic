@@ -149,7 +149,10 @@ def cmd_provide(args):
             for a in r['actions']:
                 print "  ", "%5s " % a[1], a[0]
         return
-        
+    elif args.args:
+        ret=client.call('provide_call_args', args.xpath)
+        require_to_table(ret)
+        return
     ret=client.call('provide', args.xpath)
     for provide in ret:
         print provide.get_xpath()
@@ -266,6 +269,8 @@ parser_provide = subparsers.add_parser('provide', help='List provides.')
 parser_provide.add_argument('xpath' , type=str, help='a xpath')
 parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
+parser_provide.add_argument('--args','-a',action='store_true',help="Show args of provides")
+
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
