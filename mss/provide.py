@@ -33,6 +33,15 @@ class Provide(IterContainer, XmlRegister):
     def _xml_ressource_name(self):
         return "provide"
 
+    def require_by_name(self, require_name):
+        """
+        :param require_name: Require name
+        :type require_name: str
+
+        :rtype: :class:`Require`
+        """
+        return self.get(require_name)
+
     def build_args_from_primitive(self, primitive):
         self.build_from_primitive(primitive)
         args = {}
@@ -90,7 +99,7 @@ class Provide(IterContainer, XmlRegister):
     def to_primitive(self):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
-                "require_list": [r.to_primitive() for r in self],
+                "requires": [r.to_primitive() for r in self],
                 "flags": self.flags}
 
     def __repr__(self):

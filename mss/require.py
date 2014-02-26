@@ -229,6 +229,16 @@ class Require(XmlRegister):
         else:
             return self._variables[index]
 
+    def variable_by_name(self, variable_name):
+        """
+        :param variable_name: variable name
+        :type variable_name: str
+
+        :rtype: :class:`Variable`
+        """
+        # TODO: handle nargs
+        return self.variables().get(variable_name)
+
     def get_values(self):
         """ FIXME This jsut return the first element"""
         return [reduce(lambda a, x:

@@ -36,14 +36,8 @@ class Variable(XmlRegister):
     """
 
     type = None
-    _value = None
 
-    def __init__(self,
-                 name,
-                 default=None,
-                 required=True,
-                 help="",
-                 from_xpath=None):
+    def __init__(self, name, default=None, required=True, from_xpath=None):
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
@@ -52,7 +46,7 @@ class Variable(XmlRegister):
         self.default = default
         self._value = default
         self.from_xpath = from_xpath
-        self.help = help
+        self.error = None
 
     def _xml_tag(self):
         return self.name
@@ -63,8 +57,12 @@ class Variable(XmlRegister):
     def to_primitive(self):
         return {'name': self.name,
                 'xpath': self.get_xpath_relative(),
+                'required': self.required,
                 'type': self.type,
-                'default': self.default}
+                'default': self.default,
+                'value': self.value,
+                'error': self.error,
+                'from_xpath': self.from_xpath}
 
     @property
     def value(self):
@@ -78,6 +76,7 @@ class Variable(XmlRegister):
         self.value = value
 
     def _validate_type(self, value):
+        self.error = None
         if value is None:
             raise VariableNotSet(variable_name=self.name,
                                  msg="%s value can't be None" % self.name)
@@ -89,17 +88,30 @@ class Variable(XmlRegister):
         used to validate the require variables. Otherwise, you must
         already have fill it because filled values will be used.
         """
+        self.error = None
         if not value:
             value = self.value
 
         if not value and self.required:
+            self.error = "%s is required" % self.name
             raise ValidationError(variable_name=self.name,
                                   msg="%s is required" % self.name)
+
+    def _custom_validation(self):
+        try:
+            self.validate()
+        except ValidationError as e:
+            self.error = e.msg
+            raise
+        return True
 
     def validate(self):
         """Override for custom validation.
         Raise ValidationError in case of error."""
         return True
+
+    def has_error(self):
+        return self.error is not None
 
     def has_default_value(self):
         return self.default is not None
@@ -158,14 +170,14 @@ class VList(Variable):
     def _validate_type(self, value):
         Variable._validate_type(self, value)
         if not type(value) == list:
-            raise TypeError("value must be a list")
+            raise ValidationError(msg="%s must be a list" % self.name, variable_name=self.name)
         return value
 
     def _validate(self):
         Variable._validate(self)
         for value in self.value:
             value._validate()
-        return self.validate()
+        return self._custom_validation()
 
     def __iter__(self):
         return iter(self.value)
@@ -188,10 +200,9 @@ class VString(Variable):
                  name,
                  default=None,
                  required=True,
-                 help="",
                  from_xpath=None,
                  modifier="%s"):
-        Variable.__init__(self, name, default, required, help, from_xpath)
+        Variable.__init__(self, name, default, required, from_xpath)
         self._modifier = modifier
 
     @property
@@ -211,9 +222,10 @@ class VString(Variable):
 
         Variable._validate(self, value)
         if self.pattern and not re.match(self.pattern, value):
+            self.error = self.pattern_error
             raise ValidationError(variable_name=self.name,
                                   msg=self.pattern_error)
-        return self.validate()
+        return self._custom_validation()
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
@@ -238,14 +250,15 @@ class VInt(Variable):
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be lower than %s" %
                                   (self.name, self.max_val))
-        return self.validate()
+        return self._custom_validation()
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
         try:
             value = int(value)
         except ValueError:
-            raise TypeError("value must be an int")
+            raise ValidationError(msg="%s must be an int" % self.name,
+                                  variable_name=self.name)
         return value
 
     def __int__(self):
@@ -260,7 +273,8 @@ class VFloat(VInt):
         try:
             value = float(value)
         except ValueError:
-            raise TypeError("value must be a float")
+            raise ValidationError(msg="%s must be a float" % self.name,
+                                  variable_name=self.name)
         return value
 
     def __float__(self):
@@ -275,7 +289,7 @@ class VBool(Variable):
         if not (value is True or value is False):
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be a boolen" % self.name)
-        return self.validate()
+        return True
 
     def _validate_type(self, value):
         Variable._validate_type(self, value)
@@ -284,7 +298,8 @@ class VBool(Variable):
         if value in ('False',):
             value = False
         if not type(value) == bool:
-            raise TypeError("value must be a boolean")
+            raise ValidationError(msg="%s must be a boolean" % self.name,
+                                  variable_name=self.name)
         return value
 
 

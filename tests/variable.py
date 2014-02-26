@@ -23,9 +23,9 @@ class TestVariable(unittest.TestCase):
         t = VInt("int", default=10)
         self.assertEqual(t.value, 10)
         self.assertEqual(int(t), 10)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.value = "foo"
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.fill("foo")
         t.value = 20
         self.assertEqual(t.value, 20)
@@ -36,9 +36,9 @@ class TestVariable(unittest.TestCase):
         t = VFloat("float", default=10.2)
         self.assertEqual(t.value, 10.2)
         self.assertEqual(float(t), 10.2)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.value = "foo"
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.fill("foo")
         t.value = 20.4500
         self.assertEqual(t.value, 20.45)
@@ -47,9 +47,9 @@ class TestVariable(unittest.TestCase):
 
     def test_VBool(self):
         t = VBool("bool1", default=False)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.value = "foo"
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             t.value = 10
         t.value = True
         self.assertTrue(t.value)

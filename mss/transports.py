@@ -51,11 +51,7 @@ class Transport(object):
     @expose
     def state_goto_requires(self, xpath):
         provides = self.lf_manager.state_goto_requires(xpath)
-        requires = []
-        for p in provides:
-            requires += p
-        return [{'xpath': xpath,
-                 'requires': requires}]
+        return {'xpath': xpath, 'requires': [p.to_primitive() for p in provides]}
 
     @expose
     def state_goto(self, xpath, requires={}):
@@ -70,25 +66,26 @@ class Transport(object):
         ret = self.lf_manager.provide_call_path(provide_xpath)
         acc = []
         for provide, path in ret:
-            acc.append({"xpath": provide.get_xpath(),
+            acc.append({'xpath': provide.get_xpath(),
                         'actions': [(i[0].name, i[1]) for i in path]})
         return acc
 
     @expose
     def provide_call_requires(self, xpath, path_idx=0):
         provides = self.lf_manager.provide_call_requires(xpath, path_idx)
-        ret = []
-        for p in provides:
-            ret += p
-        return ret
+        return {'xpath': xpath, 'requires': [p.to_primitive() for p in provides]}
 
     @expose
     def provide_call_args(self, xpath):
         provides = self.lf_manager.provide(xpath)
-        ret = []
-        for p in provides:
-            ret += p
-        return ret
+        return {'xpath': xpath, 'provide_args': [p.to_primitive() for p in provides]}
+
+    @expose
+    def provide_call_validate(self, xpath, requires=[], provide_args=[], path_idx=0):
+        result = self.lf_manager.provide_call_validate(xpath, requires, provide_args)
+        result['requires'] = [p.to_primitive() for p in result['requires']]
+        result['provide_args'] = [p.to_primitive() for p in result['provide_args']]
+        return result
 
     @expose
     def provide_call(self,
