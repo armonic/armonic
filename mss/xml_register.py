@@ -177,7 +177,7 @@ class XmlRegister(object):
         if len(ressource) == 0:
             raise XpathNotMatch("%s matches nothing!" % xpath)
         elif len(ressource) > 1:
-            raise XpathMultipleMatch("%s matches several ressource!" % xpath)
+            raise XpathMultipleMatch("%s matches several ressources: %s" % (xpath, ", ".join([XmlRegister._xml_root_tree.getpath(r) for r in ressource])))
         return ressource[0]
 
     @classmethod
