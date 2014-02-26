@@ -176,11 +176,18 @@ class IterContainer(list):
     """
     def __init__(self, *args):
         super(IterContainer, self).__init__([arg for arg in args])
+        self._register_args(*args)
+
+    def _register_args(self, *args):
         for arg in args:
             if hasattr(arg, 'name'):
-                self.__setattr__(arg.name, arg)
+                setattr(self, arg.name, arg)
 
     def get(self, attr):
         if hasattr(self, attr):
             return getattr(self, attr)
         raise DoesNotExist("%s does not exist" % attr)
+
+    def append(self, arg):
+        super(IterContainer, self).append(arg)
+        self._register_args(arg)
