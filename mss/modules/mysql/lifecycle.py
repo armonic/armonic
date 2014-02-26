@@ -3,7 +3,7 @@ import time
 import MySQLdb
 
 from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Requires, Require, RequireExternal, RequireUser, RequireLocal
+from mss.require import Require, RequireExternal, RequireUser, RequireLocal
 from mss.variable import Hostname, VString, Port, Password, VInt, VUrl
 from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
