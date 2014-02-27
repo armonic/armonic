@@ -109,6 +109,7 @@ import pprint
 import os
 import copy
 import itertools
+import re
 
 from mss.common import IterContainer, DoesNotExist
 from mss.provide import Provide
@@ -1096,6 +1097,22 @@ class LifecycleManager(object):
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
+    def _format_input_requires(self, *requires):
+        values = {}
+        for xpath, value in itertools.chain(*requires):
+            # handle nargs
+            index = 0
+            match = re.search('\[([0-9]+)\]', xpath)
+            if match and match.group(1):
+                index = int(match.group(1)) - 1
+            variable_xpath = re.sub('\[[0-9]+\]', '', xpath)
+            # get full xpath for variable
+            variable_xpath = self.from_xpath(variable_xpath, "variable").get_xpath()
+            if not variable_xpath in values:
+                values[variable_xpath] = {}
+            values[variable_xpath][index] = value
+        return values
+
     def provide_call_validate(self, xpath, requires=[], provide_args=[]):
         """Validate requires and provide_args to call the provide
 
@@ -1108,13 +1125,8 @@ class LifecycleManager(object):
 
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`], 'provide_args': [:class:`Provide`]}
         """
-        # index passed variables
-        variables = {}
-        for variable_xpath, variable_value in itertools.chain(requires, provide_args):
-            # get full xpath for variable
-            variable_xpath = self.from_xpath(variable_xpath, "variable").get_xpath()
-            variables[variable_xpath] = variable_value
-        logger.debug("Validating variables %s" % variables)
+        variables_values = self._format_input_requires(requires, provide_args)
+        logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
         # copy requires and provide_args we don't want to fill variables yet
         requires = copy.deepcopy(self.provide_call_requires(xpath))
@@ -1122,17 +1134,17 @@ class LifecycleManager(object):
         errors = False
         for provide in itertools.chain(requires, provide_args):
             for require in provide:
-                for variable in require.variables():
-                    try:
-                        try:
-                            variable.value = variables[variable.get_xpath()]
-                        except KeyError:
-                            pass
-                        except ValidationError:
-                            errors = True
-                        variable._validate()
-                    except ValidationError:
-                        errors = True
+                # filter variables for this require
+                vars = []
+                for variable_xpath, variable_values in variables_values.items():
+                    if (require.name == XmlRegister.get_ressource(variable_xpath, "require") and
+                            provide.name == XmlRegister.get_ressource(variable_xpath, "provide")):
+                        vars.append((variable_xpath, variable_values))
+                try:
+                    require.new_fill(vars)
+                    require.validate()
+                except ValidationError:
+                    errors = True
         return {'xpath': xpath, 'errors': errors, 'requires': requires, 'provide_args': provide_args}
 
     def provide_call(self, xpath, requires={}, provide_args={}):

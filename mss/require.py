@@ -22,7 +22,7 @@ types to fill values of a require.
 import logging
 
 from mss.common import IterContainer, DoesNotExist, ValidationError
-from mss.variable import VariableNotSet, Host
+from mss.variable import Host
 import copy
 
 from mss.xml_register import XmlRegister
@@ -90,20 +90,29 @@ class Require(XmlRegister):
         finally:
             self.nargs = str(nargs)
 
+        if self.nargs == "*":
+            self.nargs_min = 0
+            self.nargs_max = 99999
+        elif self.nargs == "?":
+            self.nargs_min = 0
+            self.nargs_max = 1
+        else:
+            self.nargs_min = self.nargs_max = int(self.nargs)
+
         self._variables_skel = variables
         # This will contain Variables. fill method will append
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
-        self._variables = [IterContainer(*variables)]
+        self._variables = []
+        if self.nargs not in ('*', '?'):
+            for arg in range(self.nargs_max):
+                self._variables.append(self.factory_variable())
 
     def _xml_tag(self):
         return self.name
 
     def _xml_children(self):
-        acc = []
-        for vs in self._variables:
-            acc += vs
-        return acc
+        return self._variables_skel
 
     def _xml_ressource_name(self):
         return "require"
@@ -139,7 +148,7 @@ class Require(XmlRegister):
                 logger.warning("Variable %s not found in %s, ignoring." %
                                (variable_name, self))
                 pass
-            except VariableNotSet:
+            except ValidationError:
                 raise RequireNotFilled(self.name, variable_name)
         return True
 
@@ -167,6 +176,35 @@ class Require(XmlRegister):
                 self._fill(tmp, primitive)
                 self._variables.append(tmp)
             self._xml_register_children()
+        return True
+
+    def new_fill(self, variables_values):
+        """
+        Fill the require with a list of variables values
+
+        :param variables_values: list of tuple (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+
+        """
+        for xpath, values in variables_values:
+            variable_name = XmlRegister.get_ressource(xpath, "variable")
+            if not self.variable_by_name(variable_name):
+                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
+                continue
+
+            for index, value in values.items():
+                if not index < self.nargs_max:
+                    logger.warning("Ignoring variable value '%s' for %s. Does not conform to nargs definition" % (value, self))
+                    continue
+                try:
+                    variables = self._variables[index]
+                except IndexError:
+                    variables = self.factory_variable()
+                    self._variables.append(variables)
+
+                variables.get(variable_name).fill(value)
+
         return True
 
     def validate_one_set(self, iterContainer, values={}):
@@ -214,7 +252,10 @@ class Require(XmlRegister):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
                 "nargs": self.nargs,
-                "variables": [a.to_primitive() for a in self._variables[0]],
+                "nargs_min": self.nargs_min,
+                "nargs_max": self.nargs_max,
+                "variables": [[var.to_primitive() for var in vars] for vars in self.variables(all=True)],
+                "variables_skel": [var.to_primitive() for var in self._variables_skel],
                 "type": "simple"}
 
     def variables(self, index=0, all=False):
@@ -237,8 +278,10 @@ class Require(XmlRegister):
 
         :rtype: :class:`Variable`
         """
-        # TODO: handle nargs
-        return self.variables().get(variable_name)
+        for variable in self._variables_skel:
+            if variable.name == variable_name:
+                return variable
+        return False
 
     def get_values(self):
         """ FIXME This jsut return the first element"""
@@ -335,14 +378,12 @@ class RequireLocal(Require):
                 Require._xml_add_properties_tuple(self))
 
     def to_primitive(self):
-        return {"name": self.name,
-                "xpath": self.get_xpath_relative(),
-                "type": self.type,
-                "lf_name": self.lf_name,
-                "nargs": self.nargs,
-                "provide_xpath": self.xpath,
-                "provide_args": [v.to_primitive() for v in self.provide_args],
-                "provide_ret": [v.to_primitive() for v in self.provide_ret]}
+        primitive = super(RequireLocal, self).to_primitive()
+        primitive.update({"lf_name": self.lf_name,
+                          "provide_xpath": self.xpath,
+                          "provide_args": [v.to_primitive() for v in self.provide_args],
+                          "provide_ret": [v.to_primitive() for v in self.provide_ret]})
+        return primitive
 
     def __repr__(self):
         return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \

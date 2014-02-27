@@ -1,5 +1,6 @@
 import os
 import unittest
+import logging
 
 from mss.lifecycle import State, LifecycleManager, Lifecycle, Transition
 from mss.require import Require
@@ -33,6 +34,18 @@ class StateB(State):
     def provide4(self, requires):
         pass
 
+    @Require('foo5', [VString('bar5')], nargs="*")
+    def provide5(self, requires):
+        pass
+
+    @Require('foo6', [VString('bar6')], nargs="2")
+    def provide6(self, requires):
+        pass
+
+    @Require('foo7', [VString('bar7')], nargs="?")
+    def provide7(self, requires):
+        pass
+
 
 class A(Lifecycle):
     transitions = [Transition(StateA(), StateB())]
@@ -45,7 +58,7 @@ class A(Lifecycle):
 class TestProvideValidation(unittest.TestCase):
 
     def setUp(self):
-        self.lfm = LifecycleManager(modules_dir=os.getcwd(), autoload=False)
+        self.lfm = LifecycleManager(modules_dir=os.getcwd(), autoload=True, include_modules="")
 
     def test_missing_provide_arg(self):
         validation = self.lfm.provide_call_validate("//provide1", requires=[("//bar/foo", "test1")])
@@ -89,6 +102,38 @@ class TestProvideValidation(unittest.TestCase):
         validation = self.lfm.provide_call_validate("//provide4", requires=[("//bar/foo", "test1")], provide_args=[("//foo4/host4", "myhost33")])
         self.assertFalse(validation['errors'])
 
+    def test_nargs_unlimited(self):
+        validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[("//foo5[1]/bar5", "test1"), ("//foo5[2]/bar5", "test2")])
+        self.assertFalse(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[("//foo5/bar5", "test1")])
+        self.assertFalse(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[])
+        self.assertFalse(validation['errors'])
+
+    def test_nargs_fixed(self):
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[])
+        self.assertTrue(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6/bar6", "test1")])
+        self.assertTrue(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6[1]/bar6", "test1"), ("//foo6[2]/bar6", "test2")])
+        self.assertFalse(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6[1]/bar6", "test1"), ("//foo6[2]/bar6", "test2"), ("//foo6[3]/bar6", "test3")])
+        # "//foo6[3]/bar6" is ignored
+        with self.assertRaises(IndexError):
+            validation['provide_args'].provide6.foo6.variables(2)
+        self.assertFalse(validation['errors'])
+
+    def test_nargs_zero_or_one(self):
+        validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[])
+        self.assertFalse(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[("//foo7/bar7", "test1")])
+        self.assertFalse(validation['errors'])
+        validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[("//foo7[1]/bar7", "test1"), ("//foo7[2]/bar7", "test2")])
+        with self.assertRaises(IndexError):
+            validation['provide_args'].provide7.foo7.variables(2)
+        self.assertFalse(validation['errors'])
+
 
 if __name__ == '__main__':
+    #logging.basicConfig(level=logging.DEBUG)
     unittest.main()

@@ -7,13 +7,6 @@ from mss.common import ValidationError
 from mss.xml_register import XmlRegister
 
 
-class VariableNotSet(Exception):
-    def __init__(self, msg, variable_name=None):
-        Exception.__init__(self, msg)
-        self.variable_name = variable_name
-        self.msg = msg
-
-
 class Variable(XmlRegister):
     """A object :py:class:`Variable` is a container for a value used by a
     provide. The minimal definition is just the name of the
@@ -78,8 +71,9 @@ class Variable(XmlRegister):
     def _validate_type(self, value):
         self.error = None
         if value is None:
-            raise VariableNotSet(variable_name=self.name,
-                                 msg="%s value can't be None" % self.name)
+            self.error = "%s is required" % self.name
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s value can't be None" % self.name)
         return value
 
     def _validate(self, value=None):
