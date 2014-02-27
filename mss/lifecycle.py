@@ -1116,6 +1116,7 @@ class LifecycleManager(object):
             variables[variable_xpath] = variable_value
         logger.debug("Validating variables %s" % variables)
         # check that all requires are validated
+        errors = False
         for provide in itertools.chain(self.provide_call_requires(xpath), self.provide(xpath)):
             for require in provide:
                 for variable in require.variables():
