@@ -213,6 +213,7 @@ class Require(XmlRegister):
     def to_primitive(self):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
+                "nargs": self.nargs,
                 "variables": [a.to_primitive() for a in self._variables[0]],
                 "type": "simple"}
 
