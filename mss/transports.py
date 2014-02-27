@@ -84,15 +84,19 @@ class Transport(object):
 
     @expose
     def provide_call_args(self, xpath):
-        return self.lf_manager.provide(xpath)
+        provides = self.lf_manager.provide(xpath)
+        ret = []
+        for p in provides:
+            ret += p
+        return ret
 
     @expose
     def provide_call(self,
-                     provide_xpath_uri,
+                     xpath,
                      requires={},
                      provide_args={},
                      path_idx=0):
-        return self.lf_manager.provide_call(provide_xpath_uri,
+        return self.lf_manager.provide_call(xpath,
                                             requires,
                                             provide_args)
 

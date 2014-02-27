@@ -1,6 +1,10 @@
 from mss.common import IterContainer, DoesNotExist, ValidationError
 from mss.xml_register import XmlRegister
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class Provide(IterContainer, XmlRegister):
     """Basically, this describes a list of :py:class:`Require`."""
     def __init__(self, name, require_list=[], flags=None):
