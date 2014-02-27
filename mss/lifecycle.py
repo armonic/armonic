@@ -1097,22 +1097,6 @@ class LifecycleManager(object):
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
-    def _format_input_requires(self, *requires):
-        values = {}
-        for xpath, value in itertools.chain(*requires):
-            # handle nargs
-            index = 0
-            match = re.search('\[([0-9]+)\]', xpath)
-            if match and match.group(1):
-                index = int(match.group(1)) - 1
-            variable_xpath = re.sub('\[[0-9]+\]', '', xpath)
-            # get full xpath for variable
-            variable_xpath = self.from_xpath(variable_xpath, "variable").get_xpath()
-            if not variable_xpath in values:
-                values[variable_xpath] = {}
-            values[variable_xpath][index] = value
-        return values
-
     def provide_call_validate(self, xpath, requires=[], provide_args=[]):
         """Validate requires and provide_args to call the provide
 
@@ -1125,7 +1109,7 @@ class LifecycleManager(object):
 
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`], 'provide_args': [:class:`Provide`]}
         """
-        variables_values = self._format_input_requires(requires, provide_args)
+        variables_values = list(itertools.chain(requires, provide_args))
         logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
         # copy requires and provide_args we don't want to fill variables yet
@@ -1136,7 +1120,9 @@ class LifecycleManager(object):
             for require in provide:
                 # filter variables for this require
                 vars = []
-                for variable_xpath, variable_values in variables_values.items():
+                for variable_xpath, variable_values in variables_values:
+                    if not type(variable_values) == dict:
+                        variable_values = {0: variable_values}
                     if (require.name == XmlRegister.get_ressource(variable_xpath, "require") and
                             provide.name == XmlRegister.get_ressource(variable_xpath, "provide")):
                         vars.append((variable_xpath, variable_values))

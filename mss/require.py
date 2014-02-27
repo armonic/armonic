@@ -194,11 +194,11 @@ class Require(XmlRegister):
                 continue
 
             for index, value in values.items():
-                if not index < self.nargs_max:
+                if not int(index) < self.nargs_max:
                     logger.warning("Ignoring variable value '%s' for %s. Does not conform to nargs definition" % (value, self))
                     continue
                 try:
-                    variables = self._variables[index]
+                    variables = self._variables[int(index)]
                 except IndexError:
                     variables = self.factory_variable()
                     self._variables.append(variables)

@@ -103,7 +103,7 @@ class TestProvideValidation(unittest.TestCase):
         self.assertFalse(validation['errors'])
 
     def test_nargs_unlimited(self):
-        validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[("//foo5[1]/bar5", "test1"), ("//foo5[2]/bar5", "test2")])
+        validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[("//foo5/bar5", {0: "test1", 1: "test2"})])
         self.assertFalse(validation['errors'])
         validation = self.lfm.provide_call_validate("//provide5", requires=[("//bar/foo", "test1")], provide_args=[("//foo5/bar5", "test1")])
         self.assertFalse(validation['errors'])
@@ -115,9 +115,9 @@ class TestProvideValidation(unittest.TestCase):
         self.assertTrue(validation['errors'])
         validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6/bar6", "test1")])
         self.assertTrue(validation['errors'])
-        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6[1]/bar6", "test1"), ("//foo6[2]/bar6", "test2")])
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6/bar6", {0: "test1", 1: "test2"})])
         self.assertFalse(validation['errors'])
-        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6[1]/bar6", "test1"), ("//foo6[2]/bar6", "test2"), ("//foo6[3]/bar6", "test3")])
+        validation = self.lfm.provide_call_validate("//provide6", requires=[("//bar/foo", "test1")], provide_args=[("//foo6/bar6", {0: "test1", 1: "test2", 2: "test3"})])
         # "//foo6[3]/bar6" is ignored
         with self.assertRaises(IndexError):
             validation['provide_args'].provide6.foo6.variables(2)
@@ -128,7 +128,7 @@ class TestProvideValidation(unittest.TestCase):
         self.assertFalse(validation['errors'])
         validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[("//foo7/bar7", "test1")])
         self.assertFalse(validation['errors'])
-        validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[("//foo7[1]/bar7", "test1"), ("//foo7[2]/bar7", "test2")])
+        validation = self.lfm.provide_call_validate("//provide7", requires=[("//bar/foo", "test1")], provide_args=[("//foo7/bar7", {0: "test1", 1: "test2"})])
         with self.assertRaises(IndexError):
             validation['provide_args'].provide7.foo7.variables(2)
         self.assertFalse(validation['errors'])
