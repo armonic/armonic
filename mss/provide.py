@@ -90,6 +90,6 @@ class Provide(IterContainer, XmlRegister):
                 "flags": self.flags}
 
     def __repr__(self):
-        return "<Requires:%s(%s,%s)>" % (self.name,
+        return "<Provide:%s(%s,%s)>" % (self.name,
                                          IterContainer.__repr__(self),
                                          self.flags)
