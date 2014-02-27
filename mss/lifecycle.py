@@ -1116,8 +1116,11 @@ class LifecycleManager(object):
             variables[variable_xpath] = variable_value
         logger.debug("Validating variables %s" % variables)
         # check that all requires are validated
+        # copy requires and provide_args we don't want to fill variables yet
+        requires = copy.deepcopy(self.provide_call_requires(xpath))
+        provide_args = copy.deepcopy(self.provide(xpath))
         errors = False
-        for provide in itertools.chain(self.provide_call_requires(xpath), self.provide(xpath)):
+        for provide in itertools.chain(requires, provide_args):
             for require in provide:
                 for variable in require.variables():
                     try:
@@ -1130,7 +1133,7 @@ class LifecycleManager(object):
                         variable._validate()
                     except ValidationError:
                         errors = True
-        return {'xpath': xpath, 'errors': errors, 'requires': self.provide_call_requires(xpath), 'provide_args': self.provide(xpath)}
+        return {'xpath': xpath, 'errors': errors, 'requires': requires, 'provide_args': provide_args}
 
     def provide_call(self, xpath, requires={}, provide_args={}):
         """Call a provide of a lifecycle and go to provider state if needed
