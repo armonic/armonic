@@ -196,3 +196,11 @@ class XmlRegister(object):
                 return e.tag
         raise XpathHaveNotRessource("%s have not ressource %s!" %
                                     (xpath, ressource_name))
+
+    @classmethod
+    def clear(cls):
+        cls._xml_elt = None
+        cls._xml_root = None
+        cls._xml_root_tree = None
+        cls._xpath = None
+        cls._xpath_relative = None

@@ -883,6 +883,9 @@ class LifecycleManager(object):
 
     """
     def __init__(self, autoload=True, modules_dir=None, include_modules=None, os_type=None):
+        # empty the XML register before proceeding
+        XmlRegister.clear()
+
         if autoload:
             if modules_dir is None:
                 raise TypeError("'modules_dir' could not be None")
