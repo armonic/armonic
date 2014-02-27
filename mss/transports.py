@@ -50,12 +50,12 @@ class Transport(object):
 
     @expose
     def state_goto_requires(self, xpath):
-        ret = self.lf_manager.state_goto_requires(xpath)
-        acc = []
-        for state, requires in [ret]:
-            acc.append({'xpath': state.get_xpath(),
-                        'requires': requires})
-        return acc
+        provides = self.lf_manager.state_goto_requires(xpath)
+        requires = []
+        for p in provides:
+            requires += p
+        return [{'xpath': xpath,
+                 'requires': requires}]
 
     @expose
     def state_goto(self, xpath, requires={}):
@@ -69,18 +69,22 @@ class Transport(object):
     def provide_call_path(self, provide_xpath):
         ret = self.lf_manager.provide_call_path(provide_xpath)
         acc = []
-        for xpath, path in ret:
-            acc.append({"xpath": xpath,
+        for provide, path in ret:
+            acc.append({"xpath": provide.get_xpath(),
                         'actions': [(i[0].name, i[1]) for i in path]})
         return acc
 
     @expose
     def provide_call_requires(self, xpath, path_idx=0):
-        return self.lf_manager.provide_call_requires(xpath, path_idx)
+        provides = self.lf_manager.provide_call_requires(xpath, path_idx)
+        ret = []
+        for p in provides:
+            ret += p
+        return ret
 
     @expose
     def provide_call_args(self, xpath):
-        return self.lf_manager.provide_call_args(xpath)
+        return self.lf_manager.provide(xpath)
 
     @expose
     def provide_call(self,

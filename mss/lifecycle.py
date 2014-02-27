@@ -318,9 +318,16 @@ class State(XmlRegister):
         """
         return self._provides
 
+    def get_provide_by_name(self, provide_name):
+        """
+        :param provide_name: name of a provide
+        :rtype: Provide
+        """
+        return self.provide_args(provide_name)
+
     def provide_args(self, provide_name):
         """
-        Requires for the provide
+        This is DEPRECATED. Use get_provide_by_name instead!
 
         :rtype: Provide
         """
@@ -638,13 +645,14 @@ class Lifecycle(XmlRegister):
         """Return all requires needed to go from current state to state.
         :param state: The state where we want to goto
         :type state: a state name or a state class
-        :rtype: [Require]
+        :rtype: [Provide]
         """
         acc = []
         for s in self.state_goto_path(state, path_index=path_index):
             if s[1] == "entry":
                 r = s[0].requires_entry
-                acc += r if r is not None else []
+                if r is not None:
+                    acc.append(r)
         return acc
 
     def provide_list_in_stack(self):
@@ -842,17 +850,22 @@ class LifecycleNotExist(Exception):
 
 
 class LifecycleManager(object):
-    """This is the high level object. It permits to load lifecycles, know
-    which lifecycles are loaded and interact with loaded lifecycles.
+    """The :class:`LifecyleManager` is used to manage
+    :py:class:`Lifecyle`. It permits to interact with lifecycles by
+    provinding Xpath.  For instance, to get all state of module
+    Mysql::
+    
+    lifecyleManager.state("//Mysql/*")
 
-    All methods of this class takes and returns primitive types (ie str)
-    in order to be send over network.
+    
+    All methods of :py:class:`LifecyleManager` return python object.
 
     :param autoload: TODO
     :param modules_dir: the path of the modules root directory
     :param include_modules: the list of wanted modules
-    :param os_type: to specify which kind of os has to be used.\
-    If it is not specified, the os type is automatically discovered.
+    :param os_type: to specify which kind of os has to be used.
+        If it is not specified, the os type is automatically discovered.
+
     """
     def __init__(self, autoload=True, modules_dir=None, include_modules=None, os_type=None):
         if autoload:
@@ -887,7 +900,7 @@ class LifecycleManager(object):
 
         :param lifecycle_xpath: A xpath that matches lifecycles
         :type lifecycle_xpath: str
-        :rtype: [:py:class:`Lifecycle`]
+        :rtype: [:class:`Lifecycle`]
         """
         elts = XmlRegister.find_all_elts(lifecycle_xpath)
         acc = []
@@ -950,7 +963,7 @@ class LifecycleManager(object):
         """Get the current state name of matched lifecycles.
 
         :param lifecyle_xpath: A xpath that can match multiple lifecycles
-        :rtype: [py:class:`State`]
+        :rtype: [:class:`State`]
         """
         elts = XmlRegister.find_all_elts(lifecycle_xpath)
         acc = []
@@ -979,17 +992,19 @@ class LifecycleManager(object):
         return acc
 
     def state_goto_requires(self, state_xpath_uri, path_idx=0):
-        """Get the lifecycle state's requires
+        """Return the list a special provide required to go from the current
+        state to the state that match state_xpath_uri.
 
         :param state_xpath_uri: A xpath that matches a unique state.
         :param path_idx: (Not yet implemented)
-        :rtype: (State, Requires)"""
+        :rtype: [:py:class:`Provide`]
+
+        """
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         lf = self._get_by_name(lf_name)
         state = self._get_by_name(lf_name)._get_state_class(state_name)
-        return (state,
-                lf.state_goto_requires(state_name))
+        return lf.state_goto_requires(state_name)
 
     def state_goto(self, state_xpath_uri, requires={}, path_idx=0):
         """From the current state go to state.
@@ -997,7 +1012,8 @@ class LifecycleManager(object):
         :param xpath: The xpath of a state. Must be unique.
         :type xpath: str
         :param requires: Requires needed to go to the target state
-        :type requires: dict"""
+        :type requires: dict
+        :rtype: None"""
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
@@ -1028,26 +1044,12 @@ class LifecycleManager(object):
         apply the state which provides provide_name.
 
         :param lf_name: The name of the lifecycle object
-        :param provide_name: The name of the provide"""
+        :param provide_name: The name of the provide
+        :rtype: [:py:class:`Provide`]
+        """
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
         return self._get_by_name(lf_name).provide_call_requires(state_name)
-
-    def provide_call_args(self, provide_xpath):
-        """From a provide_name, returns its needed arguments.
-
-        :param lf_name: The name of the lifecycle object
-        :type lf_name: str
-        :param provide_name: The name of the provide
-        :type provide_name: str
-        :rtype: [ Requires ]
-        """
-        if provide_xpath is not None:
-            lf_name = XmlRegister.get_ressource(provide_xpath, "lifecycle")
-            state_name = XmlRegister.get_ressource(provide_xpath, "state")
-            provide_name = XmlRegister.get_ressource(provide_xpath, "provide")
-        return self._get_by_name(lf_name).provide_call_args(state_name,
-                                                            provide_name)
 
     def provide_call_path(self, provide_xpath):
         """From a provide_name, return the path to the state of the lifecycle
@@ -1057,7 +1059,7 @@ class LifecycleManager(object):
         :type lf_name: str
         :param provide_name: The name of the provide
         :type provide_name: str
-        :rtype: [(xpath, paths)] but should be [(Provide, paths)]
+        :rtype: [(:py:class:`Provide`, paths)]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
         acc = []
@@ -1066,9 +1068,11 @@ class LifecycleManager(object):
                 provide_name = XmlRegister.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
-                    state_name = XmlRegister.get_ressource(m, "state")
                     lf = self._get_by_name(lf_name)
-                    acc.append((m, lf.provide_call_path(state_name)))
+                    state_name = XmlRegister.get_ressource(m, "state")
+                    state = lf.state_by_name(state_name)
+                    provide = state.get_provide_by_name(provide_name)
+                    acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
     def provide_call(self,
