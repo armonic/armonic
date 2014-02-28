@@ -34,7 +34,7 @@ How it works on a example::
 
 from mss.common import ValidationError
 from mss.variable import VariableNotSet
-from mss.client.socket import ClientSocket
+from mss.client.sock import ClientSocket
 import mss.lifecycle
 
 import types
@@ -481,6 +481,7 @@ class Provide(object):
         :rtype: xpath (string)"""
         return self.used_xpath
 
+
     def _lf_manager(self):
         return ClientSocket(host=self.host,
                             handlers=self.set_logging_handlers())
@@ -508,7 +509,7 @@ class Provide(object):
                 self.provide_requires = self.lf_manager.provide_call_args(
                     xpath=self.used_xpath)
 
-            except mss.client.socket.ConnectionError:
+            except mss.client.sock.ConnectionError:
                 if self.handle_connection_error():
                     continue
                 else:
