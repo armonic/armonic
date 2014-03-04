@@ -327,3 +327,7 @@ class VUrl(VString):
         localFile.write(u.read())
         localFile.close()
         return localFile.name
+
+
+class Password(VString):
+    pass
