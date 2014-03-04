@@ -339,6 +339,7 @@ class RequireLocal(Require):
                 "xpath": self.get_xpath_relative(),
                 "type": self.type,
                 "lf_name": self.lf_name,
+                "nargs": self.nargs,
                 "provide_xpath": self.xpath,
                 "provide_args": [v.to_primitive() for v in self.provide_args],
                 "provide_ret": [v.to_primitive() for v in self.provide_ret]}
