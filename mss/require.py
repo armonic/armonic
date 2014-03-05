@@ -104,7 +104,7 @@ class Require(XmlRegister):
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
         self._variables = []
-        if self.nargs not in ('*', '?'):
+        if self.nargs not in ('*', '?') and self._variables_skel:
             for arg in range(self.nargs_max):
                 self._variables.append(self.factory_variable())
 
@@ -336,26 +336,15 @@ class RequireLocal(Require):
     :param provide_ret: provide return value
     :param nargs: provide occurences (1 or more, *) or is optional (?)
     """
-    def __init__(self, name,
-                 xpath,
-                 provide_args=[],
-                 provide_ret=[],
-                 nargs="1"):
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
         _variables = provide_args + provide_ret
         Require.__init__(self, name, _variables, nargs=nargs)
+        self.type = "local"
         self.xpath = xpath
         self.lf_name = None
         self.provide_name = None
         self.provide_args = provide_args
         self.provide_ret = provide_ret
-        self.name = name
-        self.type = "local"
-        # This contains Variable submitted
-        self._variables_skel = _variables
-        # This will contain Variables. fill method will append
-        # IterContainer if needed, but we have to initialize it in
-        # order to manage default values.
-        self._variables = [IterContainer(*_variables)]
 
     def _xml_add_properties_tuple(self):
         return ([("xpath", self.xpath)] +
@@ -402,11 +391,7 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, name,
-                 xpath,
-                 provide_args=[],
-                 provide_ret=[],
-                 nargs="1"):
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
         for v in provide_args:
             if v.name == 'host':
                 raise RequireDefinitionError(

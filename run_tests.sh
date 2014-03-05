@@ -1,3 +1,3 @@
 #!/bin/sh
 
-python -m unittest discover -v tests '*_tests.py'
+python -m unittest discover tests '*_tests.py'
