@@ -925,7 +925,7 @@ class LifecycleManager(object):
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
-            lf = self._get_by_name(lf_name)
+            lf = self.lifecycle_by_name(lf_name)
             acc.append(lf)
         return acc
 
@@ -951,10 +951,6 @@ class LifecycleManager(object):
         else:
             return self.lf_loaded.keys()
 
-    def _get_by_name(self, lf_name):
-        logger.warning("_get_by_name is deprecated use lifecycle_by_name")
-        return self.lifecycle_by_name(lf_name)
-
     def lifecycle_by_name(self, lf_name):
         if self._autoload:
             try:
@@ -978,7 +974,7 @@ class LifecycleManager(object):
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
-            state = self._get_by_name(lf_name)._get_state_class(state_name)
+            state = self.lifecycle_by_name(lf_name)._get_state_class(state_name)
             acc.append(state)
         return acc
 
@@ -992,7 +988,7 @@ class LifecycleManager(object):
         acc = []
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
-            lf = self._get_by_name(lf_name)
+            lf = self.lifecycle_by_name(lf_name)
             acc.append(lf.state_current())
         return acc
 
@@ -1009,8 +1005,8 @@ class LifecycleManager(object):
         for e in elts:
             lf_name = XmlRegister.get_ressource(e, "lifecycle")
             state_name = XmlRegister.get_ressource(e, "state")
-            state = self._get_by_name(lf_name)._get_state_class(state_name)
-            paths = self._get_by_name(lf_name).state_goto_path_list(state_name)
+            state = self.lifecycle_by_name(lf_name)._get_state_class(state_name)
+            paths = self.lifecycle_by_name(lf_name).state_goto_path_list(state_name)
             acc.append((state, paths))
         return acc
 
@@ -1025,7 +1021,7 @@ class LifecycleManager(object):
         """
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
-        lf = self._get_by_name(lf_name)
+        lf = self.lifecycle_by_name(lf_name)
         return lf.state_goto_requires(state_name)
 
     def state_goto(self, state_xpath_uri, requires={}, path_idx=0):
@@ -1040,7 +1036,7 @@ class LifecycleManager(object):
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
                      lf_name, state_name, requires))
-        return self._get_by_name(lf_name).state_goto(state_name, requires)
+        return self.lifecycle_by_name(lf_name).state_goto(state_name, requires)
 
     def provide(self, provide_xpath):
         """Returns all provides of this lf_name.
@@ -1057,7 +1053,7 @@ class LifecycleManager(object):
                 if provide_name not in STATE_RESERVED_METHODS:
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
                     state_name = XmlRegister.get_ressource(m, "state")
-                    state = self._get_by_name(lf_name).state_by_name(state_name)
+                    state = self.lifecycle_by_name(lf_name).state_by_name(state_name)
                     acc.append(state.provide_args(provide_name))
         return acc
 
@@ -1071,7 +1067,7 @@ class LifecycleManager(object):
         """
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
-        return self._get_by_name(lf_name).provide_call_requires(state_name)
+        return self.lifecycle_by_name(lf_name).provide_call_requires(state_name)
 
     def provide_call_path(self, provide_xpath):
         """From a provide_name, return the path to the state of the lifecycle
@@ -1090,7 +1086,7 @@ class LifecycleManager(object):
                 provide_name = XmlRegister.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
-                    lf = self._get_by_name(lf_name)
+                    lf = self.lifecycle_by_name(lf_name)
                     state_name = XmlRegister.get_ressource(m, "state")
                     state = lf.state_by_name(state_name)
                     provide = state.get_provide_by_name(provide_name)
@@ -1174,7 +1170,7 @@ class LifecycleManager(object):
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_dot(reachable=reachable)
+        return self.lifecycle_by_name(lf_name).to_dot(reachable=reachable)
 
     def to_primitive(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
@@ -1182,7 +1178,7 @@ class LifecycleManager(object):
         :param lf_name: The name of the lifecycle object
         :type lf_name: str
         :rtype: dot file string"""
-        return self._get_by_name(lf_name).to_primitive(reachable=reachable)
+        return self.lifecycle_by_name(lf_name).to_primitive(reachable=reachable)
 
     def uri(self, xpath="//"):
         """Return the list of uri that match this xpath.
