@@ -34,7 +34,7 @@ class g(State):
 
 class TestPathGeneration(unittest.TestCase):
 
-    def test01(self):
+    def test_simple_path(self):
         """
         a -> b -> c -> d
         """
@@ -62,7 +62,7 @@ class TestPathGeneration(unittest.TestCase):
         self.assertEqual(lf._get_from_state_paths(a(), a()),
                          [])
 
-    def test02(self):
+    def test_multiple_paths(self):
         """
              b ------>
         a ->           e -> f
@@ -95,7 +95,7 @@ class TestPathGeneration(unittest.TestCase):
         self.assertEqual(lf._get_from_state_paths(f(), a()),
                          [[(f(), 'leave'), (e(), 'leave'), (b(), 'leave')]])
 
-    def test03(self):
+    def test_multiple_ends(self):
         """
         a -> b ->        -> f
                   d -> e

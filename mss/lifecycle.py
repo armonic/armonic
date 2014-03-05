@@ -267,15 +267,15 @@ class State(XmlRegister):
 
     def entry(self):
         """Called when a state is applied"""
-        return "-> %s state entry" % self.name
+        logger.debug("Entering state %s" % self.name)
 
     def leave(self):
         """Called when a state is leaved"""
-        return "-> %s state leave" % self.name
+        logger.debug("Leaving state %s" % self.name)
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
-        logger.info("State crossed but nothing to do.")
+        logger.info("State %s crossed but nothing to do" % self.name)
 
     def entry_doc(self):
         """NOT YET IMPLEMENTED.
@@ -517,7 +517,7 @@ class Lifecycle(XmlRegister):
     def _pop_state(self):
         if self._stack != []:
             t = self._stack.pop()
-            print t.leave()
+            t.leave()
 
     def _get_from_state_paths(self, from_state, to_state):
         logger.debug("Find paths from %s to %s" % (from_state, to_state))

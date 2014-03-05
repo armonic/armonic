@@ -23,7 +23,7 @@ class StateB(State):
         return (1, 2)
 
 
-class A(Lifecycle):
+class ProvideCallLF(Lifecycle):
     transitions = [Transition(StateA(), StateB())]
 
     def __init__(self):
@@ -31,21 +31,21 @@ class A(Lifecycle):
         self.init(StateA(), {})
 
 
-class TestProvideValidation(unittest.TestCase):
+class TestProvideCall(unittest.TestCase):
 
     def setUp(self):
         self.lfm = LifecycleManager(modules_dir=os.getcwd(), autoload=True, include_modules="")
 
     def test_missing_provide_arg(self):
         with self.assertRaisesRegexp(ValidationError, "Provided values doesn't met provide requires"):
-            self.lfm.provide_call("//provide1", requires=[("//bar/foo", "test1")])
+            self.lfm.provide_call("//ProvideCallLF//provide1", requires=[("//ProvideCallLF//bar/foo", "test1")])
 
     def test_missing_require(self):
         with self.assertRaisesRegexp(ValidationError, "Provided values doesn't met provide requires"):
-            self.lfm.provide_call("//provide1", provide_args=[("//foo1/bar", "test1")])
+            self.lfm.provide_call("//ProvideCallLF//provide1", provide_args=[("//ProvideCallLF//foo1/bar", "test1")])
 
     def test_valid(self):
-        self.assertEqual(self.lfm.provide_call("//provide1", requires=[("//bar/foo", "test1")], provide_args=[("//foo1/bar", "test1")]), (1, 2))
+        self.assertEqual(self.lfm.provide_call("//ProvideCallLF//provide1", requires=[("//ProvideCallLF//bar/foo", "test1")], provide_args=[("//ProvideCallLF//foo1/bar", "test1")]), (1, 2))
 
 
 if __name__ == '__main__':
