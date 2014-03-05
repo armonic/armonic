@@ -42,6 +42,34 @@ class Provide(IterContainer, XmlRegister):
         """
         return self.get(require_name)
 
+    def fill(self, variables_values):
+        """Fill the Provide with variables_values
+
+        :param variables_values: list of tuple (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+        """
+        def _filter_values(variables_values):
+            # Return only variables for this Provide
+            for xpath, values in variables_values:
+                provide_name = XmlRegister.get_ressource(xpath, "provide")
+                require_name = XmlRegister.get_ressource(xpath, "require")
+                if not (provide_name == self.name and self.require_by_name(require_name)):
+                    continue
+                yield (xpath, values)
+
+        for require in self:
+            require.new_fill(_filter_values(variables_values))
+
+    def validate(self):
+        for require in self:
+            logger.debug("Validating %s" % (require))
+            try:
+                require.validate()
+            except ValidationError as e:
+                e.require_name = require.name
+                raise e
+
     def build_args_from_primitive(self, primitive):
         self.build_from_primitive(primitive)
         args = {}

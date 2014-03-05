@@ -1102,14 +1102,21 @@ class LifecycleManager(object):
 
         :param xpath: The xpath og the provide to call
         :type xpath: str
-        :param requires: A list of of tuples (variable_xpath, require_value)
+        :param requires: A list of of tuples (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
         :type requires: list
-        :param provide_args: A list of tuples (variable_xpath, provide_arg_value)
+        :param provide_args: A list of tuples (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
         :type provide_args: list
 
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`], 'provide_args': [:class:`Provide`]}
         """
         variables_values = list(itertools.chain(requires, provide_args))
+        for index, (variable_xpath, variable_values) in enumerate(variables_values):
+            if not type(variable_values) == dict:
+                variables_values[index] = (variable_xpath, {0: variable_values})
         logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
         # copy requires and provide_args we don't want to fill variables yet
@@ -1117,20 +1124,11 @@ class LifecycleManager(object):
         provide_args = copy.deepcopy(self.provide(xpath))
         errors = False
         for provide in itertools.chain(requires, provide_args):
-            for require in provide:
-                # filter variables for this require
-                vars = []
-                for variable_xpath, variable_values in variables_values:
-                    if not type(variable_values) == dict:
-                        variable_values = {0: variable_values}
-                    if (require.name == XmlRegister.get_ressource(variable_xpath, "require") and
-                            provide.name == XmlRegister.get_ressource(variable_xpath, "provide")):
-                        vars.append((variable_xpath, variable_values))
-                try:
-                    require.new_fill(vars)
-                    require.validate()
-                except ValidationError:
-                    errors = True
+            try:
+                provide.fill(variables_values)
+                provide.validate()
+            except ValidationError:
+                errors = True
         return {'xpath': xpath, 'errors': errors, 'requires': requires, 'provide_args': provide_args}
 
     def provide_call(self, xpath, requires={}, provide_args={}):

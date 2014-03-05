@@ -187,19 +187,23 @@ class Require(XmlRegister):
             variable_values is dict of index=value
 
         """
-        for xpath, values in variables_values:
-            variable_name = XmlRegister.get_ressource(xpath, "variable")
-            if not self.variable_by_name(variable_name):
-                logger.warning("Variable %s not found in %s, ignoring." % (variable_name, self))
-                continue
+        def _filter_values(variables_values):
+            # Return only variables for this Require
+            for xpath, values in variables_values:
+                require_name = XmlRegister.get_ressource(xpath, "require")
+                variable_name = XmlRegister.get_ressource(xpath, "variable")
+                if not (require_name == self.name and self.variable_by_name(variable_name)):
+                    continue
+                yield (xpath, variable_name, values)
 
+        for xpath, variable_name, values in _filter_values(variables_values):
             for index, value in values.items():
                 if not int(index) < self.nargs_max:
                     logger.warning("Ignoring variable value '%s' for %s. Does not conform to nargs definition" % (value, self))
                     continue
                 try:
-                    variables = self._variables[int(index)]
-                except IndexError:
+                    variables = self.variables(int(index))
+                except DoesNotExist:
                     variables = self.factory_variable()
                     self._variables.append(variables)
 
