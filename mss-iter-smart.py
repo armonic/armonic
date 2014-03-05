@@ -42,13 +42,22 @@ def user_input_choose_amongst(choices, prefix=''):
             print "%sInvalid choice. Do it again!" % (prefix)
          
 
-import logging
-logging.basicConfig(level=logging.INFO)
 
 import argparse
 parser = argparse.ArgumentParser(prog='mss3-iter-smart')
 parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
+parser.add_argument('--verbose',"-v", action="store_true")
 args = parser.parse_args()
+
+
+import logging
+
+if args.verbose:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+    
+
 
 import mss.transports
 lfm = mss.transports.Transport(modules_dir="mss/modules/",os_type=mss.utils.OsType("Mandriva Business Server"))
