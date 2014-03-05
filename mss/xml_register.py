@@ -125,16 +125,6 @@ class XmlRegister(object):
         This can be useful when a client wants to mix hostname and ip addr."""
         return self._xpath_relative
 
-    def __getstate__(self):
-        dct = self.__dict__.copy()
-        if "_xpath" not in self.__dict__:
-            print self.__dict__
-        try:
-            dct.pop("_xml_elt")
-        except KeyError:
-            pass
-        return dct
-
     @classmethod
     def xpath(cls, xpath):
         """
@@ -146,7 +136,7 @@ class XmlRegister(object):
             if type(request) != list:
                 return [str(request)]
 
-            for e  in request:
+            for e in request:
                 if type(e) == _Element:
                     acc.append(tostring(e))
                 else:
