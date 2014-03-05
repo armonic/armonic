@@ -337,13 +337,9 @@ class State(XmlRegister):
             raise ProvideNotExist("%s doesn't exist in state %s" %
                                   (provide_name, self))
 
-    def get_provide_by_name(self, provide_name):
-        logger.warning("get_provide_by_name is deprecated use provide_by_name")
-        return self.provide_by_name(provide_name)
-
     def provide_args(self, provide_name):
         """
-        This is DEPRECATED. Use get_provide_by_name instead!
+        This is DEPRECATED. Use provide_by_name instead!
 
         :rtype: Provide
         """
@@ -1089,7 +1085,7 @@ class LifecycleManager(object):
                     lf = self.lifecycle_by_name(lf_name)
                     state_name = XmlRegister.get_ressource(m, "state")
                     state = lf.state_by_name(state_name)
-                    provide = state.get_provide_by_name(provide_name)
+                    provide = state.provide_by_name(provide_name)
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
