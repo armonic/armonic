@@ -666,34 +666,6 @@ class Lifecycle(XmlRegister):
         return [(s, s.provides) for s in
                 self.state_list() if s.provides != []]
 
-    def _get_state_from_provide(self, provide_name):
-        """
-        DEPRECATED
-        From a provide_name, return a tuple of (state, provide_name).
-        provide_name can be fully qualified, ie. state.provide_name.
-
-        :param provide_name: the name of a provide (can be fully qualified or
-            not)
-        :rtype: (state, provide_name)
-        """
-        p = provide_name.split(".")
-        if len(p) == 1:  # Simple provide name
-            sp = []
-            for (s, ps) in self.provide_list():
-                for p in ps:
-                    if p.name == provide_name:
-                        sp.append((s, provide_name))
-            if sp == []:
-                raise ProvideNotExist()
-            elif len(sp) > 1:
-                raise ProvideAmbigous("You should full qualify it!")
-            elif len(sp) == 1:
-                return (sp[0])
-        elif len(p) == 2:  # Fully qualified provide name
-            s = self._get_state_class(p[0])
-            s.provide_by_name(p[1])
-            return (s, p[1])
-
     def provide_call_requires(self, state_name):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
