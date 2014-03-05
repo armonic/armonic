@@ -379,10 +379,12 @@ class RequireLocal(Require):
 
     def to_primitive(self):
         primitive = super(RequireLocal, self).to_primitive()
-        primitive.update({"lf_name": self.lf_name,
-                          "provide_xpath": self.xpath,
-                          "provide_args": [v.to_primitive() for v in self.provide_args],
-                          "provide_ret": [v.to_primitive() for v in self.provide_ret]})
+        primitive.update({
+            "type": self.type,
+            "lf_name": self.lf_name,
+            "provide_xpath": self.xpath,
+            "provide_args": [v.to_primitive() for v in self.provide_args],
+            "provide_ret": [v.to_primitive() for v in self.provide_ret]})
         return primitive
 
     def __repr__(self):
