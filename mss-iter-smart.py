@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from pprint import pprint
 
 def user_input_confirm(msg, prefix=''):
@@ -40,7 +42,7 @@ def user_input_choose_amongst(choices, prefix=''):
         except Exception as e:
             print e
             print "%sInvalid choice. Do it again!" % (prefix)
-         
+
 
 
 import argparse
@@ -56,7 +58,7 @@ if args.verbose:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
-    
+
 
 
 import mss.transports
@@ -85,7 +87,7 @@ while True:
             provide.specialize(ret)
         else:
             provide.specialize(matches[0])
-            
+
     elif provide.step == "multiplicity":
         require = args
         while True:
@@ -97,11 +99,11 @@ while True:
                 print e
                 print "Invalid choice. Do it again!"
         generator.send(answer)
-            
+
     elif provide.step == "done":
         ret = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
         if ret:
             print "Configuration requires of %s" %provide.generic_xpath
-        
-        
+
+
 
