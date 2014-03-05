@@ -109,7 +109,6 @@ import pprint
 import os
 import copy
 import itertools
-import re
 
 from mss.common import IterContainer, DoesNotExist
 from mss.provide import Provide
@@ -254,15 +253,16 @@ class State(XmlRegister):
     def lf_name(self, name):
         self._lf_name = name
 
-    def safe_entry(self, primitive):
-        """Check if all state requires are satisfated.
+    def safe_entry(self, requires=[]):
+        """Check all state requires are satisfated and enter into State
 
-        :param primitive: values for all requires of the State.
-        See :py:meth:`Provide.build_from_primivitive` for more informations.
-        :type primitive: {require1: {variable1: value, variable2: value},
-            require2: ...}
+        :param requires: A list of of tuples (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+        :type requires: list
         """
-        self.requires_entry.build_from_primitive(primitive)
+        self.requires_entry.fill(requires)
+        self.requires_entry.validate()
         return self.entry()
 
     def entry(self):
@@ -574,7 +574,7 @@ class Lifecycle(XmlRegister):
         logger.debug("Found paths:\n%s" % pprint.pformat(paths))
         return paths
 
-    def state_goto(self, state, requires, path_index=0):
+    def state_goto(self, state, requires=[], path_index=0):
         """From current state, go to state. To know 'requires', call
         :py:meth:`Lifecycle.state_goto_requires`.  :py:meth:`State.entry` or
         :py:meth:`State.leave` of intermediate states are called
@@ -591,11 +591,11 @@ class Lifecycle(XmlRegister):
         """
         logger.debug("Goto state %s using path %i" % (state, path_index))
         path = self.state_goto_path(state, path_index=path_index)
-        for s in path:
-            if s[1] == "entry":
-                self._push_state(s[0], requires)
-            elif s[1] == "leave":
-                if self.state_current() == s[0]:
+        for (state, method) in path:
+            if method == "entry":
+                self._push_state(state, requires)
+            elif method == "leave":
+                if self.state_current() == state:
                     self._pop_state()
                 else:
                     raise StateNotApply(self.state_current())
@@ -741,7 +741,7 @@ class Lifecycle(XmlRegister):
         else:
             return []
 
-    def provide_call(self, state_name, provide_name, requires, provide_args):
+    def provide_call(self, state_name, provide_name, requires=[], provide_args=[]):
         """Call a provide and go to provider state if needed.
 
         :param provide_name: The name (simple or fully qualified) of the
@@ -760,16 +760,16 @@ class Lifecycle(XmlRegister):
             self.state_goto(state, requires)
         return self.provide_call_in_stack(state, provide_name, provide_args)
 
-    def provide_call_in_stack(self, state, provide_name, provide_args):
+    def provide_call_in_stack(self, state_name, provide_name, provide_args=[]):
         """Call a provide by name. State which provides must be in the stack.
         TODO: Use full qualified name when a provide is ambigous: State.provide
         """
-        state = self._get_state_class(state)
+        state = self._get_state_class(state_name)
         sidx = self._stack.index(state)
         p = state.provide_args(provide_name)
         sfct = state.__getattribute__(p.name)
-        # args = p.build_args_from_primitive(provide_args)
-        p.build_from_primitive(provide_args)
+        p.fill(provide_args)
+        p.validate()
         ret = sfct(p)
         logger.debug("Provide %s returns values %s" % (
             p.name, ret))
@@ -1097,6 +1097,15 @@ class LifecycleManager(object):
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
+    def _format_input_variables(self, *variables_values):
+        """Fix ("//xpath/to/variable_name", "value") to ("//xpath/to/variable_name", {0: "value"})
+        """
+        variables_values = list(itertools.chain(*variables_values))
+        for index, (variable_xpath, variable_values) in enumerate(variables_values):
+            if not type(variable_values) == dict:
+                variables_values[index] = (variable_xpath, {0: variable_values})
+        return variables_values
+
     def provide_call_validate(self, xpath, requires=[], provide_args=[]):
         """Validate requires and provide_args to call the provide
 
@@ -1113,10 +1122,7 @@ class LifecycleManager(object):
 
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`], 'provide_args': [:class:`Provide`]}
         """
-        variables_values = list(itertools.chain(requires, provide_args))
-        for index, (variable_xpath, variable_values) in enumerate(variables_values):
-            if not type(variable_values) == dict:
-                variables_values[index] = (variable_xpath, {0: variable_values})
+        variables_values = self._format_input_variables(requires, provide_args)
         logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
         # copy requires and provide_args we don't want to fill variables yet
@@ -1131,27 +1137,36 @@ class LifecycleManager(object):
                 errors = True
         return {'xpath': xpath, 'errors': errors, 'requires': requires, 'provide_args': provide_args}
 
-    def provide_call(self, xpath, requires={}, provide_args={}):
+    def provide_call(self, xpath, requires=[], provide_args=[]):
         """Call a provide of a lifecycle and go to provider state if needed
 
-        :param xpath: The xpath of provides
+        :param xpath: The xpath of the provide to call
         :type xpath: str
-        :param requires: Requires needed to reach the state that provides this
-                         provide
-                         See :py:meth:`Lifecycle.state_goto` for more
-                         information
-        :type requires: dict
-        :param provide_args: Args needed by this provide
-        :type provide_args: dict"""
+        :param requires: A list of of tuples (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+        :type requires: list
+        :param provide_args: A list of tuples (variable_xpath, variable_values)
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+        :type provide_args: list
+        """
+        logger.debug("Provide call %s" % xpath)
+        # be sure that the provide can be validated
+        # we don't want to change states if we can't call the provide in the end
+        if self.provide_call_validate(xpath, requires, provide_args)['errors']:
+            logger.error("Provided values doesn't met provide requires")
+            raise ValidationError("Provided values doesn't met provide requires")
+        requires = self._format_input_variables(requires)
+        provide_args = self._format_input_variables(provide_args)
         lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
         state_name = XmlRegister.get_ressource(xpath, "state")
         provide_name = XmlRegister.get_ressource(xpath, "provide")
-        logger.debug("provide-call %s %s %s %s" %
-                     (lf_name, provide_name, requires, provide_args))
-        return self._get_by_name(lf_name).provide_call(state_name,
-                                                       provide_name,
-                                                       requires,
-                                                       provide_args)
+        logger.debug("Calling provide %s" % xpath)
+        return self.lifecycle_by_name(lf_name).provide_call(state_name,
+                                                            provide_name,
+                                                            requires,
+                                                            provide_args)
 
     def to_dot(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object

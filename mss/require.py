@@ -135,50 +135,15 @@ class Require(XmlRegister):
             func._requires = [require]
         return func
 
-    def _fill(self, iterContainer, primitive):
-        """Fill an iterContainer with value found in primitive.
-        :param iterContainer: contains some variables.
-        :type iterContainer: iterContainer.
-        :type primitive: dict of variable_name: primitive_value.
-        :rtype: boolean."""
-        for variable_name, variable_value in primitive.items():
-            try:
-                iterContainer.get(variable_name).fill(variable_value)
-            except DoesNotExist:
-                logger.warning("Variable %s not found in %s, ignoring." %
-                               (variable_name, self))
-                pass
-            except ValidationError:
-                raise RequireNotFilled(self.name, variable_name)
-        return True
-
     def factory_variable(self):
-        """Return an Itercontainer of variable based on variable
-        skeleton.
+        """Return an Itercontainer of variables based on variables_skel
 
-        :rtype: IterContainer of Variable
+        :rtype: IterContainer of :class:`Variable`
         """
-        tmp_vars = copy.deepcopy(self._variables_skel)
-        return IterContainer(*tmp_vars)
+        vars = copy.deepcopy(self._variables_skel)
+        return IterContainer(*vars)
 
-    def fill(self, primitives=[]):
-        """Fill variables from a list of primitive.
-
-        NotImplementedYet: We must check if provided primitive
-        correspond to nargs.
-        """
-        if primitives != []:
-            # To avoid vaiables append on multiple calls
-            self._variables = [IterContainer(*self._variables_skel)]
-            self._fill(self._variables[0], primitives[0])
-            for primitive in primitives[1:]:
-                tmp = self.factory_variable()
-                self._fill(tmp, primitive)
-                self._variables.append(tmp)
-            self._xml_register_children()
-        return True
-
-    def new_fill(self, variables_values):
+    def fill(self, variables_values):
         """
         Fill the require with a list of variables values
 
@@ -206,6 +171,8 @@ class Require(XmlRegister):
                 except DoesNotExist:
                     variables = self.factory_variable()
                     self._variables.append(variables)
+                    # TODO: register or not ?
+                    # self._xml_register_children()
 
                 variables.get(variable_name).fill(value)
 

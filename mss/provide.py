@@ -59,7 +59,7 @@ class Provide(IterContainer, XmlRegister):
                 yield (xpath, values)
 
         for require in self:
-            require.new_fill(_filter_values(variables_values))
+            require.fill(_filter_values(variables_values))
 
     def validate(self):
         for require in self:
@@ -70,45 +70,8 @@ class Provide(IterContainer, XmlRegister):
                 e.require_name = require.name
                 raise e
 
-    def build_args_from_primitive(self, primitive):
-        self.build_from_primitive(primitive)
-        args = {}
-        for a in self.func_args:
-            for r in self:
-                try:
-                    args.update({a: r.variables().get(a).value})
-                except DoesNotExist:
-                    pass
-        return args
-
-    def build_from_primitive(self, primitive):
-        """From primitive, fill and validate this requires.
-
-        :param primitive: values for all requires.
-        :type primitive: {require1: {variable1: value, variable2: value},
-            require2: ...}
-        """
-        # Fill requires values first
-        for require_name, variables_values in primitive.items():
-            try:
-                require = self.get(require_name)
-                logger.debug("Setting %s in %s" % (variables_values, require))
-                require.fill(variables_values)
-            except DoesNotExist:
-                logger.warning("Require %s not found in %s, ignoring" %
-                               (require_name, self))
-                pass
-        # Validate each require
-        for require in self:
-            logger.debug("Validating %s" % (require))
-            try:
-                require.validate()
-            except ValidationError as e:
-                e.require_name = require.name
-                raise e
-
     def has_variable(self, variable_name):
-        """Return True if variable_name is specified by this requires."""
+        """Return True if variable_name is specified by this provide"""
         for r in self:
             try:
                 r.variables().get(variable_name)
@@ -132,5 +95,5 @@ class Provide(IterContainer, XmlRegister):
 
     def __repr__(self):
         return "<Provide:%s(%s,%s)>" % (self.name,
-                                         IterContainer.__repr__(self),
-                                         self.flags)
+                                        IterContainer.__repr__(self),
+                                        self.flags)
