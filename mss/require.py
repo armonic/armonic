@@ -235,7 +235,7 @@ class Require(XmlRegister):
         already have fill it because filled values will be used.
 
         :rtype: boolean"""
-        for (idx, vs) in enumerate(self._variables):
+        for (idx, vs) in enumerate(self.variables(all=True)):
             if values:
                 try:
                     v = values[idx]
@@ -269,19 +269,32 @@ class Require(XmlRegister):
         if all:
             return self._variables
         else:
-            return self._variables[index]
+            try:
+                return self._variables[index]
+            except IndexError:
+                raise DoesNotExist("No variables found")
 
-    def variable_by_name(self, variable_name):
-        """
+    def variable_by_name(self, variable_name, index=0):
+        """From a variable name return the corresponding instance
+
         :param variable_name: variable name
         :type variable_name: str
+        :param index: variable set index
+        :type index: int
 
         :rtype: :class:`Variable`
         """
-        for variable in self._variables_skel:
-            if variable.name == variable_name:
-                return variable
-        return False
+        try:
+            variable = self.variables(index).get(variable_name)
+            return variable
+        except DoesNotExist:
+            # Use variables_skel to resolve xpath even
+            # if no variables was set (for validation)
+            for variable in self._variables_skel:
+                if variable.name == variable_name:
+                    return variable
+            # No match, raise the exception
+            raise
 
     def get_values(self):
         """ FIXME This jsut return the first element"""
