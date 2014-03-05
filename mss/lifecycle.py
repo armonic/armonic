@@ -291,7 +291,7 @@ class State(XmlRegister):
         """
         Requires to enter the state
 
-        :rtype: Requires
+        :rtype: :class:`Provide`
         """
         return self._requires_entry
 
@@ -300,7 +300,7 @@ class State(XmlRegister):
         """
         Requires to leave the state
 
-        :rtype: Requires
+        :rtype: :class:`Provide`
         """
         return self._requires_leave
 
@@ -309,7 +309,7 @@ class State(XmlRegister):
         """
         Requires to cross the state
 
-        :rtype: Requires
+        :rtype: :class:`Provide`
         """
         return self._requires_cross
 
@@ -318,7 +318,7 @@ class State(XmlRegister):
         """
         Requires for all provides
 
-        :rtype: [:py:class:`Provide`]
+        :rtype: IterContainer([:py:class:`Provide`])
         """
         return self._provides
 
@@ -336,18 +336,6 @@ class State(XmlRegister):
         except DoesNotExist:
             raise ProvideNotExist("%s doesn't exist in state %s" %
                                   (provide_name, self))
-
-    def provide_args(self, provide_name):
-        """
-        This is DEPRECATED. Use provide_by_name instead!
-
-        :rtype: Provide
-        """
-        for p in self.provides:
-            if p.name == provide_name:
-                return p
-        raise ProvideNotExist("%s doesn't exist in state %s" %
-                              (provide_name, self.__name__))
 
     def __repr__(self):
         return "<State:%s>" % self.name
@@ -703,7 +691,7 @@ class Lifecycle(XmlRegister):
                 return (sp[0])
         elif len(p) == 2:  # Fully qualified provide name
             s = self._get_state_class(p[0])
-            s.provide_args(p[1])
+            s.provide_by_name(p[1])
             return (s, p[1])
 
     def provide_call_requires(self, state_name):
@@ -722,7 +710,7 @@ class Lifecycle(XmlRegister):
     def provide_call_args(self, state_name, provide_name):
         """From a provide_name, returns its needed arguments."""
         state = self._get_state_class(state_name)
-        return state.provide_args(provide_name)
+        return state.provide_by_name(provide_name)
 
     def provide_call_path(self, state_name):
         """From a provide_name, return the path to the state that
@@ -751,7 +739,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state_name)
         # To be sure that the provide exists
-        state.provide_args(provide_name)
+        state.provide_by_name(provide_name)
         if not self._is_state_in_stack(state):
             self.state_goto(state, requires)
         return self.provide_call_in_stack(state, provide_name, provide_args)
@@ -762,15 +750,15 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state_name)
         sidx = self._stack.index(state)
-        p = state.provide_args(provide_name)
-        sfct = state.__getattribute__(p.name)
-        p.fill(provide_args)
-        p.validate()
-        ret = sfct(p)
+        provide = state.provide_by_name(provide_name)
+        sfct = state.__getattribute__(provide.name)
+        provide.fill(provide_args)
+        provide.validate()
+        ret = sfct(provide)
         logger.debug("Provide %s returns values %s" % (
-            p.name, ret))
+            provide.name, ret))
         for i in self._stack[sidx:]:
-            i.cross(**(p.flags))
+            i.cross(**(provide.flags))
         return ret
 
     def to_dot(self, cross=False,
@@ -1050,7 +1038,7 @@ class LifecycleManager(object):
                     lf_name = XmlRegister.get_ressource(m, "lifecycle")
                     state_name = XmlRegister.get_ressource(m, "state")
                     state = self.lifecycle_by_name(lf_name).state_by_name(state_name)
-                    acc.append(state.provide_args(provide_name))
+                    acc.append(state.provide_by_name(provide_name))
         return acc
 
     def provide_call_requires(self, provide_xpath_uri, path_idx=0):
