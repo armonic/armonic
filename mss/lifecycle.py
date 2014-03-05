@@ -589,7 +589,7 @@ class Lifecycle(XmlRegister):
                 return state
         raise DoesNotExist("State %s doesn't exists" % name)
 
-    def state_goto(self, state, requires=[], path_index=0):
+    def state_goto(self, state, requires=[], path_idx=0):
         """Go to state.
 
         :param state: the target state
@@ -600,14 +600,14 @@ class Lifecycle(XmlRegister):
             ("//xpath/to/variable", {0: value})
 
         :type requires: list of tuples
-        :param path_index: the path to use when there is multiple paths
+        :param path_idx: the path to use when there is multiple paths
             to go to the target State
-        :type path_index: int
+        :type path_idx: int
 
         :rtype: None
         """
-        logger.debug("Goto state %s using path %i" % (state, path_index))
-        path = self.state_goto_path(state, path_index=path_index)
+        logger.debug("Goto state %s using path %i" % (state, path_idx))
+        path = self.state_goto_path(state, path_idx=path_idx)
         for (state, method) in path:
             if method == "entry":
                 self._push_state(state, requires)
@@ -629,21 +629,21 @@ class Lifecycle(XmlRegister):
         logger.debug("Get paths to go to state %s" % state)
         return self._get_from_state_paths(self.state_current(), state)
 
-    def state_goto_path(self, state, func=None, path_index=0):
+    def state_goto_path(self, state, func=None, path_idx=0):
         """Get one path to go to State.
 
         :param state: the target state
         :type state: state_name | :class:`State`
         :param func:  function to apply on all States of the path
         :type func: function
-        :param path_index: the path to use when there is multiple paths
+        :param path_idx: the path to use when there is multiple paths
             to go to the target State
-        :type path_index: int
+        :type path_idx: int
 
         :rtype: [(:class:`State`, method), (:class:`State`, method), ...]
         """
         try:
-            path = self.state_goto_path_list(state)[path_index]
+            path = self.state_goto_path_list(state)[path_idx]
         except IndexError:
             raise StateNotApply()
         if func is not None:
@@ -651,19 +651,19 @@ class Lifecycle(XmlRegister):
                 func(state)
         return path
 
-    def state_goto_requires(self, state, path_index=0):
+    def state_goto_requires(self, state, path_idx=0):
         """Get Requires to go to State.
 
         :param state: the target state
         :type state: state_name | :class:`State`
-        :param path_index: the path to use when there is multiple paths
+        :param path_idx: the path to use when there is multiple paths
             to go to the target State
-        :type path_index: int
+        :type path_idx: int
 
         :rtype: [:class:`Provide`]
         """
         acc = IterContainer()
-        for s in self.state_goto_path(state, path_index=path_index):
+        for s in self.state_goto_path(state, path_idx=path_idx):
             if s[1] == "entry":
                 r = s[0].requires_entry
                 if len(r) > 0:
@@ -681,7 +681,7 @@ class Lifecycle(XmlRegister):
         return [(s, s.provides) for s in self.state_list(reachable=reachable)
                 if s.provides != []]
 
-    def provide_call_requires(self, state_name):
+    def provide_call_requires(self, state_name, path_idx=0):
         """From a provide_name, return the list of "requires" needed to
         apply the state which provides provide_name.
 
@@ -690,7 +690,7 @@ class Lifecycle(XmlRegister):
         """
         state = self._get_state_class(state_name)
         if not self._is_state_in_stack(state):
-            return self.state_goto_requires(state)
+            return self.state_goto_requires(state, path_idx)
         else:
             return []
 
@@ -712,7 +712,7 @@ class Lifecycle(XmlRegister):
         else:
             return []
 
-    def provide_call(self, state, provide_name, requires=[], provide_args=[]):
+    def provide_call(self, state, provide_name, requires=[], path_idx=0):
         """Go to provide state and call provide.
 
         :param state: the target state
@@ -725,24 +725,23 @@ class Lifecycle(XmlRegister):
             ("//xpath/to/variable", {0: value})
 
         :type requires: list of tuples
-        :param provide_args: sames as requires
 
+        :rtype: provide result
         """
         state = self._get_state_class(state)
         # To be sure that the provide exists
         state.provide_by_name(provide_name)
         if not self._is_state_in_stack(state):
-            self.state_goto(state, requires)
-        return self._provide_call_in_stack(state, provide_name, provide_args)
+            self.state_goto(state, requires, path_idx)
+        return self._provide_call_in_stack(state, provide_name, requires)
 
-    def _provide_call_in_stack(self, state, provide_name, provide_args=[]):
-        """Call a provide by name. State which provides must be in the stack.
-        """
+    def _provide_call_in_stack(self, state, provide_name, requires=[]):
+        """Call a provide by name. State which provides must be in the stack."""
         state = self._get_state_class(state)
         sidx = self._stack.index(state)
         provide = state.provide_by_name(provide_name)
         sfct = state.__getattribute__(provide.name)
-        provide.fill(provide_args)
+        provide.fill(requires)
         provide.validate()
         ret = sfct(provide)
         logger.debug("Provide %s returns values %s" % (
@@ -1041,7 +1040,7 @@ class LifecycleManager(object):
         """
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
-        return self.lifecycle_by_name(lf_name).provide_call_requires(state_name)
+        return self.lifecycle_by_name(lf_name).provide_call_requires(state_name, path_idx)
 
     def provide_call_path(self, provide_xpath):
         """From a provide_name, return the path to the state of the lifecycle
@@ -1068,7 +1067,8 @@ class LifecycleManager(object):
         return acc
 
     def _format_input_variables(self, *variables_values):
-        """Fix ("//xpath/to/variable_name", "value") to ("//xpath/to/variable_name", {0: "value"})
+        """Translate ("//xpath/to/variable_name", "value")
+           to ("//xpath/to/variable_name", {0: "value"})
         """
         variables_values = list(itertools.chain(*variables_values))
         for index, (variable_xpath, variable_values) in enumerate(variables_values):
@@ -1076,67 +1076,61 @@ class LifecycleManager(object):
                 variables_values[index] = (variable_xpath, {0: variable_values})
         return variables_values
 
-    def provide_call_validate(self, xpath, requires=[], provide_args=[]):
-        """Validate requires and provide_args to call the provide
+    def provide_call_validate(self, provide_xpath_uri, requires=[], path_idx=0):
+        """Validate requires to call the provide
 
         :param xpath: The xpath og the provide to call
         :type xpath: str
-        :param requires: A list of of tuples (variable_xpath, variable_values)
+        :param requires: A list of of tuples (variable_xpath, variable_values):
             variable_xpath is a full xpath
             variable_values is dict of index=value
         :type requires: list
-        :param provide_args: A list of tuples (variable_xpath, variable_values)
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
-        :type provide_args: list
 
-        :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`], 'provide_args': [:class:`Provide`]}
+        :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
         """
-        variables_values = self._format_input_variables(requires, provide_args)
+        variables_values = self._format_input_variables(requires)
         logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
-        # copy requires and provide_args we don't want to fill variables yet
-        requires = copy.deepcopy(self.provide_call_requires(xpath))
-        provide_args = copy.deepcopy(self.provide(xpath))
+        # copy requires we don't want to fill variables yet
+        requires = copy.deepcopy(self.provide_call_requires(provide_xpath_uri))
+        try:
+            requires.append(copy.deepcopy(self.from_xpath(provide_xpath_uri, "provide")))
+        except DoesNotExist:
+            pass
         errors = False
-        for provide in itertools.chain(requires, provide_args):
+        for provide in requires:
             try:
                 provide.fill(variables_values)
                 provide.validate()
             except ValidationError:
                 errors = True
-        return {'xpath': xpath, 'errors': errors, 'requires': requires, 'provide_args': provide_args}
+        return {'xpath': provide_xpath_uri, 'errors': errors, 'requires': requires}
 
-    def provide_call(self, xpath, requires=[], provide_args=[]):
+    def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
         """Call a provide of a lifecycle and go to provider state if needed
 
         :param xpath: The xpath of the provide to call
         :type xpath: str
-        :param requires: A list of of tuples (variable_xpath, variable_values)
+        :param requires: A list of of tuples (variable_xpath, variable_values):
             variable_xpath is a full xpath
             variable_values is dict of index=value
         :type requires: list
-        :param provide_args: A list of tuples (variable_xpath, variable_values)
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
-        :type provide_args: list
         """
-        logger.debug("Provide call %s" % xpath)
+        logger.debug("Provide call %s" % provide_xpath_uri)
         # be sure that the provide can be validated
         # we don't want to change states if we can't call the provide in the end
-        if self.provide_call_validate(xpath, requires, provide_args)['errors']:
+        if self.provide_call_validate(provide_xpath_uri, requires)['errors']:
             logger.error("Provided values doesn't met provide requires")
             raise ValidationError("Provided values doesn't met provide requires")
         requires = self._format_input_variables(requires)
-        provide_args = self._format_input_variables(provide_args)
-        lf_name = XmlRegister.get_ressource(xpath, "lifecycle")
-        state_name = XmlRegister.get_ressource(xpath, "state")
-        provide_name = XmlRegister.get_ressource(xpath, "provide")
-        logger.debug("Calling provide %s" % xpath)
+        lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
+        state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
+        provide_name = XmlRegister.get_ressource(provide_xpath_uri, "provide")
+        logger.debug("Calling provide %s" % provide_xpath_uri)
         return self.lifecycle_by_name(lf_name).provide_call(state_name,
                                                             provide_name,
                                                             requires,
-                                                            provide_args)
+                                                            path_idx)
 
     def to_dot(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
@@ -1179,8 +1173,8 @@ class LifecycleManager(object):
             ressource_name = XmlRegister.get_ressource(xpath, ressource_type)
             ressource_obj = getattr(ressource_obj, "%s_by_name" % ressource_type)(ressource_name)
             if ressource_type == ret:
-                break
-        return ressource_obj
+                return ressource_obj
+        raise DoesNotExist("Can't find object")
 
     def xpath(self, xpath):
         return mss.xml_register.XmlRegister.xpath(xpath)

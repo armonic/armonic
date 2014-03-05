@@ -38,14 +38,17 @@ class TestProvideCall(unittest.TestCase):
 
     def test_missing_provide_arg(self):
         with self.assertRaisesRegexp(ValidationError, "Provided values doesn't met provide requires"):
-            self.lfm.provide_call("//ProvideCallLF//provide1", requires=[("//ProvideCallLF//bar/foo", "test1")])
+            self.lfm.provide_call("//ProvideCallLF//provide1",
+                                  requires=[("//ProvideCallLF//bar/foo", "test1")])
 
     def test_missing_require(self):
         with self.assertRaisesRegexp(ValidationError, "Provided values doesn't met provide requires"):
-            self.lfm.provide_call("//ProvideCallLF//provide1", provide_args=[("//ProvideCallLF//foo1/bar", "test1")])
+            self.lfm.provide_call("//ProvideCallLF//provide1",
+                                  requires=[("//ProvideCallLF//foo1/bar", "test1")])
 
     def test_valid(self):
-        self.assertEqual(self.lfm.provide_call("//ProvideCallLF//provide1", requires=[("//ProvideCallLF//bar/foo", "test1")], provide_args=[("//ProvideCallLF//foo1/bar", "test1")]), (1, 2))
+        self.assertEqual(self.lfm.provide_call("//ProvideCallLF//provide1",
+                                               requires=[("//ProvideCallLF//bar/foo", "test1"), ("//ProvideCallLF//foo1/bar", "test1")]), (1, 2))
 
 
 if __name__ == '__main__':

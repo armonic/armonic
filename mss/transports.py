@@ -59,8 +59,8 @@ class Transport(object):
 
     @expose
     def provide(self, provide_xpath):
-        """ Return provides that match provide_xpath.
-        
+        """Return provides that match provide_xpath.
+
         :rtype: [Provide_primitive]
         """
         return [p.to_primitive() for p in self.lf_manager.provide(provide_xpath)]
@@ -77,32 +77,28 @@ class Transport(object):
     @expose
     def provide_call_requires(self, provide_xpath_uri, path_idx=0):
         """Return Provide required to go to the provide state AND the provide.
-        
+
         :rtype: [Provide_primitive]
         """
         provide_requires = self.lf_manager.provide_call_requires(
-            provide_xpath_uri, 
+            provide_xpath_uri,
             path_idx)
-        provide_args = self.lf_manager.provide(provide_xpath_uri)[0]
-        provide_requires.append(provide_args)
+        try:
+            provide_args = self.lf_manager.provide(provide_xpath_uri)[0]
+            provide_requires.append(provide_args)
+        except IndexError:
+            pass
         return [p.to_primitive() for p in provide_requires]
 
     @expose
-    def provide_call_validate(self, xpath, requires=[], provide_args=[], path_idx=0):
-        result = self.lf_manager.provide_call_validate(xpath, requires, provide_args)
+    def provide_call_validate(self, provide_xpath_uri, requires=[], path_idx=0):
+        result = self.lf_manager.provide_call_validate(provide_xpath_uri, requires, path_idx)
         result['requires'] = [p.to_primitive() for p in result['requires']]
-        result['provide_args'] = [p.to_primitive() for p in result['provide_args']]
         return result
 
     @expose
-    def provide_call(self,
-                     xpath,
-                     requires={},
-                     provide_args={},
-                     path_idx=0):
-        return self.lf_manager.provide_call(xpath,
-                                            requires,
-                                            provide_args)
+    def provide_call(self, xpath, requires=[], path_idx=0):
+        return self.lf_manager.provide_call(xpath, requires, path_idx)
 
     @expose
     def to_dot(self, lf_name, reachable=False):
