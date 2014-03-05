@@ -6,6 +6,7 @@ from mss.lifecycle import State, LifecycleManager, Lifecycle, Transition
 from mss.require import Require
 from mss.variable import VString, Hostname
 from mss.common import DoesNotExist
+from mss.xml_register import XpathMultipleMatch
 
 
 class StateA(State):
@@ -45,6 +46,11 @@ class StateB(State):
 
     @Require('foo7', [VString('bar7')], nargs="?")
     def provide7(self, requires):
+        pass
+
+    @Require('foo8', [VString('bar')])
+    @Require('bar8', [VString('bar')])
+    def provide8(self, requires):
         pass
 
 
@@ -134,6 +140,9 @@ class TestProvideValidation(unittest.TestCase):
             validation['provide_args'].provide7.foo7.variables(2)
         self.assertFalse(validation['errors'])
 
+    def test_variable_path_ambigious(self):
+        with self.assertRaises(XpathMultipleMatch):
+            self.lfm.provide_call_validate("//provide8", requires=[("//foo", "test1")], provide_args=[("//bar", "test1")])
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
