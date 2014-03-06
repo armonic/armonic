@@ -3,8 +3,9 @@ class Remote(object):
         self.provides = []
 
     @classmethod
-    def from_json(cls, dct_json):
+    def from_json(cls, dct_json, child_num):
         this = cls()
+        this.child_num = child_num
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
         this.nargs = dct_json['nargs']
@@ -14,14 +15,20 @@ class Remote(object):
 
 def build_require_from_call_require(dct_json):
     acc = []
-    for p in dct_json['requires']:
+    idx = 0
+    for p in dct_json:
         for require in p['requires']:
             if require['type'] in ['external', 'local']:
-                acc.append(Remote.from_json(require))
+                acc.append(Remote.from_json(require, child_num=idx))
+                idx += 1
     return acc
                 
 
 class Provide(object):
+    """:param child_number: if this Provide is a dependancies, this is
+    the number of this child.
+
+    """
     STEPS = ["manage", 
              "specialize",
              "set_dependancies",
@@ -31,16 +38,23 @@ class Provide(object):
              "call",
              "done"]
 
-    def __init__(self, generic_xpath, lfm, requirer=None):
+    def __init__(self, generic_xpath, lfm, requirer=None, child_num=None):
         self.generic_xpath = generic_xpath
         self.requirer = requirer
         self.lfm = lfm
-
+        
         if requirer is not None:
             self.depth = requirer.depth + 1
+            self.tree_id = []
+            for i in requirer.tree_id:
+                self.tree_id.append(i)
+            self.tree_id.append(child_num)
+                
+            
         else:
             self.depth = 0
-            
+            self.tree_id = [0]
+
         self.ignore = False
         self._step_current = 0
 
@@ -73,8 +87,8 @@ class Provide(object):
            
         return self._children_generator
 
-    def build_child(self, generic_xpath):
-        ret = Provide(generic_xpath=generic_xpath, lfm=self.lfm, requirer=self)
+    def build_child(self, generic_xpath, child_num):
+        ret = Provide(generic_xpath=generic_xpath, lfm=self.lfm, requirer=self, child_num=child_num)
         return ret
 
     def manage(self, boolean):
@@ -118,6 +132,7 @@ def walk(root_scope):
 
             if scope.step == "set_dependancies":
                 scope.build_requires()
+                yield(scope, scope.step, None)
                 scope._next_step()
 
             if scope.step == "call":
@@ -137,9 +152,9 @@ def walk(root_scope):
                         if req.nargs == "*":
                             number = yield (scope, scope.step, req)
                             for i in range(0,number):
-                                req.provides.append(scope.build_child(generic_xpath=req.provide_xpath))
+                                req.provides.append(scope.build_child(generic_xpath=req.provide_xpath, child_num=req.child_num))
                         else:
-                            req.provides.append(scope.build_child(generic_xpath=req.provide_xpath))
+                            req.provides.append(scope.build_child(generic_xpath=req.provide_xpath, child_num=req.child_num))
                         scope._current_require = req
                     except StopIteration:
                         pass

@@ -74,8 +74,9 @@ while True:
         (provide, step, args) = generator.next()
     except StopIteration:
         break
-
-    print "%s [%s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step)
+    if provide.tree_id == None:
+        print provide.generic_xpath
+    print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step.ljust(12), provide.tree_id)
     if provide.step == "manage":
         ret = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
         provide.manage(ret)
@@ -87,6 +88,9 @@ while True:
             provide.specialize(ret)
         else:
             provide.specialize(matches[0])
+
+    elif provide.step == "set_dependancies":
+        pass
 
     elif provide.step == "multiplicity":
         require = args
