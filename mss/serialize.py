@@ -1,10 +1,13 @@
-import mss.lifecycle
+import json
+from functools import wraps
+
+from mss.lifecycle import LifecycleManager
 from mss.common import expose, is_exposed
 
 
-class Transport(object):
+class Serialize(object):
     def __init__(self, *args, **kwargs):
-        self.lf_manager = mss.lifecycle.LifecycleManager(self, *args, **kwargs)
+        self.lf_manager = LifecycleManager(self, *args, **kwargs)
 
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager`
@@ -120,3 +123,18 @@ class Transport(object):
     def to_xml(self, xpath=None):
         """Return the xml representation of agent."""
         return self.lf_manager.to_xml(xpath)
+
+
+class SerializeJSON(object):
+
+    def __init__(self, *args, **kwargs):
+        self.obj = Serialize(*args, **kwargs)
+
+    def __getattr__(self, attrname):
+        attr = getattr(self.obj, attrname)
+        if callable(attr):
+            @wraps(attr)
+            def wrapper(*args, **kwargs):
+                return json.dumps(attr(*args, **kwargs))
+            return wrapper
+        return attr

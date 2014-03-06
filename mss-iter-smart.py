@@ -60,9 +60,9 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 
-
-import mss.transports
-lfm = mss.transports.Transport(modules_dir="mss/modules/",os_type=mss.utils.OsType("Mandriva Business Server"))
+import mss.utils
+from mss.serialize import Serialize
+lfm = Serialize(modules_dir="mss/modules/",os_type=mss.utils.OsType("Mandriva Business Server"))
 
 from mss.client.iter_smart import Provide, walk
 
