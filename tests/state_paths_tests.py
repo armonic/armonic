@@ -1,7 +1,8 @@
 import unittest
+import logging
 
-
-from mss.lifecycle import Lifecycle, State, Transition
+from mss.lifecycle import Lifecycle, State, Transition, MetaState
+from mss.utils import OsTypeDebian, OsTypeMBS, OS_TYPE
 
 
 class a(State):
@@ -30,6 +31,18 @@ class f(State):
 
 class g(State):
     pass
+
+
+class i(State):
+    supported_os_type = [OsTypeDebian()]
+
+
+class j(State):
+    supported_os_type = [OsTypeMBS()]
+
+
+class h(MetaState):
+    implementations = [i, j]
 
 
 class TestPathGeneration(unittest.TestCase):
@@ -125,5 +138,30 @@ class TestPathGeneration(unittest.TestCase):
         self.assertEqual(lf._get_from_state_paths(g(), c()),
                          [])
 
+    def test_metastates(self):
+        """
+             i (debian) ->
+        a ->               h (meta) -> g
+             j (mbs)    ->
+        """
+        class TestLifecycle(Lifecycle):
+            transitions = [
+                Transition(a(), h()),
+                Transition(h(), g())
+            ]
+
+            def __init__(self):
+                self.init(a())
+
+        lf = TestLifecycle()
+        path = lf._get_from_state_paths(a(), g())[0]
+        path = [(state.name, method) for state, method in path]
+        if OS_TYPE.name == "Mandriva Business Server":
+            self.assertEqual(path, [('h.j', 'enter'), ('h', 'enter'), ('g', 'enter')])
+        if OS_TYPE.name == "Debian":
+            self.assertEqual(path, [('h.i', 'enter'), ('h', 'enter'), ('g', 'enter')])
+
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
