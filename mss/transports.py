@@ -59,7 +59,11 @@ class Transport(object):
 
     @expose
     def provide(self, provide_xpath):
-        return self.lf_manager.provide(provide_xpath)
+        """ Return provides that match provide_xpath.
+        
+        :rtype: [Provide_primitive]
+        """
+        return [p.to_primitive() for p in self.lf_manager.provide(provide_xpath)]
 
     @expose
     def provide_call_path(self, provide_xpath):
@@ -71,14 +75,17 @@ class Transport(object):
         return acc
 
     @expose
-    def provide_call_requires(self, xpath, path_idx=0):
-        provides = self.lf_manager.provide_call_requires(xpath, path_idx)
-        return {'xpath': xpath, 'requires': [p.to_primitive() for p in provides]}
-
-    @expose
-    def provide_call_args(self, xpath):
-        provides = self.lf_manager.provide(xpath)
-        return {'xpath': xpath, 'provide_args': [p.to_primitive() for p in provides]}
+    def provide_call_requires(self, provide_xpath_uri, path_idx=0):
+        """Return Provide required to go to the provide state AND the provide.
+        
+        :rtype: [Provide_primitive]
+        """
+        provide_requires = self.lf_manager.provide_call_requires(
+            provide_xpath_uri, 
+            path_idx)
+        provide_args = self.lf_manager.provide(provide_xpath_uri)[0]
+        provide_requires.append(provide_args)
+        return [p.to_primitive() for p in provide_requires]
 
     @expose
     def provide_call_validate(self, xpath, requires=[], provide_args=[], path_idx=0):
