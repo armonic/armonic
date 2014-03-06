@@ -383,16 +383,13 @@ class Lifecycle(XmlRegister):
     """
 
     def __new__(cls):
-        instance = super(Lifecycle, cls).__new__(
-            cls)
-
+        instance = super(Lifecycle, cls).__new__(cls)
         # Update transitions to manage MetaState
         for ms in instance._state_list():
             # For each MetaState ms
             if isinstance(ms, MetaState):
                 transitions = [(s, i) for (s, i) in
                                instance.transitions if i == ms]
-
                 # We create new state suffixed by metaclass name This
                 # permits to create specical path.  If two metastate
                 # has same implementation, we need to create special

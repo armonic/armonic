@@ -144,7 +144,7 @@ class TestPathGeneration(unittest.TestCase):
         a ->               h (meta) -> g
              j (mbs)    ->
         """
-        class TestLifecycle(Lifecycle):
+        class TestLifecycle1(Lifecycle):
             transitions = [
                 Transition(a(), h()),
                 Transition(h(), g())
@@ -153,13 +153,28 @@ class TestPathGeneration(unittest.TestCase):
             def __init__(self):
                 self.init(a())
 
-        lf = TestLifecycle()
+        class TestLifecycle2(Lifecycle):
+            transitions = [
+                Transition(a(), h()),
+                Transition(h(), g())
+            ]
+
+            def __init__(self):
+                self.init(a())
+
+        OS_TYPE.name = "Mandriva Business Server"
+        OS_TYPE.version = "1.0"
+        lf = TestLifecycle1()
         path = lf._get_from_state_paths(a(), g())[0]
         path = [(state.name, method) for state, method in path]
-        if OS_TYPE.name == "Mandriva Business Server":
-            self.assertEqual(path, [('h.j', 'enter'), ('h', 'enter'), ('g', 'enter')])
-        if OS_TYPE.name == "Debian":
-            self.assertEqual(path, [('h.i', 'enter'), ('h', 'enter'), ('g', 'enter')])
+        self.assertEqual(path, [('h.j', 'enter'), ('h', 'enter'), ('g', 'enter')])
+
+        OS_TYPE.name = "debian"
+        OS_TYPE.version = "wheezy"
+        lf = TestLifecycle2()
+        path = lf._get_from_state_paths(a(), g())[0]
+        path = [(state.name, method) for state, method in path]
+        self.assertEqual(path, [('h.i', 'enter'), ('h', 'enter'), ('g', 'enter')])
 
 
 if __name__ == '__main__':
