@@ -21,7 +21,9 @@ class AptGetInstallError(PackageInstallationError):
 
 
 class InstallPackagesUrpm(State):
+    """Install packages on the system using ``urpmi``."""
     packages = []
+    """List of packages to install"""
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
     def _xml_add_properties_tuple(self):
@@ -65,7 +67,9 @@ class InstallPackagesUrpm(State):
 
 
 class InstallPackagesApt(State):
+    """Install packages on the system using ``apt``."""
     packages = []
+    """List of packages to install"""
     supported_os_type = [armonic.utils.OsTypeDebian(), armonic.utils.OsTypeUbuntu()]
 
     def enter(self):

@@ -8,7 +8,7 @@ from armonic.xml_register import XmlRegister
 
 
 class Variable(XmlRegister, ExtraInfoMixin):
-    """A object :py:class:`Variable` is a container for a value used by a
+    """A object :class:`Variable` is a container for a value used by a
     provide. The minimal definition is just the name of the
     variable. It is possbile to specify a default value. Moreover, it
     is also possible to specify an xpath from where the value must be retreive.
@@ -21,13 +21,12 @@ class Variable(XmlRegister, ExtraInfoMixin):
     We can not directly use the value because at init time, it is not
     been filled yet. So, another way is to use a lamdba but in this case
     we must go to a state state per state if we want to know the value
-    before using it. Indeed, if
+    before using it.
 
     :param from_xpath: If this parameter is set, the client can reuse
     a value already used by the varaible targeted by this xpath.
-
+    :type from_xpath: str
     """
-
     type = None
 
     def __init__(self, name, default=None, required=True, from_xpath=None, **extra):
@@ -124,13 +123,11 @@ class Variable(XmlRegister, ExtraInfoMixin):
 
 
 class VList(Variable):
-    """
-    :class:`VList` provide a list container for :class:`Variable` instances.
+    """:class:`VList` provide a list container for :class:`Variable` instances.
 
     Running the validation on :class:`VList` will recursively run the
     validation for all contained instances.
     """
-
     type = 'list'
     _inner_class = None
     _inner_inner_class = None
@@ -188,11 +185,13 @@ class VList(Variable):
 
 
 class VString(Variable):
-    """:param modifier: a format string with one string arg which will be the
-    value."""
+    """Variable of type string
+    """
     type = 'str'
     pattern = None
+    """Validate the value again a regexp"""
     pattern_error = None
+    """Error message if the value doesn't match the regexp"""
 
     def __init__(self, name, default=None, required=True, from_xpath=None, modifier="%s", **extra):
         Variable.__init__(self, name, default, required, from_xpath, **extra)
@@ -228,7 +227,9 @@ class VString(Variable):
 class VInt(Variable):
     type = 'int'
     min_val = None
+    """Minimum value"""
     max_val = None
+    """Maximum value"""
 
     def _validate(self, value=None):
         if not value:
@@ -297,16 +298,28 @@ class VBool(Variable):
 
 
 class Host(VString):
+    """Variable for hosts.
+
+    Validate that the value is an IP or a hostname
+    """
     pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
     pattern_error = 'Incorrect host (pattern: %s)' % pattern
 
 
 class Hostname(VString):
+    """Variable for hostnames.
+
+    Validate that the value is a hostname
+    """
     pattern = '^[a-z]+[a-z0-9]*$'
     pattern_error = 'Incorrect Hostname (pattern: %s)' % pattern
 
 
 class Port(VInt):
+    """Variable for port numbers.
+
+    Validate that the value is between 0 and 65535
+    """
     min_val = 0
     max_val = 65535
 

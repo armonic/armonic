@@ -14,10 +14,12 @@ class ErrorSystemd(Exception):
 
 
 class ActiveWithSystemd(State):
-    """If systemctl returns a code != 0, systemctl status 'service' is
-    called and exception ErrorSystemd is raised"""
+    """Start services using ``systemd``.
+    """
     services = []
+    """List of services to be started when entering the state"""
     supported_os_type = [armonic.utils.OsTypeMBS()]
+    """Supported OS list for this state"""
 
     def __systemctl(self, action):
         for service in self.services:
@@ -63,9 +65,12 @@ class ActiveWithSystemd(State):
 
 
 class ActiveWithSystemV(State):
-    """Lauch the service via SysV."""
+    """Start services using the classic SystemV init system.
+    """
     services = []
+    """List of services to be started when entering the state"""
     supported_os_type = [armonic.utils.OsTypeDebian()]
+    """Supported OS list for this state"""
 
     def enter(self):
         for service in self.services:

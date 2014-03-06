@@ -1,6 +1,6 @@
 """ A :class:`Require` permits to a module developper to specify what type of
 value it must provide to go to a state. They are specified in
-:py:class:`armonic.lifecycle.State`.
+:class:`armonic.lifecycle.State`.
 
 Two subclasses of :class:`Require` can be used if value can be
 provided by a lifecycle provider, namely :class:`RequireLocal` and
@@ -8,14 +8,14 @@ provided by a lifecycle provider, namely :class:`RequireLocal` and
 a provide and what variables it needs and returns. Moreover, it is
 sometime intersting to be able to call several time this provide and
 then, to use several values returned by this provide (see
-:py:module:`armonic.varnish` for instance).
+:module:`armonic.varnish` for instance).
 
 * :class:`RequireLocal` specify a provide call on the same agent instance.
 * :class:`RequireExternal` specify a provide call on an other agent instance.
 
-To provide values to a require, :py:meth:`Require.fill` method has to
+To provide values to a require, :meth:`Require.fill` method has to
 be used. Note that this method is automatically called when a state is
-reached. :py:meth:`Require.fill` take a dict (or a list) of primitive
+reached. :meth:`Require.fill` take a dict (or a list) of primitive
 types to fill values of a require.
 """
 
@@ -69,15 +69,14 @@ class Require(XmlRegister, ExtraInfoMixin):
     are used to specify, verify and store values needed to enter in
     this state.
 
-    To submit variable values of a require, :py:meth:`fill` method
-    must be used. Then, method :py:meth:`validate` can be used to
+    To submit variable values of a require, :meth:`fill` method
+    must be used. Then, method :meth:`validate` can be used to
     validate that values respect constraints defined by the require.
 
     :param name: name of the require
     :param variables: list of variables
-    :param nargs: variables occurences (1 or more, *, ?)
+    :param nargs: variables occurences (1 or more, '*', '?')
     """
-
     def __init__(self, name, variables, nargs='1', **extra):
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
@@ -341,7 +340,7 @@ class RequireLocal(Require):
     :param xpath: the path of the provide to call
     :param provide_args: default values for the provide
     :param provide_ret: provide return value
-    :param nargs: provide occurences (1 or more, *) or is optional (?)
+    :param nargs: provide occurences (1 or more, '*') or is optional ('?')
     """
     def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1", **extra):
         _variables = provide_args + provide_ret
