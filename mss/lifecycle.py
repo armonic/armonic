@@ -681,14 +681,16 @@ class Lifecycle(XmlRegister):
         return [(s, s.provides) for s in self.state_list(reachable=reachable)
                 if s.provides != []]
 
-    def provide_call_requires(self, state_name, path_idx=0):
-        """From a provide_name, return the list of "requires" needed to
-        apply the state which provides provide_name.
+    def provide_call_requires(self, state, path_idx=0):
+        """Get requires to call provide in state.
 
-        Note: this method should be useless. We should use
-        state_goto_requires instead!
+        :param state: the target state
+        :type state: state_name | :class:`State`
+        :param path_idx: the path to use when there is multiple paths
+            to go to the target State
+        :type path_idx: int
         """
-        state = self._get_state_class(state_name)
+        state = self._get_state_class(state)
         if not self._is_state_in_stack(state):
             return self.state_goto_requires(state, path_idx)
         else:
@@ -699,16 +701,15 @@ class Lifecycle(XmlRegister):
         state = self._get_state_class(state_name)
         return state.provide_by_name(provide_name)
 
-    def provide_call_path(self, state_name):
-        """From a provide_name, return the path to the state that
-        provides the "provide".
+    def provide_call_path(self, state):
+        """Get paths to call a provide in state.
 
-        Note: this method should be useless. We should use
-        state_goto_requires instead!
+        :param state: the target state
+        :type state: state_name | :class:`State`
         """
-        state = self._get_state_class(state_name)
+        state = self._get_state_class(state)
         if not self._is_state_in_stack(state):
-            return self.state_goto_path(state)
+            return self.state_goto_path_list(state)
         else:
             return []
 
@@ -1012,10 +1013,11 @@ class LifecycleManager(object):
         return self.lifecycle_by_name(lf_name).state_goto(state_name, requires)
 
     def provide(self, provide_xpath):
-        """Returns all provides that match provide_xpath.
+        """Provides that match provide_xpath.
 
-        :param provide_xpath: A xpath that matches provide
+        :param provide_xpath: xpath to provide
         :type provide_xpath: str
+
         :rtype: [:py:class:`Provide`]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
@@ -1031,11 +1033,14 @@ class LifecycleManager(object):
         return acc
 
     def provide_call_requires(self, provide_xpath_uri, path_idx=0):
-        """From a provide_name, return the list of "requires" needed to
-        apply the state which provides provide_name.
+        """Requires for the provide.
 
-        :param lf_name: The name of the lifecycle object
-        :param provide_name: The name of the provide
+        :param provide_xpath_uri: unique xpath to provide
+        :type provide_xpath_uri: str
+        :param path_idx: the path to use when there is multiple paths
+            to go to the provide
+        :type path_idx: int
+
         :rtype: [:py:class:`Provide`]
         """
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
@@ -1043,14 +1048,12 @@ class LifecycleManager(object):
         return self.lifecycle_by_name(lf_name).provide_call_requires(state_name, path_idx)
 
     def provide_call_path(self, provide_xpath):
-        """From a provide_name, return the path to the state of the lifecycle
-        that provides the "provide".
+        """Paths for provides that matches provide_xpath.
 
-        :param xpath: The xpath of provides
-        :type lf_name: str
-        :param provide_name: The name of the provide
-        :type provide_name: str
-        :rtype: [(:py:class:`Provide`, paths)]
+        :param provide_xpath: xpath to provide
+        :type provide_xpath: str
+
+        :rtype: [(:py:class:`Provide`, [path, ...])]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
         acc = []

@@ -67,11 +67,15 @@ class Transport(object):
 
     @expose
     def provide_call_path(self, provide_xpath):
-        ret = self.lf_manager.provide_call_path(provide_xpath)
+        """Paths for provides that match provide_xpath
+        """
+        provides_paths = self.lf_manager.provide_call_path(provide_xpath)
         acc = []
-        for provide, path in ret:
-            acc.append({'xpath': provide.get_xpath(),
-                        'actions': [(i[0].name, i[1]) for i in path]})
+        for provide, paths in provides_paths:
+            acc.append({
+                'xpath': provide.get_xpath(),
+                'paths': [[(s.name, m) for s, m in path] for path in paths]
+            })
         return acc
 
     @expose
