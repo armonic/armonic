@@ -7,10 +7,19 @@ logger = logging.getLogger(__name__)
 
 class Provide(IterContainer, XmlRegister):
     """Basically, this describes a list of :py:class:`Require`."""
-    def __init__(self, name, require_list=[], flags=None):
+    def __init__(self, name=None, requires=[], flags={}):
         self.name = name
-        IterContainer.__init__(self, *require_list)
+        IterContainer.__init__(self, *requires)
         self.flags = flags  # Should not be in Requires ...
+
+    def __call__(self, func):
+        """
+        Used as a method decorator mark :py:class:`State` methods
+        as provide.
+        """
+        if not hasattr(func, '_requires'):
+            func._requires = []
+        return func
 
     def get_values(self):
         acc = {}
@@ -97,3 +106,14 @@ class Provide(IterContainer, XmlRegister):
         return "<Provide:%s(%s,%s)>" % (self.name,
                                         IterContainer.__repr__(self),
                                         self.flags)
+
+
+class Flags(object):
+
+    def __init__(self, **flags):
+        self.flags = dict(**flags)
+
+    def __call__(self, func):
+        if self.flags:
+            func._flags = self.flags
+        return Provide()(func)

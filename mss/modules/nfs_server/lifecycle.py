@@ -2,8 +2,9 @@ import os
 import os.path
 import logging
 
-from mss.lifecycle import State, Transition, Lifecycle, flags
+from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Require
+from mss.provide import Flags
 from mss.variable import Host, VString
 from mss.states import InstallPackagesUrpm, ActiveWithSystemd
 import mss.utils
@@ -92,7 +93,7 @@ class Installed(InstallPackagesUrpm):
 class Configured(State):
 
     @Require("export", variables=[VString("name"), Host("client")])
-    @flags({'restart': True})
+    @Flags(restart=True)
     def get_dir(self, requires):
         conf = Configuration()
         name = requires.get("export").variables().get("name").value
@@ -115,7 +116,7 @@ class Active(ActiveWithSystemd):
     # Configuration and the n call start provide. But Zephyrus is
     # currently not able to call two provide...
     @Require("export", variables=[VString("name"), Host("client")])
-    @flags({'restart': True})
+    @Flags(restart=True)
     def get_dir(self, requires):
         conf = Configuration()
         name = requires.get("export").variables().get("name").value

@@ -44,7 +44,7 @@ class Configured(State):
                       "event": "listening",
                       "port": self.requires_enter.get('conf').variables().port.value})
 
-    # @provide(requires=Requires([Require([Port("port")])]),
+    # @Provide(requires=Requires([Require([Port("port")])]),
     #          flags={'restart':True})
     def set_port(self, port):
         logger.info("%s.%-10s: provide call: set port with value %s" %

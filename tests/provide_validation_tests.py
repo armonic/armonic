@@ -4,6 +4,7 @@ import logging
 
 from mss.lifecycle import State, LifecycleManager, Lifecycle, Transition
 from mss.require import Require
+from mss.provide import Provide
 from mss.variable import VString, Hostname
 from mss.common import DoesNotExist
 from mss.xml_register import XpathMultipleMatch
@@ -17,6 +18,10 @@ class StateB(State):
 
     @Require('bar', [VString('foo')])
     def enter(self):
+        pass
+
+    @Provide()
+    def provide(self, requires):
         pass
 
     @Require('foo1', [VString('bar')])
@@ -63,6 +68,11 @@ class TestProvideValidation(unittest.TestCase):
 
     def setUp(self):
         self.lfm = LifecycleManager(modules_dir=os.getcwd(), autoload=True, include_modules="")
+
+    def test_no_require_provide(self):
+        validation = self.lfm.provide_call_validate("//ProvideValidationLF//provide",
+                                                    requires=[("//ProvideValidationLF//bar/foo", "test1")])
+        self.assertFalse(validation['errors'])
 
     def test_missing_provide_arg(self):
         validation = self.lfm.provide_call_validate("//ProvideValidationLF//provide1",

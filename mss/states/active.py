@@ -1,6 +1,7 @@
 import logging
 
-from mss.lifecycle import State, provide
+from mss.lifecycle import State
+from mss.provide import Provide
 from mss.process import ProcessThread
 import mss.utils
 
@@ -56,7 +57,7 @@ class ActiveWithSystemd(State):
             self.__systemctl("reload")
             logger.info("Restarting services '%s': done." % self.services)
 
-    @provide()
+    @Provide()
     def start(self, requires):
         logger.info("Start (via provide) services '%s': done." % self.services)
 
@@ -100,7 +101,7 @@ class ActiveWithSystemV(State):
                 logger.info("%s.%-10s: /etc/init.d/%s reload" %
                             (self.lf_name, self.name, service))
 
-    @provide()
+    @Provide()
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))

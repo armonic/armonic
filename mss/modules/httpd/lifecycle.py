@@ -1,5 +1,6 @@
-from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Require
+from mss.provide import Provide
 from mss.variable import VString, Port
 from mss.states import InstallPackagesUrpm, ActiveWithSystemd
 import configuration
@@ -48,7 +49,7 @@ class Configured(State):
         """Set listen and vhost port"""
         self.conf.setPort(requires.get('conf').variables().port.value)
 
-    @provide()
+    @Provide()
     def get_port(self, requires):
         """Set listen and vhost port"""
         return {"port": self.conf.port.value}

@@ -1,7 +1,8 @@
 import logging
 
-from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Require, RequireLocal, RequireExternal
+from mss.provide import Provide
 from mss.variable import VString, Password
 from mss.states import InitialState, CopyTemplates, InstallPackagesUrpm, InstallPackagesApt
 import configuration
@@ -70,11 +71,11 @@ class Active(State):
     def leave(self):
         logger.debug("you should call 'apache.leaveActiveState(%s)'" % self.httpdDocumentRoot)
 
-    @provide()
+    @Provide()
     def get_website(self, requires):
         return
 
-    @provide()
+    @Provide()
     def get_network_port(self):
         """Return the httpd listening port for this wordpress installation"""
         return "Call Httpd.getPortByDocumentRoot('%s')" % self.httpdDocumentRoot
@@ -94,7 +95,7 @@ class ActiveWithNfs(State):
     def enter(self):
         pass
 
-    @provide()
+    @Provide()
     def get_website(self, requires):
         pass
 
