@@ -173,12 +173,12 @@ class StateNotExist(Exception):
 
 
 class State(XmlRegister):
-    """A state describe a step during service :class:`Lifecycle`.
+    """A State describes a step during the life of a :class:`Lifecycle`.
 
-    It is possible to specify some requires. A require is a :class:`Require`
-    which represents arguments required to entry in this state.
+    Each State can have some Requires. :class:`Require` objects
+    defines the arguments required to enter the State.
 
-    To define a new state, it is necessary to redefine methods:
+    To define a new State, it is necessary to redefine methods:
      :py:meth:`State.entry`
      :py:meth:`State.leave`
      :py:meth:`State.cross`
@@ -355,38 +355,31 @@ class MetaState(State):
 
 
 class Lifecycle(XmlRegister):
-    """The lifecycle of a service is represented by transitions,
-    specified by class attribute :py:meth:`Lyfecycle.transition`,
-    between :class:`State` classes. Moreover, this class remember
-    which states have been applied in a stack, in order to be able
-    able to unapply them.
+    """The Lifecycle of a service or application is represented
+    by transitions between :class:`State` classes.
+    The transitions list is specified in the class attribute
+    :attr:`Lifecycle.transition`.
 
-    Main operations on a lifecycle are:
+    Main operations on a Lifecycle are:
 
-    * :py:meth:`Lifecycle.state_list` to list available states,
-    * :py:meth:`Lifecycle.state_current` to know the current state,
-    * :py:meth:`Lifecycle.state_goto` to go from current state to another
-                state.
-    * :py:meth:`Lifecycle.provide_call` to call a provide.
+    * :meth:`Lifecycle.state_list` to list available states,
+    * :meth:`Lifecycle.state_current` to know the current state,
+    * :meth:`Lifecycle.state_goto` to go from current state to another state.
+    * :meth:`Lifecycle.provide_call` to call a provide.
 
-    All :class:`Lifecycle` method arguments 'state' can be a
-    :class:`State` subclass or a string that describes this states
-    (see :py:meth:`State.name`).
-
-    The stack is considered by construction to be correct:
-    - It doesn't contains two same states;
-
+    States applied are recorded in a stack to be able to unapply them.
+    The State stack does not contain the same State twice.
     """
     _initialized = False
 
     os_type = mss.utils.OS_TYPE
-    """To specify the current os_type. By default, os type is
-    automatically discovered but it is possible to overlap this
+    """To specify the current OS type. By default, OS type is
+    automatically discovered but it is possible to override this
     attribute to manually specify one.
     """
     abstract = False
-    """If the Lifecycle is abstract it won't be load in the LifecycleManager
-    and ine the XML registery.
+    """If the Lifecycle is abstract it won't be loaded in the LifecycleManager
+    and in the XML registery.
     """
 
     def __new__(cls):
@@ -464,8 +457,10 @@ class Lifecycle(XmlRegister):
     def state_list(self, reachable=False):
         """To get all available states.
 
-        :parama reachable: list reachable states from the current state.
-        :rtype: list of states.
+        :param reachable: list only reachable states from the current state
+        :type reachable: bool
+
+        :rtype: [:class:`State`]
         """
         states = self.__class__._state_list()
         if reachable:
@@ -478,7 +473,10 @@ class Lifecycle(XmlRegister):
         return states
 
     def state_current(self):
-        """To get current state."""
+        """Get current state.
+
+        :rtype: :class:`State`
+        """
         if self._stack == []:
             return None
         else:
@@ -558,32 +556,6 @@ class Lifecycle(XmlRegister):
         logger.debug("Found paths:\n%s" % pprint.pformat(paths))
         return paths
 
-    def state_goto(self, state, requires=[], path_index=0):
-        """From current state, go to state. To know 'requires', call
-        :py:meth:`Lifecycle.state_goto_requires`.  :py:meth:`State.entry` or
-        :py:meth:`State.leave` of intermediate states are called
-        depending of the presence of states in stack.
-
-        :param requires: A dict of requires name and values. Value is a list of
-        dict of variable_name:value ::
-
-            {req1: [{variable1: value1, variable2: value2,...},
-            {variable1: value3, variable2: value4,...},...], req2: ...}
-
-        :rtype: list of (state,["entry"|"leave"])
-
-        """
-        logger.debug("Goto state %s using path %i" % (state, path_index))
-        path = self.state_goto_path(state, path_index=path_index)
-        for (state, method) in path:
-            if method == "entry":
-                self._push_state(state, requires)
-            elif method == "leave":
-                if self.state_current() == state:
-                    self._pop_state()
-                else:
-                    raise StateNotApply(self.state_current())
-
     def _get_state_class(self, state):
         """From a string state name or a state class, try to find the state
         object.
@@ -605,47 +577,90 @@ class Lifecycle(XmlRegister):
         raise StateNotExist("%s is not a valid state" % state)
 
     def state_by_name(self, name):
-        """Get a state from its name
+        """Get state from its name
 
         :param name: the name of a state
-        :rtype: State or None (if state doesn't exist)
-        """
-        for s in self.state_list():
-            if s.name == name:
-                return s
+        :type name: str
 
-    def has_state(self, state):
-        """To know if state_name is a state of self."""
-        self._get_state_class(state)
-        return True
+        :rtype: :class:`State`
+        """
+        for state in self.state_list():
+            if state.name == name:
+                return state
+        raise DoesNotExist("State %s doesn't exists" % name)
+
+    def state_goto(self, state, requires=[], path_index=0):
+        """Go to state.
+
+        :param state: the target state
+        :type state: state_name | :class:`State`
+        :param requires: variable values to fill the requires ::
+
+            ("//xpath/to/variable", {0: value}),
+            ("//xpath/to/variable", {0: value})
+
+        :type requires: list of tuples
+        :param path_index: the path to use when there is multiple paths
+            to go to the target State
+        :type path_index: int
+
+        :rtype: None
+        """
+        logger.debug("Goto state %s using path %i" % (state, path_index))
+        path = self.state_goto_path(state, path_index=path_index)
+        for (state, method) in path:
+            if method == "entry":
+                self._push_state(state, requires)
+            elif method == "leave":
+                if self.state_current() == state:
+                    self._pop_state()
+                else:
+                    raise StateNotApply(self.state_current())
 
     def state_goto_path_list(self, state):
-        """From the current state return the list of paths to go to the state.
+        """Get the list of paths to go to State.
+
+        :param state: the target state
+        :type state: state_name | :class:`State`
+
+        :rtype: [[(:class:`State`, method), (:class:`State`, method), ...], ...]
         """
         state = self._get_state_class(state)
         logger.debug("Get paths to go to state %s" % state)
         return self._get_from_state_paths(self.state_current(), state)
 
-    def state_goto_path(self, state, fct=None, path_index=0):
-        """From the current state, return the path to goto the state.
-        If fct is not None, fct is applied on each state on the path.
-        state arg is preprocessed by _get_state_class method. It then can be a
-        str or a class.
+    def state_goto_path(self, state, func=None, path_index=0):
+        """Get one path to go to State.
+
+        :param state: the target state
+        :type state: state_name | :class:`State`
+        :param func:  function to apply on all States of the path
+        :type func: function
+        :param path_index: the path to use when there is multiple paths
+            to go to the target State
+        :type path_index: int
+
+        :rtype: [(:class:`State`, method), (:class:`State`, method), ...]
         """
         try:
             path = self.state_goto_path_list(state)[path_index]
         except IndexError:
             raise StateNotApply()
-        if fct is not None:
-            for state in path:
-                fct(state[0])
+        if func is not None:
+            for state, method in path:
+                func(state)
         return path
 
     def state_goto_requires(self, state, path_index=0):
-        """Return all requires needed to go from current state to state.
-        :param state: The state where we want to goto
-        :type state: a state name or a state class
-        :rtype: [Provide]
+        """Get Requires to go to State.
+
+        :param state: the target state
+        :type state: state_name | :class:`State`
+        :param path_index: the path to use when there is multiple paths
+            to go to the target State
+        :type path_index: int
+
+        :rtype: [:class:`Provide`]
         """
         acc = IterContainer()
         for s in self.state_goto_path(state, path_index=path_index):
@@ -655,16 +670,16 @@ class Lifecycle(XmlRegister):
                     acc.append(r)
         return acc
 
-    def provide_list_in_stack(self):
-        """:rtype: the list of states and provides for the current stack."""
-        return [(s, s.provides) for s in
-                self._stack if s.provides != []]
+    def provide_list(self, reachable=False):
+        """Get all available provides
 
-    def provide_list(self):
-        """Return the list of all tuple which contain states and provides.
-        :rtype: [(State, [Provide])]"""
-        return [(s, s.provides) for s in
-                self.state_list() if s.provides != []]
+        :param reachable: list only reachable provides from the current state
+        :type reachable: bool
+
+        :rtype: [(:class:`State`, [:class:`Provide`])]
+        """
+        return [(s, s.provides) for s in self.state_list(reachable=reachable)
+                if s.provides != []]
 
     def provide_call_requires(self, state_name):
         """From a provide_name, return the list of "requires" needed to
@@ -697,30 +712,33 @@ class Lifecycle(XmlRegister):
         else:
             return []
 
-    def provide_call(self, state_name, provide_name, requires=[], provide_args=[]):
-        """Call a provide and go to provider state if needed.
+    def provide_call(self, state, provide_name, requires=[], provide_args=[]):
+        """Go to provide state and call provide.
 
-        :param provide_name: The name (simple or fully qualified) of the
-            provide
-        :param requires: Requires needed to reach the state that provides this
-            provide.
-                         See :py:meth:`Lifecycle.state_goto` for more
-                         informations
-        :param provide_args: Args needed by this provide
+        :param state: the target state
+        :type state: state_name | :class:`State`
+        :param provide_name: name of the provide
+        :type provide_name: str
+        :param requires: variable values to fill the requires ::
+
+            ("//xpath/to/variable", {0: value}),
+            ("//xpath/to/variable", {0: value})
+
+        :type requires: list of tuples
+        :param provide_args: sames as requires
 
         """
-        state = self._get_state_class(state_name)
+        state = self._get_state_class(state)
         # To be sure that the provide exists
         state.provide_by_name(provide_name)
         if not self._is_state_in_stack(state):
             self.state_goto(state, requires)
-        return self.provide_call_in_stack(state, provide_name, provide_args)
+        return self._provide_call_in_stack(state, provide_name, provide_args)
 
-    def provide_call_in_stack(self, state_name, provide_name, provide_args=[]):
+    def _provide_call_in_stack(self, state, provide_name, provide_args=[]):
         """Call a provide by name. State which provides must be in the stack.
-        TODO: Use full qualified name when a provide is ambigous: State.provide
         """
-        state = self._get_state_class(state_name)
+        state = self._get_state_class(state)
         sidx = self._stack.index(state)
         provide = state.provide_by_name(provide_name)
         sfct = state.__getattribute__(provide.name)

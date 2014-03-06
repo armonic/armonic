@@ -33,7 +33,6 @@ How it works on a example::
 """
 
 from mss.common import ValidationError
-from mss.variable import VariableNotSet
 from mss.client.sock import ClientSocket
 import mss.lifecycle
 
@@ -133,8 +132,6 @@ class RequireSmart(object):
         while self.handle_validation_error():
             try:
                 self.validate_one_set(self.factory_variable(), values)
-            except VariableNotSet as e:
-                values = self.on_require_not_filled_error(e.variable_name, values)
             except ValidationError as e:
                 logger.debug(
                     "Variable %s has not been validated." % e.variable_name)

@@ -4,12 +4,12 @@ Clients
 
 Socket client
 -------------
-.. automodule:: mss.client_socket
-   :members: 
+.. automodule:: mss.client.sock
+   :members:
 
 Smart client
 ------------
 .. automodule:: mss.client.smart
-   :members: 
+   :members:
 
 
