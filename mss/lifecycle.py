@@ -392,14 +392,14 @@ class Lifecycle(XmlRegister):
                 # Ignore already done MetaState transitions
                 transitions = [(s, i) for (s, i) in
                                instance.transitions if i == ms and not "%s." % i.name in s.name]
+                if not transitions:
+                    continue
                 # We create new state suffixed by metaclass name This
                 # permits to create specical path.  If two metastate
                 # has same implementation, we need to create special
                 # implementations for each metastate.
-                created_states = [type(
-                    '%s.%s' % (ms.__class__.__name__, s.__name__),
-                    (s,),
-                    {}) for s in ms.implementations]
+                created_states = [type('%s.%s' % (ms.__class__.__name__, s.__name__), (s,), {})
+                                  for s in ms.implementations]
                 for s in created_states:
                     logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name))
                 # For each transtion to MetaState ms
