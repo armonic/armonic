@@ -76,7 +76,9 @@ OS_TYPE = find_distribution()
 def ethernet_ifs():
     ifs = []
     for interface in netifaces.interfaces():
-        if interface.startswith("eth"):
+        # support new ethernet device naming style
+        # http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+        if interface.startswith(("eth", "en")):
             if_detail = netifaces.ifaddresses(interface)
             # check if interface is configured
             if netifaces.AF_INET in if_detail:
