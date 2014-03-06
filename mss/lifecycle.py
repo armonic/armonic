@@ -995,7 +995,7 @@ class LifecycleManager(object):
         return self.lifecycle_by_name(lf_name).state_goto(state_name, requires)
 
     def provide(self, provide_xpath):
-        """Returns all provides of this lf_name.
+        """Returns all provides that match provide_xpath.
 
         :param provide_xpath: A xpath that matches provide
         :type provide_xpath: str
