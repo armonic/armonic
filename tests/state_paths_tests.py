@@ -144,16 +144,7 @@ class TestPathGeneration(unittest.TestCase):
         a ->               h (meta) -> g
              j (mbs)    ->
         """
-        class TestLifecycle1(Lifecycle):
-            transitions = [
-                Transition(a(), h()),
-                Transition(h(), g())
-            ]
-
-            def __init__(self):
-                self.init(a())
-
-        class TestLifecycle2(Lifecycle):
+        class TestLifecycle(Lifecycle):
             transitions = [
                 Transition(a(), h()),
                 Transition(h(), g())
@@ -164,14 +155,14 @@ class TestPathGeneration(unittest.TestCase):
 
         OS_TYPE.name = "Mandriva Business Server"
         OS_TYPE.version = "1.0"
-        lf = TestLifecycle1()
+        lf = TestLifecycle()
         path = lf._get_from_state_paths(a(), g())[0]
         path = [(state.name, method) for state, method in path]
         self.assertEqual(path, [('h.j', 'enter'), ('h', 'enter'), ('g', 'enter')])
 
         OS_TYPE.name = "debian"
         OS_TYPE.version = "wheezy"
-        lf = TestLifecycle2()
+        lf = TestLifecycle()
         path = lf._get_from_state_paths(a(), g())[0]
         path = [(state.name, method) for state, method in path]
         self.assertEqual(path, [('h.i', 'enter'), ('h', 'enter'), ('g', 'enter')])
