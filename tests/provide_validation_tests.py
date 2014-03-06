@@ -55,11 +55,8 @@ class StateB(State):
 
 
 class ProvideValidationLF(Lifecycle):
+    initial_state = StateA()
     transitions = [Transition(StateA(), StateB())]
-
-    def __init__(self):
-        Lifecycle.__init__(self)
-        self.init(StateA(), {})
 
 
 class TestProvideValidation(unittest.TestCase):

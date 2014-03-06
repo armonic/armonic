@@ -24,11 +24,8 @@ class StateB(State):
 
 
 class ProvideCallLF(Lifecycle):
+    initial_state = StateA()
     transitions = [Transition(StateA(), StateB())]
-
-    def __init__(self):
-        Lifecycle.__init__(self)
-        self.init(StateA(), {})
 
 
 class TestProvideCall(unittest.TestCase):

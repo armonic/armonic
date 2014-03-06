@@ -381,6 +381,8 @@ class Lifecycle(XmlRegister):
     """If the Lifecycle is abstract it won't be loaded in the LifecycleManager
     and in the XML registery.
     """
+    initial_state = None
+    """The initial state for this Lifecycle"""
 
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(cls)
@@ -418,7 +420,11 @@ class Lifecycle(XmlRegister):
 
         return instance
 
-    def init(self, state, requires={}):
+    def __init__(self):
+        if self.initial_state:
+            self.init(self.initial_state)
+
+    def init(self, state, requires=[]):
         """If it is not already initialized, push state in stack."""
         self._stack = []
         if not self._initialized:

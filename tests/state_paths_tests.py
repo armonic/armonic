@@ -52,14 +52,12 @@ class TestPathGeneration(unittest.TestCase):
         a -> b -> c -> d
         """
         class TestLifecycle(Lifecycle):
+            initial_state = a()
             transitions = [
                 Transition(a(), b()),
                 Transition(b(), c()),
                 Transition(c(), d())
             ]
-
-            def __init__(self):
-                self.init(a(), {})
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), d()),
@@ -82,6 +80,7 @@ class TestPathGeneration(unittest.TestCase):
              c -> d ->
         """
         class TestLifecycle(Lifecycle):
+            initial_state = a()
             transitions = [
                 Transition(a(), b()),
                 Transition(a(), c()),
@@ -90,9 +89,6 @@ class TestPathGeneration(unittest.TestCase):
                 Transition(d(), e()),
                 Transition(e(), f())
             ]
-
-            def __init__(self):
-                self.init(a(), {})
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
@@ -115,6 +111,7 @@ class TestPathGeneration(unittest.TestCase):
              c ->        -> g
         """
         class TestLifecycle(Lifecycle):
+            initial_state = a()
             transitions = [
                 Transition(a(), b()),
                 Transition(c(), d()),
@@ -123,9 +120,6 @@ class TestPathGeneration(unittest.TestCase):
                 Transition(e(), f()),
                 Transition(e(), g())
             ]
-
-            def __init__(self):
-                self.init(a(), {})
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
@@ -145,13 +139,11 @@ class TestPathGeneration(unittest.TestCase):
              j (mbs)    ->
         """
         class TestLifecycle(Lifecycle):
+            initial_state = a()
             transitions = [
                 Transition(a(), h()),
                 Transition(h(), g())
             ]
-
-            def __init__(self):
-                self.init(a())
 
         OS_TYPE.name = "Mandriva Business Server"
         OS_TYPE.version = "1.0"
