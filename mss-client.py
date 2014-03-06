@@ -146,8 +146,10 @@ def cmd_provide(args):
         ret = client.call('provide_call_path', args.xpath)
         for r in ret:
             print r['xpath']
-            for a in r['actions']:
-                print "  ", "%5s " % a[1], a[0]
+            for i, p in enumerate(r['paths']):
+                print "path %i" % i
+                for a in p:
+                    print "  ", "%5s " % a[1], a[0]
         return
     elif args.args:
         ret=client.call('provide_call_args', args.xpath)
@@ -222,7 +224,7 @@ parser = argparse.ArgumentParser(
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
-parser.add_argument('--host','-H', type=str, 
+parser.add_argument('--host','-H', type=str,
                     default=os.environ.get('MSS_AGENT_HOST', "localhost")
                     ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
 parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
@@ -234,8 +236,8 @@ parser_status = subparsers.add_parser('status', help='Show status of agent.')
 parser_status.set_defaults(func=cmd_status)
 
 parser_lifecycle = subparsers.add_parser('lifecycle', help='List lifecycles.')
-parser_lifecycle.add_argument("xpath" , type=str, 
-                          default="//*[@ressource='lifecycle']", nargs="?", 
+parser_lifecycle.add_argument("xpath" , type=str,
+                          default="//*[@ressource='lifecycle']", nargs="?",
                           help="A xpath. Default is '%(default)s' which matches all lifecycles.")
 parser_lifecycle.add_argument('--long-description','-l',action='store_true',help="Show long description.")
 parser_lifecycle.set_defaults(func=cmd_lifecycle)
@@ -246,8 +248,8 @@ parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associa
 parser_xpath.set_defaults(func=cmd_xpath)
 
 parser_state = subparsers.add_parser('state', help='List states.')
-parser_state.add_argument("xpath" , type=str, 
-                          default="//*[@ressource='state']", nargs="?", 
+parser_state.add_argument("xpath" , type=str,
+                          default="//*[@ressource='state']", nargs="?",
                           help="A xpath. Default is '%(default)s' which matches all states.")
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description.")
 parser_state.add_argument('--path','-p',action='store_true',help="Show state path to go to these states.")
