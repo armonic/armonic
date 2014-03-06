@@ -27,13 +27,13 @@ class Configured(State):
     - disable skipnetworking"""
     @Require('conf', [Port("port", default=3306)])
     @Require('augeas', [VString("root", default="/")])
-    def enter(self):
+    def enter(self, requires):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s" %
-                    (self.lf_name, self.name, self.requires_enter))
+                    (self.lf_name, self.name, requires))
         self.config = configuration.Mysql(autoload=True,
-                                          augeas_root=self.requires_enter.get('augeas').variables().root.value)
-        self.config.port.set(str(self.requires_enter.get('conf').variables().port.value))
+                                          augeas_root=requires.augeas.variables().root.value)
+        self.config.port.set(str(requires.conf.variables().port.value))
 #        self.config.server_id.set("1")
         try:
             self.config.skipNetworking.rm()
@@ -42,11 +42,11 @@ class Configured(State):
         self.config.save()
         logger.event({"lifecycle": self.lf_name,
                       "event": "listening",
-                      "port": self.requires_enter.get('conf').variables().port.value})
+                      "port": requires.conf.variables().port.value})
 
     # @Provide(requires=Requires([Require([Port("port")])]),
     #          flags={'restart':True})
-    def set_port(self, port):
+    def set_port(self):
         logger.info("%s.%-10s: provide call: set port with value %s" %
                     (self.lf_name, self.name, port))
         self.config.port.set(port)
@@ -61,8 +61,8 @@ class SetRootPassword(State):
     """Set initial Mysql root password"""
 
     @Require('auth', [VString("password", default="root")])
-    def enter(self):
-        pwd = self.requires_enter.get('auth').variables().get('password').value  # password.value
+    def enter(self, requires):
+        pwd = self.requires.auth.variables().password.value  # password.value
         thread_mysqld = ProcessThread("mysql",
                                       None,
                                       "test",
@@ -113,7 +113,7 @@ class ResetRootPassword(State):
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     @Require("auth", [VString("password", default="root")])
-    def enter(self):
+    def enter(self, requires):
         logger.debug("%s.%s changing mysql root password ...",
                      self.lf_name,
                      self.name)
@@ -145,10 +145,10 @@ class ResetRootPassword(State):
                         self.lf_name,
                         self.name,
                         i)
-            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s" % self.requires_enter.get("auth").variables().password.value, None, "test",
+            thread_mysql = ProcessThread("mysql -u root CHANGE_PWD to %s" % requires.auth.variables().password.value, None, "test",
                                          ["/usr/bin/mysql",
                                           "-u", "root",
-                                          "-e", "use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;" % self.requires_enter.get("auth").variables().password.value
+                                          "-e", "use mysql;update user set password=PASSWORD('%s') where User='root';flush privileges;" % requires.auth.variables().password.value
                                           ])
             thread_mysql.start()
             thread_mysql.join()
@@ -164,7 +164,7 @@ class ResetRootPassword(State):
             logger.info("%s.%s mysql root password is now '%s'",
                         self.lf_name,
                         self.name,
-                        self.requires_enter.get("auth").variables().password.value)
+                        requires.auth.variables().password.value)
         else:
             logger.info("%s.%s mysql root password changing fail",
                         self.lf_name,
@@ -182,7 +182,7 @@ class ActiveOnMBS(ActiveWithSystemd):
 class EnsureMysqlIsStopped(ActiveWithSystemd):
     services = ["mysqld"]
 
-    def enter(self):
+    def enter(self, requires):
         ActiveWithSystemd.leave(self)
 
 
@@ -241,8 +241,9 @@ class Active(MetaState):
         cur.execute("DROP DATABASE %s;" % database)
         return True
 
-    # @Require([VString('user'), VString('password'), VString('database')])
-    def addUser(self, user, password, newUser, userPassword):
+    @Require('auth', [VString('user'), VString('password')])
+    @Require('user', [VString('username'), VString('userpassword')])
+    def addUser(self, requires):
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;" % (newUser, userPassword)
@@ -260,10 +261,10 @@ class ConfiguredAsSlave(State):
     """Configure Mysql as a slave"""
     @Require('conf', [VInt('server_id', default=2)])
     @Require('augeas', [VString("root", default="/")])
-    def enter(self):
+    def enter(self, requires):
         self.config = configuration.Mysql(autoload=True,
-                                          augeas_root=self.requires_enter.get('augeas').variables().root.value)
-        self.config.server_id.set(str(self.requires_enter.get('conf').variables().server_id.value))
+                                          augeas_root=requires.augeas.variables().root.value)
+        self.config.server_id.set(str(requires.conf.variables().server_id.value))
         self.config.log_bin.set("mysql-bin")
         self.config.save()
 
@@ -292,16 +293,16 @@ class ActiveAsSlave(MetaState):
     @RequireExternal('auth', xpath='//Mysql//add_slave_auth',
                      provide_args=[VString('user', default='replication'),
                                    VString('password', default='repl_pwd')])
-    def enter(self):
+    def enter(self, requires):
         root_user = "root"
-        root_password = self.requires_enter.get('auth_root').variables().get('root_password').value
+        root_password = requires.auth_root.variables().root_password.value
         # We are using VUrl object retrieve the dump.
-        filePath = self.requires_enter.get('dump').variables[0].fileUrl.get_file()
-        logFile = self.requires_enter.get('dump').variables[0].logFile.value
-        logPosition = self.requires_enter.get('dump').variables[0].logPosition.value
-        slave_user = self.requires_enter.get('auth').variables[0].get('user').value
-        slave_password = self.requires_enter.get('auth').variables[0].get('password').value
-        master_host = self.requires_enter.get('auth').variables[0].get('host').value
+        filePath = requires.dump.variables().fileUrl.get_file()
+        logFile = requires.dump.variables().logFile.value
+        logPosition = requires.dump.variables().logPosition.value
+        slave_user = requires.auth.variables().user.value
+        slave_password = requires.auth.variables().password.value
+        master_host = requires.auth.variables().host.value
 
         logger.debug("%s %s %s", filePath, logFile, logPosition)
         thread = ProcessThread("mysql", None, "test",
@@ -342,11 +343,10 @@ class ConfiguredAsMaster(State):
     """Expose all databases to slave except mysql and informationshema."""
     @Require('conf', [VInt('server_id', default=1)])
     @Require('augeas', [VString("root", default="/")])
-    def enter(self):
+    def enter(self, requires):
         self.config = configuration.Mysql(autoload=True,
-                                          augeas_root=self.requires_enter.get('augeas').variables().root.value)
-        self.config.server_id.set(str(
-            self.requires_enter.get('conf').variables().server_id.value))
+                                          augeas_root=requires.augeas.variables().root.value)
+        self.config.server_id.set(str(requires.conf.variables().server_id.value))
         self.config.log_bin.set("mysql-bin")
 
         # Management of bin_log_ignore directive.

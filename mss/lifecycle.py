@@ -244,7 +244,10 @@ class State(XmlRegister):
         """
         self.requires_enter.fill(requires)
         self.requires_enter.validate()
-        return self.enter()
+        if self.requires_enter:
+            return self.enter(self.requires_enter)
+        else:
+            return self.enter()
 
     def enter(self):
         """Called when a state is applied"""
@@ -730,7 +733,10 @@ class Lifecycle(XmlRegister):
         sfct = state.__getattribute__(provide.name)
         provide.fill(requires)
         provide.validate()
-        ret = sfct(provide)
+        if provide:
+            ret = sfct(provide)
+        else:
+            ret = sfct()
         logger.debug("Provide %s returns values %s" % (
             provide.name, ret))
         for i in self._stack[sidx:]:

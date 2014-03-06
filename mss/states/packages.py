@@ -68,7 +68,7 @@ class InstallPackagesApt(State):
     packages = []
     supported_os_type = [mss.utils.OsTypeDebian(), mss.utils.OsTypeUbuntu()]
 
-    def enter(self, requires={}):
+    def enter(self):
         pkgs = " ".join(self.packages)
         logger.info("%s.%s apt-get install %s ...",
                     self.lf_name,

@@ -8,7 +8,7 @@ from mss.provide import Flags
 class StateA(State):
 
     @Flags(reload=True)
-    def provideFlag(self, requires):
+    def provideFlag(self):
         return True
 
     @Flags(reload=True, foo="bar")

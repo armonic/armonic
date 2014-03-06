@@ -35,11 +35,11 @@ class Configured(State):
                                             default="wordpress_pwd"),
                                    VString("database",
                                            default="wordpress_db")])
-    def enter(self):
+    def enter(self, requires):
         """set value in wp-config.php"""
-        self.conf = configuration.Wordpress(autoload=True, augeas_root=self.requires_enter.get('augeas').variables().root.value)
-        print self.requires_enter.get('db').variables()
-        tmp = self.requires_enter.get('db').variables()
+        self.conf = configuration.Wordpress(autoload=True, augeas_root=requires.augeas.variables().root.value)
+        print requires.db.variables()
+        tmp = requires.db.variables()
         logger.info("Editing wordpress configuration file with db:%s user:%s pwd:%s host:%s" % (
             tmp.database.value, tmp.user.value, tmp.password.value, tmp.host.value))
 
@@ -64,15 +64,15 @@ class Active(State):
                   provide_args=[VString("httpdDocumentRoot",
                                 default="/var/www/wordpress")])
     @RequireLocal("http_start", "//Httpd//start")
-    def enter(self):
-        self.httpdDocumentRoot = self.requires_enter.get('http_document').variables().httpdDocumentRoot.value
+    def enter(self, requires):
+        self.httpdDocumentRoot = requires.http_document.variables().httpdDocumentRoot.value
         logger.debug("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s" % (self.lf_name, self.name, self.httpdDocumentRoot))
 
     def leave(self):
         logger.debug("you should call 'apache.leaveActiveState(%s)'" % self.httpdDocumentRoot)
 
     @Provide()
-    def get_website(self, requires):
+    def get_website(self):
         return
 
     @Provide()
@@ -92,11 +92,11 @@ class ActiveWithNfs(State):
                 from_xpath="Wordpress/Active/enter/http_document/httpdDocumentRoot",
                 modifier="%s/wp-content"),
             VString("name", default="wordpress")])
-    def enter(self):
+    def enter(self, requires):
         pass
 
     @Provide()
-    def get_website(self, requires):
+    def get_website(self):
         pass
 
 

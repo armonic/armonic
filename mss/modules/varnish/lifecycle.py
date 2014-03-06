@@ -24,15 +24,15 @@ class Configured(RunScript):
 
     @Require('conf', [Port("port", default=80)])
     @RequireExternal('backend', "//get_website", nargs='*')
-    def enter(self):
+    def enter(self, requires):
         RunScript.enter(self)
-        for v in self.requires_enter.get('backend').variables(all=True):
+        for v in requires.backend.variables(all=True):
             logger.event({"lifecycle": self.lf_name,
                           "event": "binding",
                           "target": v.host.value})
         logger.event({"lifecycle": self.lf_name,
                       "event": "listening",
-                      "port": self.requires_enter.conf.variables().port.value})
+                      "port": requires.conf.variables().port.value})
 
 
 class Active(ActiveWithSystemd):

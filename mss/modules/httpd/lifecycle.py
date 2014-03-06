@@ -20,11 +20,11 @@ class Configured(State):
 
     @Require('conf', [Port("port", default=8080)])
     @Require('augeas', [VString("root", default="/")])
-    def enter(self):
+    def enter(self, requires):
         """Set listen and vhost port"""
-        port = self.requires_enter.get('conf').variables().port.value
+        port = requires.conf.variables().port.value
         logger.info("Set httpd listening port to %s" % port)
-        augeas = self.requires_enter.get('augeas').variables().root.value
+        augeas = requires.augeas.variables().root.value
 
         self.conf = configuration.Apache(autoload=True, augeas_root=augeas)
         self.conf.setPort(str(port))
@@ -47,10 +47,10 @@ class Configured(State):
     # flags={'restart':True})
     def set_port(self, requires):
         """Set listen and vhost port"""
-        self.conf.setPort(requires.get('conf').variables().port.value)
+        self.conf.setPort(requires.conf.variables().port.value)
 
     @Provide()
-    def get_port(self, requires):
+    def get_port(self):
         """Set listen and vhost port"""
         return {"port": self.conf.port.value}
 
