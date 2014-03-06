@@ -100,7 +100,7 @@
 	#     Translate the client X.509 into a Basic Authorisation.  This means that
 	#     the standard Auth/DBMAuth methods can be used for access control.  The
 	#     user name is the `one line' version of the client's X.509 certificate.
-	#     Note that no password is obtained from the user. Every entry in the user
+	#     Note that no password is obtained from the user. Every enter in the user
 	#     file needs this password: `xxj31ZMTZzkVA'.
 	#   o ExportCertData:
 	#     This exports two additional environment variables: SSL_CLIENT_CERT and

@@ -15,7 +15,7 @@ class StateA(State):
 class StateB(State):
 
     @Require('bar', [VString('foo')])
-    def entry(self):
+    def enter(self):
         pass
 
     @Require('foo1', [VString('bar')])

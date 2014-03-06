@@ -22,7 +22,7 @@ class CopyTemplate(mss.lifecycle.State):
     src = ""
     dst = ""
 
-    def entry(self):
+    def enter(self):
         logger.info("Copying template file from '%s' to '%s' ...",
                     self.src,
                     self.dst)
@@ -43,7 +43,7 @@ class RunScript(mss.lifecycle.State):
         """
         return []
 
-    def entry(self):
+    def enter(self):
         script_path = os.path.join(os.path.dirname(inspect.getfile(
                                             self.__class__)), self.script_name)
         script_dir = os.path.dirname(script_path)
@@ -81,7 +81,7 @@ class InstallPackagesUrpm(mss.lifecycle.State):
                 [('package', p) for p in self.packages] +
                 mss.lifecycle.State._xml_add_properties_tuple(self))
         
-    def entry(self):
+    def enter(self):
         pkgs = " ".join(self.packages)
         logger.info("Installing packages '%s' ..." % (pkgs))
         for p in self.packages:
@@ -129,7 +129,7 @@ class InstallPackagesApt(mss.lifecycle.State):
 #                [('package', p) for p in self.packages] +
 #                mss.lifecycle.State._xml_add_property(self))
 
-    def entry(self, requires={}):
+    def enter(self, requires={}):
         pkgs = " ".join(self.packages)
         logger.info("%s.%s apt-get install %s ...",
                     self.lf_name,
@@ -211,7 +211,7 @@ class ActiveWithSystemd(mss.lifecycle.State):
                 thread.join()
                 raise ErrorSystemd("See PROCESS log for information about systemd status %s" % service)
 
-    def entry(self):
+    def enter(self):
         logger.info("Starting services '%s' ..." % self.services)
         self.__systemctl("start")
         logger.event({"lifecycle": self.lf_name, "is_active": "true"})
@@ -236,7 +236,7 @@ class ActiveWithSystemV(mss.lifecycle.State):
     services = []
     supported_os_type = [mss.utils.OsTypeDebian()]
 
-    def entry(self):
+    def enter(self):
         for service in self.services:
             thread = process.ProcessThread("/etc/init.d/%s" % service, None,
                                            "test",

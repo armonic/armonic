@@ -50,9 +50,9 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), d()),
-                         [[(b(), 'entry'), (c(), 'entry'), (d(), 'entry')]])
+                         [[(b(), 'enter'), (c(), 'enter'), (d(), 'enter')]])
         self.assertEqual(lf._get_from_state_paths(b(), c()),
-                         [[(c(), 'entry')]])
+                         [[(c(), 'enter')]])
         lf.state_goto(d(), {})
         self.assertEqual(lf._get_from_state_paths(d(), a()),
                          [[(d(), 'leave'), (c(), 'leave'), (b(), 'leave')]])
@@ -83,10 +83,10 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
-                         [[(b(), 'entry'), (e(), 'entry'), (f(), 'entry')],
-                          [(c(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
+                         [[(b(), 'enter'), (e(), 'enter'), (f(), 'enter')],
+                          [(c(), 'enter'), (d(), 'enter'), (e(), 'enter'), (f(), 'enter')]])
         self.assertEqual(lf._get_from_state_paths(a(), d()),
-                         [[(c(), 'entry'), (d(), 'entry')]])
+                         [[(c(), 'enter'), (d(), 'enter')]])
         lf.state_goto(f(), {}, 1)
         self.assertEqual(lf._get_from_state_paths(f(), a()),
                          [[(f(), 'leave'), (e(), 'leave'), (d(), 'leave'), (c(), 'leave')]])
@@ -116,9 +116,9 @@ class TestPathGeneration(unittest.TestCase):
 
         lf = TestLifecycle()
         self.assertEqual(lf._get_from_state_paths(a(), f()),
-                         [[(b(), 'entry'), (d(), 'entry'), (e(), 'entry'), (f(), 'entry')]])
+                         [[(b(), 'enter'), (d(), 'enter'), (e(), 'enter'), (f(), 'enter')]])
         self.assertEqual(lf._get_from_state_paths(c(), g()),
-                         [[(d(), 'entry'), (e(), 'entry'), (g(), 'entry')]])
+                         [[(d(), 'enter'), (e(), 'enter'), (g(), 'enter')]])
         lf.state_goto(g(), {})
         self.assertEqual(lf._get_from_state_paths(g(), a()),
                          [[(g(), 'leave'), (e(), 'leave'), (d(), 'leave'), (b(), 'leave')]])

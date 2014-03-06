@@ -86,7 +86,7 @@ def state_to_table(state):
     x.add_row(["Xpath",state['xpath']])
     x.add_row(["Supported OS","\n".join(map(str,state['supported_os_type']))])
     x.add_row(["Provides","\n".join([p['name'] for p in state['provides']])])
-    x.add_row(["Entry Requires","\n".join([p['name'] for p in state['requires_entry']['require_list']])])
+    x.add_row(["Enter Requires","\n".join([p['name'] for p in state['requires_enter']['require_list']])])
     print x
 
 def dict_to_table(dct):

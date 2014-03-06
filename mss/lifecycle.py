@@ -118,7 +118,7 @@ import mss.utils
 from xml_register import XmlRegister, Element, SubElement
 
 logger = logging.getLogger(__name__)
-STATE_RESERVED_METHODS = ('entry', 'leave', 'cross')
+STATE_RESERVED_METHODS = ('enter', 'leave', 'cross')
 
 
 class TransitionNotAllowed(Exception):
@@ -179,7 +179,7 @@ class State(XmlRegister):
     defines the arguments required to enter the State.
 
     To define a new State, it is necessary to redefine methods:
-     :py:meth:`State.entry`
+     :py:meth:`State.enter`
      :py:meth:`State.leave`
      :py:meth:`State.cross`
     """
@@ -253,7 +253,7 @@ class State(XmlRegister):
     def lf_name(self, name):
         self._lf_name = name
 
-    def safe_entry(self, requires=[]):
+    def safe_enter(self, requires=[]):
         """Check all state requires are satisfated and enter into State
 
         :param requires: A list of of tuples (variable_xpath, variable_values)
@@ -261,11 +261,11 @@ class State(XmlRegister):
             variable_values is dict of index=value
         :type requires: list
         """
-        self.requires_entry.fill(requires)
-        self.requires_entry.validate()
-        return self.entry()
+        self.requires_enter.fill(requires)
+        self.requires_enter.validate()
+        return self.enter()
 
-    def entry(self):
+    def enter(self):
         """Called when a state is applied"""
         logger.debug("Entering state %s" % self.name)
 
@@ -277,23 +277,23 @@ class State(XmlRegister):
         """Called when the state is traversed"""
         logger.info("State %s crossed but nothing to do" % self.name)
 
-    def entry_doc(self):
+    def enter_doc(self):
         """NOT YET IMPLEMENTED.
-        By default, it returns doc string of entry method. You can
+        By default, it returns doc string of enter method. You can
         override it to be more concise.
 
         TODO Need state to be built by LF in order to have an instance.
         """
-        return self.entry.__doc__
+        return self.enter.__doc__
 
     @property
-    def requires_entry(self):
+    def requires_enter(self):
         """
         Requires to enter the state
 
         :rtype: :class:`Provide`
         """
-        return self._requires_entry
+        return self._requires_enter
 
     @property
     def requires_leave(self):
@@ -328,7 +328,7 @@ class State(XmlRegister):
         :rtype: Provide
         """
         # Small hack for LifecycleManager.from_xpath
-        if provide_name in ('entry', 'leave', 'cross'):
+        if provide_name in ('enter', 'leave', 'cross'):
             return getattr(self, 'requires_%s' % provide_name)
 
         try:
@@ -346,7 +346,7 @@ class State(XmlRegister):
                 "supported_os_type": [t.to_primitive() for t in
                                       self.supported_os_type],
                 "provides": [r.to_primitive() for r in self.provides],
-                "requires_entry": self.requires_entry.to_primitive()}
+                "requires_enter": self.requires_enter.to_primitive()}
 
 
 class MetaState(State):
@@ -504,7 +504,7 @@ class Lifecycle(XmlRegister):
         logger.event({'event': 'state_appling',
                       'state': state.name,
                       'lifecycle': self.name})
-        ret = state.safe_entry(requires)
+        ret = state.safe_enter(requires)
         self._stack.append(state)
         logger.event({'event': 'state_applied',
                       'state': state.name,
@@ -525,7 +525,7 @@ class Lifecycle(XmlRegister):
             for (src, dst) in self.transitions:
                 if src == state and self._is_transition_allowed(src, dst):
                     new_path = copy.copy(path)
-                    new_path.append((dst, 'entry'))
+                    new_path.append((dst, 'enter'))
                     paths.append(new_path)
                     if not dst == to_state:
                         _find_next_state(dst, paths, new_path)
@@ -609,7 +609,7 @@ class Lifecycle(XmlRegister):
         logger.debug("Goto state %s using path %i" % (state, path_idx))
         path = self.state_goto_path(state, path_idx=path_idx)
         for (state, method) in path:
-            if method == "entry":
+            if method == "enter":
                 self._push_state(state, requires)
             elif method == "leave":
                 if self.state_current() == state:
@@ -664,8 +664,8 @@ class Lifecycle(XmlRegister):
         """
         acc = IterContainer()
         for s in self.state_goto_path(state, path_idx=path_idx):
-            if s[1] == "entry":
-                r = s[0].requires_entry
+            if s[1] == "enter":
+                r = s[0].requires_enter
                 if len(r) > 0:
                     acc.append(r)
         return acc
@@ -800,7 +800,7 @@ class Lifecycle(XmlRegister):
             )
             # Enter doc
             if enter_doc:
-                acc += " | Entry: %s" % (dotify(s.entry.__doc__))
+                acc += " | Entry: %s" % (dotify(s.enter.__doc__))
             if leave_doc:
                 acc += " | Leave: %s" % (dotify(s.leave.__doc__))
             # Cross method
@@ -810,7 +810,7 @@ class Lifecycle(XmlRegister):
                     inspect.getargspec(s.cross).args[1:])
             # Enter Requires
             acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in
-                                                          s.requires_entry])
+                                                          s.requires_enter])
             for p in s.get_provides():
                 acc += " | { %s }" % dot_provide(p)
             # End of label

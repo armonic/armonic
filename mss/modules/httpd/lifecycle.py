@@ -18,11 +18,11 @@ class Configured(State):
 
     @Require('conf', [Port("port", default=8080)])
     @Require('augeas', [VString("root", default="/")])
-    def entry(self):
+    def enter(self):
         """Set listen and vhost port"""
-        port = self.requires_entry.get('conf').variables().port.value
+        port = self.requires_enter.get('conf').variables().port.value
         logger.info("Set httpd listening port to %s" % port)
-        augeas = self.requires_entry.get('augeas').variables().root.value
+        augeas = self.requires_enter.get('augeas').variables().root.value
 
         self.conf = configuration.Apache(autoload=True, augeas_root=augeas)
         self.conf.setPort(str(port))

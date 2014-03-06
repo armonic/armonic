@@ -65,7 +65,7 @@ class RequireDefinitionError(Exception):
 class Require(XmlRegister):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and
-    are used to specify, verify and store values needed to entry in
+    are used to specify, verify and store values needed to enter in
     this state.
 
     To submit variable values of a require, :py:meth:`fill` method

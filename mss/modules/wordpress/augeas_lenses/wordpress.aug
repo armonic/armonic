@@ -91,7 +91,7 @@ let simple_function (kw:regexp) =
 let expr = /[A-Za-z\(\) !'\n\t,_.\/]*/
 let if = [ key "if" . del /[ \t]*/ " " . store expr . del /[ \t]*;/ ";" ]
 
-let entry      = Util.indent
+let enter      = Util.indent
                . ( global
                  | variable
                  | include
@@ -105,7 +105,7 @@ let entry      = Util.indent
  *                                LENS
  *************************************************************************)
 
-let lns        = open_php . (empty|comment|entry)* . close_php
+let lns        = open_php . (empty|comment|enter)* . close_php
 
 let filter     = incl "/var/www/wordpress/wp-config.php"
                . Util.stdexcl

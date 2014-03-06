@@ -13,7 +13,7 @@ class NotInstalled(State):
 class Installed(State):
     packages = []
 
-    def entry(self, requires):
+    def enter(self, requires):
         """apt-get install wordpress"""
         return "urpmi %s" % self.packages
 
@@ -31,7 +31,7 @@ class Installed(State):
 class ConfiguredAndActive(State):
     requires = []
 
-    def entry(self, requires):
+    def enter(self, requires):
         """ set wordpress.php """
         return "Call setup.py %s" % requires
 

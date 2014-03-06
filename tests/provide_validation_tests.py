@@ -16,7 +16,7 @@ class StateA(State):
 class StateB(State):
 
     @Require('bar', [VString('foo')])
-    def entry(self):
+    def enter(self):
         pass
 
     @Require('foo1', [VString('bar')])
@@ -71,14 +71,14 @@ class TestProvideValidation(unittest.TestCase):
         validation = self.lfm.provide_call_validate("//ProvideValidationLF//provide1",
                                                     requires=[("//ProvideValidationLF//bar/foo", "test1")])
         self.assertTrue(validation['errors'])
-        self.assertFalse(validation['requires'].entry.bar.variables().foo.error)
+        self.assertFalse(validation['requires'].enter.bar.variables().foo.error)
         self.assertEqual(validation['requires'].provide1.foo1.variables().bar.error, 'bar is required')
 
     def test_missing_require(self):
         validation = self.lfm.provide_call_validate("//ProvideValidationLF//provide1",
                                                     requires=[("//ProvideValidationLF//foo1/bar", "test1")])
         self.assertTrue(validation['errors'])
-        self.assertEqual(validation['requires'].entry.bar.variables().foo.error, 'foo is required')
+        self.assertEqual(validation['requires'].enter.bar.variables().foo.error, 'foo is required')
         self.assertFalse(validation['requires'].provide1.foo1.variables().bar.error)
 
     def test_valid(self):
@@ -86,7 +86,7 @@ class TestProvideValidation(unittest.TestCase):
                                                     requires=[("//ProvideValidationLF//bar/foo", "test1"),
                                                               ("//ProvideValidationLF//foo1/bar", "test1")])
         self.assertEqual(validation['requires'].provide1.foo1.variables().bar.error, None)
-        self.assertEqual(validation['requires'].entry.bar.variables().foo.error, None)
+        self.assertEqual(validation['requires'].enter.bar.variables().foo.error, None)
         self.assertFalse(validation['errors'])
 
     def test_multiple_variables(self):

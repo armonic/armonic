@@ -929,7 +929,7 @@
 0	string	CWS		application/x-shockwave-flash
 
 # Gnumeric spreadsheet
-# This entry is only semi-helpful, as Gnumeric compresses its files, so
+# This enter is only semi-helpful, as Gnumeric compresses its files, so
 # they will ordinarily reported as "compressed", but at least -z helps
 39      string          =<gmr:Workbook           application/x-gnumeric
 

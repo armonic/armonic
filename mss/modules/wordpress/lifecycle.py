@@ -32,11 +32,11 @@ class Configured(State):
                                             default="wordpress_pwd"),
                                    VString("database",
                                            default="wordpress_db")])
-    def entry(self):
+    def enter(self):
         """set value in wp-config.php"""
-        self.conf = configuration.Wordpress(autoload=True, augeas_root=self.requires_entry.get('augeas').variables().root.value)
-        print self.requires_entry.get('db').variables()
-        tmp = self.requires_entry.get('db').variables()
+        self.conf = configuration.Wordpress(autoload=True, augeas_root=self.requires_enter.get('augeas').variables().root.value)
+        print self.requires_enter.get('db').variables()
+        tmp = self.requires_enter.get('db').variables()
         logger.info("Editing wordpress configuration file with db:%s user:%s pwd:%s host:%s" % (
             tmp.database.value, tmp.user.value, tmp.password.value, tmp.host.value))
 
@@ -62,8 +62,8 @@ class Active(State):
                       provide_args=[VString("httpdDocumentRoot",
                                     default="/var/www/wordpress")])
     @RequireLocal("http_start", "//Httpd//start")
-    def entry(self):
-        self.httpdDocumentRoot = self.requires_entry.get('http_document').variables().httpdDocumentRoot.value
+    def enter(self):
+        self.httpdDocumentRoot = self.requires_enter.get('http_document').variables().httpdDocumentRoot.value
         logger.debug("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s" % (self.lf_name, self.name, self.httpdDocumentRoot))
 
     def leave(self):
@@ -87,10 +87,10 @@ class ActiveWithNfs(State):
         provide_args=[
             VString(
                 "path",
-                from_xpath="Wordpress/Active/entry/http_document/httpdDocumentRoot",
+                from_xpath="Wordpress/Active/enter/http_document/httpdDocumentRoot",
                 modifier="%s/wp-content"),
             VString("name", default="wordpress")])
-    def entry(self):
+    def enter(self):
         pass
 
     @provide()
