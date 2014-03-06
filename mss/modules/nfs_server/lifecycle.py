@@ -1,15 +1,16 @@
-from mss.lifecycle import State, Transition, Lifecycle, provide, flags
-from mss.require import Require, RequireExternal
-from mss.variable import Port, Host, VString
-import mss.state
-import mss.utils
 import os
 import os.path
-
-import mss.configuration_augeas as augeas
-
-import mss.common
 import logging
+
+from mss.lifecycle import State, Transition, Lifecycle, flags
+from mss.require import Require
+from mss.variable import Host, VString
+from mss.states import InstallPackagesUrpm, ActiveWithSystemd
+import mss.utils
+import mss.configuration_augeas as augeas
+import mss.common
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,7 +74,7 @@ class Configuration(augeas.Configuration):
         of them will be removed.
         """
         for d in self.dirs:
-            if client != None:
+            if client is not None:
                 for c in d.clients:
                     if c.value == client:
                         d.rm()
@@ -84,7 +85,7 @@ class NotInstalled(State):
     pass
 
 
-class Installed(mss.state.InstallPackagesUrpm):
+class Installed(InstallPackagesUrpm):
     packages = ["nfs-utils"]
 
 
@@ -107,7 +108,7 @@ class Configured(State):
         return {'remotetarget': remotetarget}
 
 
-class Active(mss.state.ActiveWithSystemd):
+class Active(ActiveWithSystemd):
     services = ["nfs-common", "nfs-server"]
 
     # This should be useless because we should call it in state
@@ -135,7 +136,7 @@ class Nfs_server(Lifecycle):
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), Configured()),
         Transition(Configured(), Active()),
-        ]
+    ]
 
     def __init__(self):
         self.init(NotInstalled(), {})

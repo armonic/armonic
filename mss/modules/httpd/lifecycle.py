@@ -1,11 +1,12 @@
 from mss.lifecycle import State, Transition, Lifecycle, provide
 from mss.require import Require
 from mss.variable import VString, Port
-import mss.state
+from mss.states import InstallPackagesUrpm, ActiveWithSystemd
 import configuration
 
-import mss.common
 import logging
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,15 +54,11 @@ class Configured(State):
         return {"port": self.conf.port.value}
 
 
-class Active(mss.state.ActiveWithSystemd):
+class Active(ActiveWithSystemd):
     services = ["httpd"]
 
-    # @provide()
-    # def start(self):
-    #     logger.info("Apache activation...")
 
-
-class Installed(mss.state.InstallPackagesUrpm):
+class Installed(InstallPackagesUrpm):
     packages = ["apache"]
 
 
@@ -70,7 +67,7 @@ class Httpd(Lifecycle):
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), Configured()),
         Transition(Configured(), Active()),
-        ]
+    ]
 
     def __init__(self):
         self.init(NotInstalled(), {})

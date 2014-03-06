@@ -2,13 +2,13 @@ import logging
 import time
 import MySQLdb
 
-from mss.lifecycle import State, Transition, Lifecycle, provide
+from mss.lifecycle import State, Transition, Lifecycle, MetaState
 from mss.require import Require, RequireExternal, RequireUser, RequireLocal
-from mss.variable import Hostname, VString, Port, Password, VInt, VUrl
+from mss.variable import VString, Port, Password, VInt, VUrl
 from mss.configuration_augeas import XpathNotInFile
 from mss.process import ProcessThread
-import mss.state
-from mss.utils import OsTypeDebian, OsTypeMBS
+from mss.states import ActiveWithSystemV, ActiveWithSystemd, InstallPackagesUrpm, InstallPackagesApt, InitialState
+import mss.common
 
 import configuration
 
@@ -16,7 +16,7 @@ import configuration
 logger = logging.getLogger(__name__)
 
 
-class NotInstalled(mss.state.InitialState):
+class NotInstalled(InitialState):
     """Initial state"""
     pass
 
@@ -57,7 +57,7 @@ class Configured(State):
         return self.config.port.get()
 
 
-class SetRootPassword(mss.lifecycle.State):
+class SetRootPassword(State):
     """Set initial Mysql root password"""
 
     @Require('auth', [VString("password", default="root")])
@@ -89,7 +89,7 @@ class SetRootPassword(mss.lifecycle.State):
 
         if thread_mysqld.launch():
             logger.info("%s.%s mysql root password is '%s'",
-                         self.lf_name, self.name, pwd)
+                        self.lf_name, self.name, pwd)
             self.root_password = pwd
         else:
             logger.info("%s.%s mysql root password setting failed",
@@ -106,11 +106,11 @@ class SetRootPassword(mss.lifecycle.State):
             raise Exception("Error at mysqld launching for mysqladmin")
 
 
-class ResetRootPassword(mss.lifecycle.State):
+class ResetRootPassword(State):
     """To change mysql root password. It launches a
     mysqld without grant table and networking, sets a new root
     password and stop mysqld."""
-    supported_os_type = [OsTypeMBS()]
+    supported_os_type = [mss.utils.OsTypeMBS()]
 
     @Require("auth", [VString("password", default="root")])
     def enter(self):
@@ -171,38 +171,22 @@ class ResetRootPassword(mss.lifecycle.State):
                         self.name)
 
 
-class ActiveOnDebian(mss.state.ActiveWithSystemV):
+class ActiveOnDebian(ActiveWithSystemV):
     services = ["mysql"]
-    supported_os_type = [OsTypeDebian()]
 
 
-class ActiveOnMBS(mss.state.ActiveWithSystemd):
-    """Permit to activate the service"""
+class ActiveOnMBS(ActiveWithSystemd):
     services = ["mysqld"]
-    supported_os_type = [OsTypeMBS()]
 
 
-class EnsureMysqlIsStopped(mss.state.ActiveWithSystemd):
+class EnsureMysqlIsStopped(ActiveWithSystemd):
     services = ["mysqld"]
-    supported_os_type = [OsTypeMBS()]
 
     def enter(self):
-        mss.state.ActiveWithSystemd.leave(self)
-
-    def leave(self):
-        pass
-
-    def cross(self):
-        pass
+        ActiveWithSystemd.leave(self)
 
 
-class ActiveOnMBS(mss.state.ActiveWithSystemd):
-    """Permit to activate the service"""
-    services = ["mysqld"]
-    supported_os_type = [OsTypeMBS()]
-
-
-class Active(mss.lifecycle.MetaState):
+class Active(MetaState):
     """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
@@ -220,8 +204,8 @@ class Active(mss.lifecycle.MetaState):
         return [d[0] for d in rows]
 
     @RequireUser('auth',
-                     provided_by="Mysql/SetRootPassword/enter/auth/password",
-                     variables=[Password('root_password')])
+                 provided_by="Mysql/SetRootPassword/enter/auth/password",
+                 variables=[Password('root_password')])
     @Require('data', [VString('user'),
                       VString('password'),
                       VString('database')])
@@ -247,8 +231,8 @@ class Active(mss.lifecycle.MetaState):
         return {}
 
     @RequireUser('auth',
-                     provided_by="Mysql/SetRootPassword/enter/auth/password",
-                     variables=[Password('user'), Password('password')])
+                 provided_by="Mysql/SetRootPassword/enter/auth/password",
+                 variables=[Password('user'), Password('password')])
     @Require('data', [VString('database')])
     def rmDatabase(self, user, password, database):
         con = MySQLdb.connect('localhost', user,
@@ -259,10 +243,7 @@ class Active(mss.lifecycle.MetaState):
 
     # @Require([VString('user'), VString('password'), VString('database')])
     def addUser(self, user, password, newUser, userPassword):
-        con = MySQLdb.connect('localhost',
-                              user,
-                              password)
-
+        con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;" % (newUser, userPassword)
         logger.debug("$mysql> %s" % cmd)
@@ -287,7 +268,7 @@ class ConfiguredAsSlave(State):
         self.config.save()
 
 
-class ActiveAsSlave(mss.lifecycle.MetaState):
+class ActiveAsSlave(MetaState):
     """Take a filepath of a dump and apply this dump.
     To obtain the dump, you can call the provide Mysql.get_dump.
     The dump file is removed after its application.
@@ -302,8 +283,8 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @RequireUser('auth_root',
-                     provided_by="Mysql/SetRootPassword/enter/auth/password",
-                     variables=[Password('root_password')])
+                 provided_by="Mysql/SetRootPassword/enter/auth/password",
+                 variables=[Password('root_password')])
     @RequireExternal('dump', xpath='//Mysql//get_dump',
                      provide_ret=[VUrl('fileUrl'),
                                   VString('logFile'),
@@ -344,8 +325,8 @@ class ActiveAsSlave(mss.lifecycle.MetaState):
         cur.execute("slave start;")
 
     @RequireUser('auth',
-                     provided_by="Mysql/SetRootPassword/enter/auth/password",
-                     variables=[Password('root_password')])
+                 provided_by="Mysql/SetRootPassword/enter/auth/password",
+                 variables=[Password('root_password')])
     def slave_status(self, requires):
         root_user = "root"
         root_password = requires.get('auth').variables().get('root_password').value
@@ -365,7 +346,7 @@ class ConfiguredAsMaster(State):
         self.config = configuration.Mysql(autoload=True,
                                           augeas_root=self.requires_enter.get('augeas').variables().root.value)
         self.config.server_id.set(str(
-                self.requires_enter.get('conf').variables().server_id.value))
+            self.requires_enter.get('conf').variables().server_id.value))
         self.config.log_bin.set("mysql-bin")
 
         # Management of bin_log_ignore directive.
@@ -383,11 +364,11 @@ class ConfiguredAsMaster(State):
         self.config.save()
 
 
-class ActiveAsMaster(mss.lifecycle.MetaState):
+class ActiveAsMaster(MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require('slave_id', [VString('user', default='replication'),
-              VString('password', default='password')])
+                          VString('password', default='password')])
     @RequireUser('auth',
                  provided_by="Mysql/SetRootPassword/enter/auth/password",
                  variables=[Password('root_password')])
@@ -492,11 +473,11 @@ class ActiveAsMaster(mss.lifecycle.MetaState):
         pass
 
 
-class InstalledOnMBS(mss.state.InstallPackagesUrpm):
+class InstalledOnMBS(InstallPackagesUrpm):
     packages = ["mysql-MariaDB"]
 
 
-class InstalledOnDebian(mss.state.InstallPackagesApt):
+class InstalledOnDebian(InstallPackagesApt):
     packages = ["mysql-server"]
 
 
@@ -512,6 +493,7 @@ class Mysql(Lifecycle):
     - use mysql as a slave database server
     - use mysql as a master database server
     """
+    initial_state = NotInstalled()
     transitions = [
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), SetRootPassword()),
@@ -524,7 +506,4 @@ class Mysql(Lifecycle):
         # Master Branch
         Transition(Configured(), ConfiguredAsMaster()),
         Transition(ConfiguredAsMaster(), ActiveAsMaster()),
-        ]
-
-    def __init__(self):
-        self.init(NotInstalled(), {})
+    ]

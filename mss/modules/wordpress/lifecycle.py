@@ -1,23 +1,25 @@
+import logging
+
 from mss.lifecycle import State, Transition, Lifecycle, provide
 from mss.require import Require, RequireLocal, RequireExternal
 from mss.variable import VString, Password
-import mss.state
+from mss.states import InitialState, CopyTemplates, InstallPackagesUrpm, InstallPackagesApt
 import configuration
-import mss.common
-import logging
+import mss.utils
+
 
 logger = logging.getLogger(__name__)
 
 
-class NotInstalled(mss.state.InitialState):
+class NotInstalled(InitialState):
     pass
 
 
-class Template(mss.state.CopyTemplate):
+class Template(CopyTemplates):
     """Copy wp-config-sample.php to wp-config.php"""
     supported_os_type = [mss.utils.OsTypeMBS()]
-    src = "/var/www/wordpress/wp-config-sample.php"
-    dst = "/var/www/wordpress/wp-config.php"
+    src_files = ["/var/www/wordpress/wp-config-sample.php"]
+    dst_files = ["/var/www/wordpress/wp-config.php"]
 
 
 class Configured(State):
@@ -55,12 +57,11 @@ class Configured(State):
 
 class Active(State):
     httpdDocumentRoot = None
-
     supported_os_type = [mss.utils.OsTypeMBS()]
 
     @RequireLocal("http_document", "//Httpd//get_documentRoot",
-                      provide_args=[VString("httpdDocumentRoot",
-                                    default="/var/www/wordpress")])
+                  provide_args=[VString("httpdDocumentRoot",
+                                default="/var/www/wordpress")])
     @RequireLocal("http_start", "//Httpd//start")
     def enter(self):
         self.httpdDocumentRoot = self.requires_enter.get('http_document').variables().httpdDocumentRoot.value
@@ -98,16 +99,17 @@ class ActiveWithNfs(State):
         pass
 
 
-class Installed(mss.state.InstallPackagesUrpm):
+class Installed(InstallPackagesUrpm):
     packages = ["wordpress"]
 
 
-class InstalledOnDebian(mss.state.InstallPackagesApt):
+class InstalledOnDebian(InstallPackagesApt):
     packages = ["wordpress"]
     supported_os_type = [mss.utils.OsTypeDebianWheezy()]
 
 
 class Wordpress(Lifecycle):
+    initial_state = NotInstalled()
     transitions = [
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), Template()),
@@ -116,7 +118,4 @@ class Wordpress(Lifecycle):
         Transition(Template(), Configured()),
         Transition(Configured(), Active()),
         Transition(Active(), ActiveWithNfs()),
-        ]
-
-    def __init__(self):
-        self.init(NotInstalled(), {})
+    ]

@@ -1,10 +1,11 @@
+import logging
+
 from mss.lifecycle import State, Transition, Lifecycle
 from mss.require import Require, RequireExternal
 from mss.variable import Port
-import mss.state
+from mss.states import ActiveWithSystemd, InstallPackagesUrpm, RunScript
 
-import mss.common
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -12,7 +13,7 @@ class NotInstalled(State):
     pass
 
 
-class Configured(mss.state.RunScript):
+class Configured(RunScript):
     script_name = "setup.sh"
 
     def require_to_script_args(self):
@@ -24,7 +25,7 @@ class Configured(mss.state.RunScript):
     @Require('conf', [Port("port", default=80)])
     @RequireExternal('backend', "//get_website", nargs='*')
     def enter(self):
-        mss.state.RunScript.enter(self)
+        RunScript.enter(self)
         for v in self.requires_enter.get('backend').variables(all=True):
             logger.event({"lifecycle": self.lf_name,
                           "event": "binding",
@@ -34,20 +35,18 @@ class Configured(mss.state.RunScript):
                       "port": self.requires_enter.conf.variables().port.value})
 
 
-class Active(mss.state.ActiveWithSystemd):
+class Active(ActiveWithSystemd):
     services = ["varnish"]
 
 
-class Installed(mss.state.InstallPackagesUrpm):
+class Installed(InstallPackagesUrpm):
     packages = ["varnish"]
 
 
 class Varnish(Lifecycle):
+    initial_state = NotInstalled()
     transitions = [
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), Configured()),
         Transition(Configured(), Active()),
-        ]
-
-    def __init__(self):
-        self.init(NotInstalled(), {})
+    ]

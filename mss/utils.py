@@ -55,6 +55,11 @@ class OsTypeMBS(OsType):
         OsType.__init__(self, "Mandriva Business Server")
 
 
+class OsTypeUbuntu(OsType):
+    def __init__(self):
+        OsType.__init__(self, "ubuntu")
+
+
 class OsTypeDebian(OsType):
     def __init__(self):
         OsType.__init__(self, "debian")

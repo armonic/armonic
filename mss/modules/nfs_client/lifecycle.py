@@ -1,19 +1,17 @@
-from mss.lifecycle import State, Transition, Lifecycle, provide
-from mss.require import Require, RequireExternal
-from mss.variable import Port, VString, Host
-import mss.state
-import time
-
-from mss.utils import ethernet_ifs
-
-from mss.process import ProcessThread
-
 import shutil
 import os.path
 import os
-
-import mss.common
 import logging
+import time
+
+from mss.lifecycle import State, Transition, Lifecycle
+from mss.require import Require, RequireExternal
+from mss.variable import VString, Host
+from mss.states import InstallPackagesUrpm
+from mss.utils import ethernet_ifs
+from mss.process import ProcessThread
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +19,7 @@ class NotInstalled(State):
     pass
 
 
-class Installed(mss.state.InstallPackagesUrpm):
+class Installed(InstallPackagesUrpm):
     packages = ["nfs-utils-clients"]
 
 
@@ -31,8 +29,7 @@ class Active(State):
     @RequireExternal(
         'nfs',
         "//Nfs_server/Active/get_dir",
-        provide_args=[
-                       Host("client", default=ethernet_ifs()[0][1])],
+        provide_args=[Host("client", default=ethernet_ifs()[0][1])],
         provide_ret=[VString("remotetarget")])
     @Require('mountpoint', [VString("path")])
 #    @RequireExternal('nfs-start',
@@ -86,10 +83,8 @@ class Active(State):
 
 
 class Nfs_client(Lifecycle):
+    initial_state = NotInstalled()
     transitions = [
         Transition(NotInstalled(), Installed()),
         Transition(Installed(), Active()),
-        ]
-
-    def __init__(self):
-        self.init(NotInstalled(), {})
+    ]
