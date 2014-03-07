@@ -23,6 +23,7 @@ import logging
 
 from mss.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from mss.variable import Host
+from mss.provide import Provide
 import copy
 
 from mss.xml_register import XmlRegister
@@ -103,6 +104,14 @@ class Require(XmlRegister, ExtraInfoMixin):
         self._variables_skel = variables
         self._init_variables()
 
+    def __call__(self, func):
+        """
+        Used as a method decorator to define Require on :py:class:`State`
+        methods
+        Permit to directly use Require constructor as a decorator.
+        """
+        return Provide(name=None, requires=[self], flags={})(func)
+
     def _init_variables(self):
         # This will contain Variables. fill method will append
         # IterContainer if needed, but we have to initialize it in
@@ -124,20 +133,6 @@ class Require(XmlRegister, ExtraInfoMixin):
     def _xml_add_properties_tuple(self):
         return [("nargs", self.nargs),
                 ("type", self.type)]
-
-    def __call__(self, func):
-        """
-        Used as a method decorator to define Require on :py:class:`State`
-        methods
-        Permit to directly use Require constructor as a decorator.
-        """
-        has_requires = hasattr(func, '_requires')
-        require = self
-        if has_requires:
-            func._requires.append(require)
-        else:
-            func._requires = [require]
-        return func
 
     def factory_variable(self):
         """Return an Itercontainer of variables based on variables_skel

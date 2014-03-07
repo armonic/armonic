@@ -18,8 +18,13 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         Used as a method decorator mark :py:class:`State` methods
         as provide.
         """
-        if not hasattr(func, '_requires'):
-            func._requires = []
+        if not hasattr(func, '_provide'):
+            func._provide = self
+        func._provide.name = func.__name__
+        func._provide.flags.update(self.flags)
+        for require in self:
+            if not require in func._provide:
+                func._provide.append(require)
         return func
 
     def get_values(self):
@@ -115,6 +120,4 @@ class Flags(object):
         self.flags = dict(**flags)
 
     def __call__(self, func):
-        if self.flags:
-            func._flags = self.flags
-        return Provide()(func)
+        return Provide(name=None, requires=[], flags=self.flags)(func)

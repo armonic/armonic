@@ -179,16 +179,13 @@ class State(XmlRegister):
 
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                if hasattr(f, '_requires'):
+                if hasattr(f, '_provide'):
                     if f.__name__ in STATE_RESERVED_METHODS:
-                        r = Provide(f.__name__, f._requires)
-                        setattr(cls, "_requires_%s" % f.__name__, r)
+                        setattr(cls, "_requires_%s" % f.__name__, f._provide)
                     else:
-                        flags = f._flags if hasattr(f, '_flags') else {}
-                        r = Provide(f.__name__, f._requires, flags)
-                        cls._provides.append(r)
+                        cls._provides.append(f._provide)
 
-                    logger.debug("Create a Provide for %s.%s with Require %s" % (cls.__name__, f.__name__, [t.name for t in r]))
+                    logger.debug("Registered %s in %s" % (f._provide, cls._instance))
 
         return cls._instance
 
