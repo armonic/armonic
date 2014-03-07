@@ -324,6 +324,14 @@ class State(XmlRegister):
     def __repr__(self):
         return "<State:%s>" % self.name
 
+    def clear(self):
+        """Init variables to default values in all requires"""
+        for p in self.provides:
+            for r in p:
+                r._init_variables()
+        for r in self.requires_enter:
+            r._init_variables()
+
     def to_primitive(self):
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
@@ -817,6 +825,11 @@ class Lifecycle(XmlRegister):
     def __repr__(self):
         return "<Lifecycle:%s>" % self.name
 
+    def clear(self):
+        """Init variables to default values in all requires of all states"""
+        for s in self.state_list():
+            s.clear()
+
     def to_primitive(self, reachable=False):
         state_list = self.state_list(reachable=reachable)
         return {'name': self.name,
@@ -906,6 +919,9 @@ class LifecycleManager(object):
         if lf_name is not None:
             try:
                 lf = self.lf[lf_name]()
+                # Reset variables values in all States
+                # since States are Singleton
+                lf.clear()
                 if self.os_type is not None:
                     lf.os_type = self.os_type
                 lf._xml_register()

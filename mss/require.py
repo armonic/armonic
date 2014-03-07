@@ -100,6 +100,9 @@ class Require(XmlRegister):
             self.nargs_min = self.nargs_max = int(self.nargs)
 
         self._variables_skel = variables
+        self._init_variables()
+
+    def _init_variables(self):
         # This will contain Variables. fill method will append
         # IterContainer if needed, but we have to initialize it in
         # order to manage default values.
