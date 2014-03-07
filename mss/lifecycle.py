@@ -715,24 +715,25 @@ class Lifecycle(XmlRegister):
     def _provide_call_in_stack(self, state, provide_name, requires=[]):
         """Call a provide by name. State which provides must be in the stack."""
         state = self._get_state_class(state)
-        sidx = self._stack.index(state)
+        state_index = self._stack.index(state)
         provide = state.provide_by_name(provide_name)
-        sfct = state.__getattribute__(provide.name)
+        provide_method = getattr(state, provide_name)
         provide.fill(requires)
         provide.validate()
         try:
             if provide:
-                ret = sfct(provide)
+                ret = provide_method(provide)
             else:
-                ret = sfct()
+                ret = provide_method()
         except ValidationError:
             raise
         except Exception, e:
             raise ProvideError(provide, e.message, sys.exc_info())
-        logger.debug("Provide %s returns values %s" % (
-            provide.name, ret))
-        for i in self._stack[sidx:]:
-            i.cross(**(provide.flags))
+        logger.debug("Provide %s returns values %s" % (provide_name, ret))
+        if not state == self.state_current():
+            logger.debug("Propagate flags %s to upper states" % provide.flags)
+            for s in self._stack[state_index:]:
+                s.cross(**(provide.flags))
         return ret
 
     def to_dot(self, cross=False,
