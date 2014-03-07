@@ -119,6 +119,7 @@ from xml_register import XmlRegister, Element, SubElement
 
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('enter', 'leave', 'cross')
+STATE_RESERVED_PROVIDES = ('enter',)
 
 
 class TransitionNotAllowed(Exception):
@@ -170,22 +171,26 @@ class State(XmlRegister):
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
-
-            # init requires
+            # init provides
             cls._provides = IterContainer()
-            for method in STATE_RESERVED_METHODS:
-                setattr(cls, "_requires_%s" % method, Provide(method, []))
 
+            # setup reserved provides
+            for method_name in STATE_RESERVED_PROVIDES:
+                method = getattr(cls, method_name).__func__
+                if not hasattr(method, "_provide"):
+                    setattr(method, "_provide", Provide(method_name))
+                # setup class properties to access reserved provides
+                # cls.provide_enter etc...
+                setattr(cls, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
+
+            # register custom provides
             funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
             for (fname, f) in funcs:
-                if hasattr(f, '_provide'):
-                    if f.__name__ in STATE_RESERVED_METHODS:
-                        setattr(cls, "_requires_%s" % f.__name__, f._provide)
-                    else:
-                        cls._provides.append(f._provide)
-
+                if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
+                    cls._provides.append(f._provide)
                     logger.debug("Registered %s in %s" % (f._provide, cls._instance))
+
+            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
 
         return cls._instance
 
@@ -193,13 +198,10 @@ class State(XmlRegister):
         return self.name
 
     def _xml_children(self):
-        acc = []
-        for method in STATE_RESERVED_METHODS:
-            require = getattr(self, "_requires_%s" % method)
-            if require is not None:
-                acc.append(require)
-
-        return self.provides + acc
+        provides = []
+        for method_name in STATE_RESERVED_PROVIDES:
+            provides.append(getattr(self, "provide_%s" % method_name))
+        return provides + self.provides
 
     def _xml_ressource_name(self):
         return "state"
@@ -239,11 +241,11 @@ class State(XmlRegister):
             variable_values is dict of index=value
         :type requires: list
         """
-        self.requires_enter.fill(requires)
-        self.requires_enter.validate()
+        self.provide_enter.fill(requires)
+        self.provide_enter.validate()
         try:
-            if self.requires_enter:
-                return self.enter(self.requires_enter)
+            if self.provide_enter:
+                return self.enter(self.provide_enter)
             else:
                 return self.enter()
         except ValidationError:
@@ -273,33 +275,6 @@ class State(XmlRegister):
         return self.enter.__doc__
 
     @property
-    def requires_enter(self):
-        """
-        Requires to enter the state
-
-        :rtype: :class:`Provide`
-        """
-        return self._requires_enter
-
-    @property
-    def requires_leave(self):
-        """
-        Requires to leave the state
-
-        :rtype: :class:`Provide`
-        """
-        return self._requires_leave
-
-    @property
-    def requires_cross(self):
-        """
-        Requires to cross the state
-
-        :rtype: :class:`Provide`
-        """
-        return self._requires_cross
-
-    @property
     def provides(self):
         """
         Requires for all provides
@@ -314,8 +289,8 @@ class State(XmlRegister):
         :rtype: Provide
         """
         # Small hack for LifecycleManager.from_xpath
-        if provide_name in ('enter', 'leave', 'cross'):
-            return getattr(self, 'requires_%s' % provide_name)
+        if provide_name in STATE_RESERVED_PROVIDES:
+            return getattr(self, 'provide_%s' % provide_name)
 
         try:
             return self.provides.get(provide_name)
@@ -331,7 +306,7 @@ class State(XmlRegister):
         for p in self.provides:
             for r in p:
                 r._init_variables()
-        for r in self.requires_enter:
+        for r in self.provide_enter:
             r._init_variables()
 
     def to_primitive(self):
@@ -340,7 +315,7 @@ class State(XmlRegister):
                 "supported_os_type": [t.to_primitive() for t in
                                       self.supported_os_type],
                 "provides": [r.to_primitive() for r in self.provides],
-                "requires_enter": self.requires_enter.to_primitive()}
+                "provide_enter": self.provide_enter.to_primitive()}
 
 
 class MetaState(State):
@@ -664,11 +639,10 @@ class Lifecycle(XmlRegister):
         :rtype: [:class:`Provide`]
         """
         acc = IterContainer()
-        for s in self.state_goto_path(state, path_idx=path_idx):
-            if s[1] == "enter":
-                r = s[0].requires_enter
-                if len(r) > 0:
-                    acc.append(r)
+        for state, method in self.state_goto_path(state, path_idx=path_idx):
+            if method == "enter":
+                if state.provide_enter:
+                    acc.append(state.provide_enter)
         return acc
 
     def provide_list(self, reachable=False):
@@ -820,7 +794,7 @@ class Lifecycle(XmlRegister):
                     inspect.getargspec(s.cross).args[1:])
             # Enter Requires
             acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in
-                                                          s.requires_enter])
+                                                          s.provide_enter])
             for p in s.get_provides():
                 acc += " | { %s }" % dot_provide(p)
             # End of label

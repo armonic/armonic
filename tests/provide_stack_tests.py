@@ -22,7 +22,7 @@ class TestProvideStack(unittest.TestCase):
 
     def test_provide(self):
         state = StateA()
-        provide = state.requires_enter
+        provide = state.provide_enter
         self.assertEqual(provide.name, 'enter')
         self.assertEqual(provide.flags, {'reload': True, 'restart': False, 'foo': 'bar'})
         self.assertEqual(provide.bar.variables().foo.value, None)

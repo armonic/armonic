@@ -18,9 +18,9 @@ class Configured(RunScript):
 
     def require_to_script_args(self):
         hosts = [v.host.value for v in
-                 self.requires_enter.get('backend').variables(all=True)]
+                 self.provide_enter.backend.variables(all=True)]
         return [",".join(hosts),
-                str(self.requires_enter.conf.variables().port.value)]
+                str(self.provide_enter.conf.variables().port.value)]
 
     @Require('conf', [Port("port", default=80)])
     @RequireExternal('backend', "//get_website", nargs='*')
