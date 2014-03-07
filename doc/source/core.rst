@@ -12,16 +12,16 @@ Module Lifecycle: To manage lifecycle of a service
 
 
 .. automodule:: mss.provide
-    :members: 
+    :members:
 
 .. automodule:: mss.require
-    :members: 
+    :members:
 
-.. automodule:: mss.state
-    :members: 
+.. automodule:: mss.states
+    :members:
 
 
 Augeas Configuration
 ====================
 .. automodule:: mss.configuration_augeas
-    :members: 
+    :members:

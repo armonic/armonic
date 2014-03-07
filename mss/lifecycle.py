@@ -1086,13 +1086,15 @@ class LifecycleManager(object):
 
         :param xpath: unique xpath of the provide to call
         :type xpath: str
-        :param requires: list of of tuples (variable_xpath, variable_values):
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
+        :param requires: list of of tuples (variable_xpath, variable_values)::
+
+            ("//xpath/to/variable", {0: value}),
+            ("//xpath/to/variable", {0: value})
+
         :type requires: list
 
         :return: list of validated provides to call in order to call provide_xpath_uri
-        :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
+        :rtype: {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
         """
         variables_values = format_input_variables(requires)
         logger.debug("Validating variables %s" % variables_values)
