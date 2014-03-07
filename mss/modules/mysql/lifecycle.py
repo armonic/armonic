@@ -218,10 +218,7 @@ class Active(MetaState):
         mysql_root_pwd = requires.get('auth').variables().get('root_password').value
 
         if database in ['database']:
-            raise mss.common.ProvideError('Mysql',
-                                          self.name,
-                                          'addDatabase',
-                                          "database name can not be '%s'" % database)
+            raise Exception("database name can not be '%s'" % database)
         self.addUser('root', mysql_root_pwd, user, password)
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
@@ -442,10 +439,7 @@ class ActiveAsMaster(MetaState):
         mysql_root_pwd = requires.get('auth').variables().get('root_password').value
 
         if database in ['database']:
-            raise mss.common.ProvideError('Mysql',
-                                          self.name,
-                                          'addDatabase',
-                                          "database name can not be '%s'" % database)
+            raise Exception("database name can not be '%s'" % database)
         self.addUser('root', mysql_root_pwd, user, password)
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()

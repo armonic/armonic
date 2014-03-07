@@ -3,6 +3,7 @@ import logging
 
 from mss.lifecycle import State, Lifecycle, Transition
 from mss.provide import Flags, Provide
+from mss.common import ProvideError
 
 
 class StateA(State):
@@ -51,7 +52,7 @@ class TestProvideFlags(unittest.TestCase):
     def test_cross_missing_flag(self):
         self.lf.state_goto(StateB())
         self.assertEqual(self.lf.state_current(), StateB())
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegexp(ProvideError, 'takes exactly 2 arguments'):
             self.lf.provide_call(StateA(), 'provide_flag2')
 
     def test_cross_no_flag(self):

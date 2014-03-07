@@ -109,8 +109,9 @@ import pprint
 import os
 import copy
 import itertools
+import sys
 
-from mss.common import IterContainer, DoesNotExist
+from mss.common import IterContainer, DoesNotExist, ProvideError
 from mss.provide import Provide
 from mss.variable import ValidationError
 import mss.utils
@@ -244,10 +245,15 @@ class State(XmlRegister):
         """
         self.requires_enter.fill(requires)
         self.requires_enter.validate()
-        if self.requires_enter:
-            return self.enter(self.requires_enter)
-        else:
-            return self.enter()
+        try:
+            if self.requires_enter:
+                return self.enter(self.requires_enter)
+            else:
+                return self.enter()
+        except ValidationError:
+            raise
+        except Exception, e:
+            raise ProvideError(self.provide_by_name('enter'), e.message, sys.exc_info())
 
     def enter(self):
         """Called when a state is applied"""
@@ -741,10 +747,15 @@ class Lifecycle(XmlRegister):
         sfct = state.__getattribute__(provide.name)
         provide.fill(requires)
         provide.validate()
-        if provide:
-            ret = sfct(provide)
-        else:
-            ret = sfct()
+        try:
+            if provide:
+                ret = sfct(provide)
+            else:
+                ret = sfct()
+        except ValidationError:
+            raise
+        except Exception, e:
+            raise ProvideError(provide, e.message, sys.exc_info())
         logger.debug("Provide %s returns values %s" % (
             provide.name, ret))
         for i in self._stack[sidx:]:

@@ -136,18 +136,20 @@ class ValidationError(Exception):
 
 
 class ProvideError(Exception):
-    def __init__(self, lf_name, state_name, provide_name, msg):
-        self.lf_name = lf_name
-        self.state_name = state_name
-        self.provide_name = provide_name
-        self.msg = msg
-        Exception.__init__(self, "%s.%s.%s : %s" %
-                           (lf_name, state_name, provide_name, msg))
+    def __init__(self, provide, message, exc_info=None):
+        self.provide = provide
+        self.message = message
+        if exc_info:
+            exc_type, exc_value, exc_traceback = exc_info
+            self.traceback = "".join(traceback.format_exception(exc_type, exc_value,
+                                                                exc_traceback))
+        Exception.__init__(self, message)
 
-    def __reduce__(self):
-        """We need to override it to support pickle. Must be FIXED."""
-        return (ProvideError,
-                (self.lf_name, self.state_name, self.provide_name, self.msg,))
+    def __str__(self):
+        str = "%s in %s" % (self.message, self.provide.get_xpath())
+        if self.traceback:
+            str += "\n" + self.traceback
+        return str
 
 
 class IterContainer(list):
