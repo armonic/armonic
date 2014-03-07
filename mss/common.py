@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import logging.handlers
-import json
 import traceback
 
 from mss.utils import ethernet_ifs
@@ -102,18 +101,14 @@ def load_lifecycles(dir, include_modules=None):
         sys.path.insert(0, dir)
         for module in os.listdir(dir):
             if (include_modules is not None
-                and module not in include_modules):
+                    and module not in include_modules):
                 continue
             if os.path.exists(os.path.join(dir, module, '__init__.py')):
                 try:
                     __import__(module)
                     logger.info("Imported module %s" % module)
-                except ImportError as e:
-                    logger.info("Module %s can not be imported" % module)
-                    logger.debug("Exception on import module %s:" % module)
-                    tb = traceback.format_exc().split("\n")
-                    for l in tb:
-                        logger.debug("  %s" % l)
+                except ImportError:
+                    logger.exception("Exception on import module %s:" % module)
 
 
 class DoesNotExist(Exception):
