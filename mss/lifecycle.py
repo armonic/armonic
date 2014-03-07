@@ -108,10 +108,9 @@ import logging
 import pprint
 import os
 import copy
-import itertools
 import sys
 
-from mss.common import IterContainer, DoesNotExist, ProvideError
+from mss.common import IterContainer, DoesNotExist, ProvideError, format_input_variables
 from mss.provide import Provide
 from mss.variable import ValidationError
 import mss.utils
@@ -425,6 +424,7 @@ class Lifecycle(XmlRegister):
     def init(self, state, requires=[]):
         """If it is not already initialized, push state in stack."""
         self._stack = []
+        requires = format_input_variables(requires)
         if not self._initialized:
             self._push_state(state, requires)
             self._initialized = True
@@ -609,6 +609,7 @@ class Lifecycle(XmlRegister):
 
         :rtype: None
         """
+        requires = format_input_variables(requires)
         logger.debug("Goto state %s using path %i" % (state, path_idx))
         path = self.state_goto_path(state, path_idx=path_idx)
         for (state, method) in path:
@@ -732,6 +733,7 @@ class Lifecycle(XmlRegister):
 
         :rtype: provide result
         """
+        requires = format_input_variables(requires)
         state = self._get_state_class(state)
         # To be sure that the provide exists
         state.provide_by_name(provide_name)
@@ -1020,7 +1022,7 @@ class LifecycleManager(object):
         :param requires: Requires needed to go to the target state
         :type requires: dict
         :rtype: None"""
-        requires = self._format_input_variables(requires)
+        requires = format_input_variables(requires)
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
@@ -1084,16 +1086,6 @@ class LifecycleManager(object):
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
-    def _format_input_variables(self, *variables_values):
-        """Translate ("//xpath/to/variable_name", "value")
-           to ("//xpath/to/variable_name", {0: "value"})
-        """
-        variables_values = list(itertools.chain(*variables_values))
-        for index, (variable_xpath, variable_values) in enumerate(variables_values):
-            if not type(variable_values) == dict:
-                variables_values[index] = (variable_xpath, {0: variable_values})
-        return variables_values
-
     def provide_call_validate(self, provide_xpath_uri, requires=[], path_idx=0):
         """Validate requires to call the provide
 
@@ -1106,7 +1098,7 @@ class LifecycleManager(object):
 
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
         """
-        variables_values = self._format_input_variables(requires)
+        variables_values = format_input_variables(requires)
         logger.debug("Validating variables %s" % variables_values)
         # check that all requires are validated
         # copy requires we don't want to fill variables yet
@@ -1134,13 +1126,14 @@ class LifecycleManager(object):
             variable_values is dict of index=value
         :type requires: list
         """
+        requires = format_input_variables(requires)
         logger.debug("Provide call %s" % provide_xpath_uri)
         # be sure that the provide can be validated
         # we don't want to change states if we can't call the provide in the end
         if self.provide_call_validate(provide_xpath_uri, requires)['errors']:
             logger.error("Provided values doesn't met provide requires")
             raise ValidationError("Provided values doesn't met provide requires")
-        requires = self._format_input_variables(requires)
+        requires = format_input_variables(requires)
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
         provide_name = XmlRegister.get_ressource(provide_xpath_uri, "provide")

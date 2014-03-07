@@ -3,6 +3,7 @@ import sys
 import logging
 import logging.handlers
 import traceback
+import itertools
 
 from mss.utils import ethernet_ifs
 
@@ -93,6 +94,17 @@ def expose(f):
 def is_exposed(f):
     "Test whether another function should be publicly exposed."
     return getattr(f, 'exposed', False)
+
+
+def format_input_variables(*variables_values):
+    """Translate ("//xpath/to/variable_name", "value")
+       to ("//xpath/to/variable_name", {0: "value"})
+    """
+    variables_values = list(itertools.chain(*variables_values))
+    for index, (variable_xpath, variable_values) in enumerate(variables_values):
+        if not type(variable_values) == dict:
+            variables_values[index] = (variable_xpath, {0: variable_values})
+    return variables_values
 
 
 def load_lifecycles(dir, include_modules=None):
