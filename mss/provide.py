@@ -1,13 +1,14 @@
-from mss.common import IterContainer, DoesNotExist, ValidationError
+from mss.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from mss.xml_register import XmlRegister
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class Provide(IterContainer, XmlRegister):
+class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
     """Basically, this describes a list of :py:class:`Require`."""
-    def __init__(self, name=None, requires=[], flags={}):
+    def __init__(self, name=None, requires=[], flags={}, **extra):
+        ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         IterContainer.__init__(self, *requires)
         self.flags = flags  # Should not be in Requires ...

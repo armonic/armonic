@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import traceback
 import itertools
+import copy
 
 from mss.utils import ethernet_ifs
 
@@ -200,3 +201,14 @@ class IterContainer(list):
     def append(self, arg):
         super(IterContainer, self).append(arg)
         self._register_args(arg)
+
+
+class ExtraInfoMixin(object):
+    extra = {}
+
+    def __init__(self, **kwargs):
+        self.extra = copy.copy(self.__class__.extra)
+        self.extra.update(dict(**kwargs))
+
+    def to_primitive(self):
+        return {'extra': self.extra}

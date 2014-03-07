@@ -14,7 +14,8 @@ vs = {
     'default': None,
     'required': True,
     'type': 'str',
-    'value': None
+    'value': None,
+    'extra': {}
 }
 
 
@@ -24,7 +25,7 @@ class TestSerialization(unittest.TestCase):
         self.maxDiff = None
 
     def test_require(self):
-        r = Require('require1', [v])
+        r = Require('require1', [v], title="foo")
         rs = {
             'xpath': None,
             'type': 'simple',
@@ -35,7 +36,10 @@ class TestSerialization(unittest.TestCase):
             'variables': [
                 [vs]
             ],
-            'variables_skel': [vs]
+            'variables_skel': [vs],
+            'extra': {
+                'title': 'foo'
+            }
         }
         self.assertEqual(r.to_primitive(), rs)
 
@@ -51,7 +55,8 @@ class TestSerialization(unittest.TestCase):
             'variables': [
                 [vs], [vs], [vs]
             ],
-            'variables_skel': [vs]
+            'variables_skel': [vs],
+            'extra': {}
         }
         self.assertEqual(r.to_primitive(), rs)
 
@@ -65,7 +70,8 @@ class TestSerialization(unittest.TestCase):
             'nargs_max': 99999,
             'nargs_min': 0,
             'variables': [],
-            'variables_skel': [vs, vs]
+            'variables_skel': [vs, vs],
+            'extra': {}
         }
         self.assertEqual(r.to_primitive(), rs)
 
@@ -83,7 +89,8 @@ class TestSerialization(unittest.TestCase):
             'provide_ret': [],
             'provide_args': [],
             'variables': [],
-            'variables_skel': []
+            'variables_skel': [],
+            'extra': {}
         }
         self.assertEqual(r.to_primitive(), rs)
 
@@ -105,7 +112,8 @@ class TestSerialization(unittest.TestCase):
             'variables': [
                 [vs]
             ],
-            'variables_skel': [vs]
+            'variables_skel': [vs],
+            'extra': {}
         }
         self.assertEqual(r.to_primitive(), rs)
 
@@ -130,7 +138,8 @@ class TestSerialization(unittest.TestCase):
                     'from_xpath': None,
                     'error': None,
                     'value': None,
-                    'default': None
+                    'default': None,
+                    'extra': {}
                 }
             ],
             'variables': [[
@@ -142,7 +151,8 @@ class TestSerialization(unittest.TestCase):
                     'from_xpath': None,
                     'error': None,
                     'value': None,
-                    'default': None
+                    'default': None,
+                    'extra': {}
                 }
             ]],
             'variables_skel': [
@@ -154,9 +164,11 @@ class TestSerialization(unittest.TestCase):
                     'from_xpath': None,
                     'error': None,
                     'value': None,
-                    'default': None
+                    'default': None,
+                    'extra': {}
                 }
-            ]
+            ],
+            'extra': {}
         }
         self.assertEqual(r.to_primitive(), rs)
 

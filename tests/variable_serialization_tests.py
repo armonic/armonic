@@ -16,12 +16,13 @@ class TestVariableSerialization(unittest.TestCase):
             'default': None,
             'required': True,
             'type': 'str',
-            'value': None
+            'value': None,
+            'extra': {}
         }
         self.assertEqual(v.to_primitive(), vs)
 
     def test_variable_default_required(self):
-        v = VString('var1', default="test", required=False)
+        v = VString('var1', default="test", required=False, foo="bar")
         vs = {
             'xpath': None,
             'from_xpath': None,
@@ -30,7 +31,10 @@ class TestVariableSerialization(unittest.TestCase):
             'default': "test",
             'required': False,
             'type': 'str',
-            'value': "test"
+            'value': "test",
+            'extra': {
+                'foo': 'bar'
+            }
         }
         self.assertEqual(v.to_primitive(), vs)
 
@@ -48,10 +52,88 @@ class TestVariableSerialization(unittest.TestCase):
             'default': None,
             'required': True,
             'type': 'str',
-            'value': None
+            'value': None,
+            'extra': {}
         }
         self.assertEqual(v.to_primitive(), vs)
 
+    def test_extra_infos(self):
+
+        class ExtraInfosVariable(VString):
+            extra = {
+                'label': 'foo',
+                'help': 'bar'
+            }
+
+        v = ExtraInfosVariable('var1')
+        vs = {
+            'xpath': None,
+            'from_xpath': None,
+            'name': 'var1',
+            'error': None,
+            'default': None,
+            'required': True,
+            'type': 'str',
+            'value': None,
+            'extra': {
+                'label': 'foo',
+                'help': 'bar'
+            }
+        }
+        self.assertEqual(v.to_primitive(), vs)
+
+        v = ExtraInfosVariable('var1', label="bar", foo="bar")
+        vs = {
+            'xpath': None,
+            'from_xpath': None,
+            'name': 'var1',
+            'error': None,
+            'default': None,
+            'required': True,
+            'type': 'str',
+            'value': None,
+            'extra': {
+                'label': 'bar',
+                'help': 'bar',
+                'foo': 'bar'
+            }
+        }
+        self.assertEqual(v.to_primitive(), vs)
+
+    def test_extra_infos_args(self):
+        v = VString('var1', label="foo", help="bar")
+        vs = {
+            'xpath': None,
+            'from_xpath': None,
+            'name': 'var1',
+            'error': None,
+            'default': None,
+            'required': True,
+            'type': 'str',
+            'value': None,
+            'extra': {
+                'label': 'foo',
+                'help': 'bar'
+            }
+        }
+        self.assertEqual(v.to_primitive(), vs)
+
+        v = VString('var1', default="foo", label="foo", help="bar")
+        vs = {
+            'xpath': None,
+            'from_xpath': None,
+            'name': 'var1',
+            'error': None,
+            'default': "foo",
+            'required': True,
+            'type': 'str',
+            'value': "foo",
+            'extra': {
+                'label': 'foo',
+                'help': 'bar'
+            }
+        }
+        self.assertEqual(v.to_primitive(), vs)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

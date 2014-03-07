@@ -3,11 +3,11 @@ import re
 import tempfile
 import urllib2
 
-from mss.common import ValidationError
+from mss.common import ValidationError, ExtraInfoMixin
 from mss.xml_register import XmlRegister
 
 
-class Variable(XmlRegister):
+class Variable(XmlRegister, ExtraInfoMixin):
     """A object :py:class:`Variable` is a container for a value used by a
     provide. The minimal definition is just the name of the
     variable. It is possbile to specify a default value. Moreover, it
@@ -30,7 +30,8 @@ class Variable(XmlRegister):
 
     type = None
 
-    def __init__(self, name, default=None, required=True, from_xpath=None):
+    def __init__(self, name, default=None, required=True, from_xpath=None, **extra):
+        ExtraInfoMixin.__init__(self, **extra)
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
         # Second time, we want to use default value but it is not use, first value instead.
@@ -48,14 +49,17 @@ class Variable(XmlRegister):
         return "variable"
 
     def to_primitive(self):
-        return {'name': self.name,
-                'xpath': self.get_xpath_relative(),
-                'required': self.required,
-                'type': self.type,
-                'default': self.default,
-                'value': self.value,
-                'error': self.error,
-                'from_xpath': self.from_xpath}
+        primitive = ExtraInfoMixin.to_primitive(self)
+        primitive.update(
+            {'name': self.name,
+             'xpath': self.get_xpath_relative(),
+             'required': self.required,
+             'type': self.type,
+             'default': self.default,
+             'value': self.value,
+             'error': self.error,
+             'from_xpath': self.from_xpath})
+        return primitive
 
     @property
     def value(self):
@@ -131,14 +135,14 @@ class VList(Variable):
     _inner_class = None
     _inner_inner_class = None
 
-    def __init__(self, name, inner, default=None, required=True):
+    def __init__(self, name, inner, default=None, required=True, **extra):
         if inspect.isclass(inner):
             self._inner_class = inner
         else:
             self._inner_class = inner.__class__
         if self._inner_class == VList:
             self._inner_inner_class = inner._inner_class
-        Variable.__init__(self, name, default, required)
+        Variable.__init__(self, name, default, required, from_xpath=None, **extra)
 
     @property
     def value(self):
@@ -190,13 +194,8 @@ class VString(Variable):
     pattern = None
     pattern_error = None
 
-    def __init__(self,
-                 name,
-                 default=None,
-                 required=True,
-                 from_xpath=None,
-                 modifier="%s"):
-        Variable.__init__(self, name, default, required, from_xpath)
+    def __init__(self, name, default=None, required=True, from_xpath=None, modifier="%s", **extra):
+        Variable.__init__(self, name, default, required, from_xpath, **extra)
         self._modifier = modifier
 
     @property

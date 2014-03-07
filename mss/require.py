@@ -21,7 +21,7 @@ types to fill values of a require.
 
 import logging
 
-from mss.common import IterContainer, DoesNotExist, ValidationError
+from mss.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from mss.variable import Host
 import copy
 
@@ -62,7 +62,7 @@ class RequireDefinitionError(Exception):
     pass
 
 
-class Require(XmlRegister):
+class Require(XmlRegister, ExtraInfoMixin):
     """Basically, a require is a set of
     :class:`mss.variable.Variable`. They are defined in a state and
     are used to specify, verify and store values needed to enter in
@@ -77,7 +77,8 @@ class Require(XmlRegister):
     :param nargs: variables occurences (1 or more, *, ?)
     """
 
-    def __init__(self, name, variables, nargs='1'):
+    def __init__(self, name, variables, nargs='1', **extra):
+        ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         self.type = "simple"
 
@@ -223,14 +224,18 @@ class Require(XmlRegister):
         return True
 
     def to_primitive(self):
-        return {"name": self.name,
-                "xpath": self.get_xpath_relative(),
-                "nargs": self.nargs,
-                "nargs_min": self.nargs_min,
-                "nargs_max": self.nargs_max,
-                "variables": [[var.to_primitive() for var in vars] for vars in self.variables(all=True)],
-                "variables_skel": [var.to_primitive() for var in self._variables_skel],
-                "type": "simple"}
+        primitive = ExtraInfoMixin.to_primitive(self)
+        primitive.update({
+            "name": self.name,
+            "xpath": self.get_xpath_relative(),
+            "nargs": self.nargs,
+            "nargs_min": self.nargs_min,
+            "nargs_max": self.nargs_max,
+            "variables": [[var.to_primitive() for var in vars] for vars in self.variables(all=True)],
+            "variables_skel": [var.to_primitive() for var in self._variables_skel],
+            "type": "simple"}
+        )
+        return primitive
 
     def variables(self, index=0, all=False):
         """Return variables of given index.
@@ -308,8 +313,8 @@ class RequireUser(Require):
     """To specify a require which has to be known by user. For
     instance, mysql password is just know by user who must remember
     it."""
-    def __init__(self, name, provided_by, variables):
-        Require.__init__(self, name, variables)
+    def __init__(self, name, provided_by, variables, **extra):
+        Require.__init__(self, name, variables, **extra)
         self.type = "user"
         self.provided_by = provided_by
 
@@ -318,11 +323,15 @@ class RequireUser(Require):
                                                          self._variables)
 
     def to_primitive(self):
-        return {"name": self.name,
-                "xpath": self.get_xpath_relative(),
-                "variables": [a.to_primitive() for a in self._variables[0]],
-                "type": "user",
-                "provided_by_xpath": self.provided_by}
+        primitive = Require.to_primitive(self)
+        primitive.update({
+            "name": self.name,
+            "xpath": self.get_xpath_relative(),
+            "variables": [a.to_primitive() for a in self._variables[0]],
+            "type": "user",
+            "provided_by_xpath": self.provided_by}
+        )
+        return primitive
 
 
 class RequireLocal(Require):
@@ -339,9 +348,9 @@ class RequireLocal(Require):
     :param provide_ret: provide return value
     :param nargs: provide occurences (1 or more, *) or is optional (?)
     """
-    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1", **extra):
         _variables = provide_args + provide_ret
-        Require.__init__(self, name, _variables, nargs=nargs)
+        Require.__init__(self, name, _variables, nargs=nargs, **extra)
         self.type = "local"
         self.xpath = xpath
         self.lf_name = None
@@ -354,7 +363,7 @@ class RequireLocal(Require):
                 Require._xml_add_properties_tuple(self))
 
     def to_primitive(self):
-        primitive = super(RequireLocal, self).to_primitive()
+        primitive = Require.to_primitive(self)
         primitive.update({
             "type": self.type,
             "lf_name": self.lf_name,
@@ -394,17 +403,16 @@ class RequireExternal(RequireLocal):
     A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
-    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1"):
+    def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1", **extra):
         for v in provide_args:
             if v.name == 'host':
                 raise RequireDefinitionError(
                     "Variable name 'host' can not be use because it is a"
                     " reserved variable name for External require.")
 
-        RequireLocal.__init__(self, name,
-                              xpath,
+        RequireLocal.__init__(self, name, xpath,
                               provide_args + [Host('host')],
-                              provide_ret, nargs)
+                              provide_ret, nargs, **extra)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):
