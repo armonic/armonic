@@ -990,7 +990,7 @@ class LifecycleManager(object):
         lf = self.lifecycle_by_name(lf_name)
         return lf.state_goto_requires(state_name)
 
-    def state_goto(self, state_xpath_uri, requires={}, path_idx=0):
+    def state_goto(self, state_xpath_uri, requires=[], path_idx=0):
         """From the current state go to state.
 
         :param xpath: The xpath of a state. Must be unique.
@@ -998,6 +998,7 @@ class LifecycleManager(object):
         :param requires: Requires needed to go to the target state
         :type requires: dict
         :rtype: None"""
+        requires = self._format_input_variables(requires)
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
