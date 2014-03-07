@@ -866,33 +866,29 @@ class LifecycleManager(object):
 
     All methods of :py:class:`LifecyleManager` return python object.
 
-    :param autoload: TODO
     :param modules_dir: the path of the modules root directory
     :param include_modules: the list of wanted modules
     :param os_type: to specify which kind of os has to be used.
         If it is not specified, the os type is automatically discovered.
 
     """
-    def __init__(self, autoload=True, modules_dir=None, include_modules=None, os_type=None):
+    def __init__(self, modules_dir=None, include_modules=None, os_type=None, autoload=True):
         # empty the XML register before proceeding
         XmlRegister.clear()
 
-        if autoload:
-            if modules_dir is None:
-                raise TypeError("'modules_dir' could not be None")
+        if modules_dir is not None:
             mss.common.load_lifecycles(os.path.abspath(modules_dir),
                                        include_modules=include_modules)
 
         self.os_type = os_type
-
-        self._autoload = autoload
         self.lf_loaded = {}
         self.lf = {}
         for lf in mss.utils.get_subclasses(Lifecycle):
             if not lf.abstract:
                 logger.debug("Found Lifecycle %s" % lf)
                 self.lf.update({lf.__name__: lf})
-                self.load(lf.__name__)
+                if autoload:
+                    self.load(lf.__name__)
             else:
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
 
@@ -945,11 +941,10 @@ class LifecycleManager(object):
             return self.lf_loaded.keys()
 
     def lifecycle_by_name(self, lf_name):
-        if self._autoload:
-            try:
-                self.lf_loaded[lf_name]
-            except KeyError:
-                self.load(lf_name)
+        try:
+            self.lf_loaded[lf_name]
+        except KeyError:
+            self.load(lf_name)
         try:
             return self.lf_loaded[lf_name]
         except KeyError:
