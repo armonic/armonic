@@ -1,7 +1,7 @@
 import mss.utils
 from mss.lifecycle import State
 
-from packages import InstallPackagesUrpm, InstallPackagesApt
+from packages import InstallPackages, InstallPackagesUrpm, InstallPackagesApt
 from run import RunScript
 from active import ActiveWithSystemV, ActiveWithSystemd
 from templates import CopyTemplates

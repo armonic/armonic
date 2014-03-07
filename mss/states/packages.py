@@ -1,6 +1,6 @@
 import logging
 
-from mss.lifecycle import State
+from mss.lifecycle import State, MetaState
 from mss import process
 import mss.utils
 
@@ -108,3 +108,10 @@ class InstallPackagesApt(State):
     def leave(self):
         logger.info("%s.%-10s: urpme %s" %
                     (self.lf_name, self.name, " ".join(self.packages)))
+
+
+class InstallPackages(MetaState):
+    """Install packages using the available package management tool
+    on the system.
+    """
+    implementations = [InstallPackagesUrpm, InstallPackagesApt]
