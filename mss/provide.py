@@ -109,9 +109,9 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
                 "flags": self.flags}
 
     def __repr__(self):
-        return "<Provide:%s(%s,%s)>" % (self.name,
-                                        IterContainer.__repr__(self),
-                                        self.flags)
+        return "<Provide:%s(%s,flags=%s)>" % (self.name,
+                                              IterContainer.__repr__(self),
+                                              self.flags)
 
 
 class Flags(object):

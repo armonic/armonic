@@ -830,21 +830,27 @@ class LifecycleNotExist(Exception):
 
 
 class LifecycleManager(object):
-    """The :class:`LifecyleManager` is used to manage
-    :py:class:`Lifecyle`. It permits to interact with lifecycles by
-    provinding Xpath.  For instance, to get all state of module
-    Mysql::
+    """The :class:`LifecyleManager` is used to manage :py:class:`Lifecyle`
+    objects. It permits to interact with lifecycles by provinding xpaths.
 
-    lifecyleManager.state("//Mysql/*")
+    The full path to a variable is::
 
+        /hostname/lifecycle_name/state_name/provide_name/require_name/variable_name
 
-    All methods of :py:class:`LifecyleManager` return python object.
+    The xpath to get all states of the Mysql :class:`Lifecyle` would be::
+
+        //Mysql/*
+
+    To get the ``add_database`` provide in the Mysql :class:`Lifecyle`::
+
+        //Mysql//add_database
+
+    All methods of :py:class:`LifecyleManager` returns python objects.
 
     :param modules_dir: the path of the modules root directory
     :param include_modules: the list of wanted modules
     :param os_type: to specify which kind of os has to be used.
         If it is not specified, the os type is automatically discovered.
-
     """
     def __init__(self, modules_dir=None, include_modules=None, os_type=None, autoload=True):
         # empty the XML register before proceeding
@@ -869,16 +875,18 @@ class LifecycleManager(object):
     def info(self):
         """Get info of mss agent
 
-        :rtype: list of strings (lifecycle objects names)
+        :rtype: dict
         """
         return {"os-type": mss.utils.OS_TYPE.name,
                 "os-release": mss.utils.OS_TYPE.release}
 
     def lifecycle(self, lifecycle_xpath):
-        """List loaded lifecycle objects.
+        """List loaded lifecycle objects
 
-        :param lifecycle_xpath: A xpath that matches lifecycles
+        :param lifecycle_xpath: xpath that matches lifecycles
         :type lifecycle_xpath: str
+
+        :return: list of :class:`Lifecycle`
         :rtype: [:class:`Lifecycle`]
         """
         elts = XmlRegister.find_all_elts(lifecycle_xpath)
@@ -889,30 +897,29 @@ class LifecycleManager(object):
             acc.append(lf)
         return acc
 
-    def load(self, lf_name=None):
-        """Load a lifecycle object in the manager.
-        If lf_name is not set, return a list of loaded LF.
+    def load(self, lf_name):
+        """Load a :class:`Lifecycle` in the manager and register it in the
+        XML register.
 
-        :param lf_name: the lifecycle to load
+        :param lf_name: the :class:`Lifecycle` name to load
         :type lf_name: str
-        :rtype: list of lifecycle objects names
+
+        :raises LifecycleNotExist: if the :class:`Lifecycle` isn't found
+        :return: the loaded :class:`Lifecycle`
+        :rtype: :class:`Lifecycle`
         """
-        if lf_name is not None:
-            try:
-                lf = self.lf[lf_name]()
-                # Reset variables values in all States
-                # since States are Singleton
-                lf.clear()
-                if self.os_type is not None:
-                    lf.os_type = self.os_type
-                lf._xml_register()
-            except KeyError:
-                raise LifecycleNotExist("Lifecycle '%s' doesn't exist!" %
-                                        lf_name)
-            self.lf_loaded.update({lf_name: lf})
-            return [lf.name]
-        else:
-            return self.lf_loaded.keys()
+        try:
+            lf = self.lf[lf_name]()
+            # Reset variables values in all States
+            # since States are Singleton
+            lf.clear()
+            if self.os_type is not None:
+                lf.os_type = self.os_type
+            lf._xml_register()
+        except KeyError:
+            raise LifecycleNotExist("Lifecycle '%s' doesn't exist" % lf_name)
+        self.lf_loaded.update({lf_name: lf})
+        return lf
 
     def lifecycle_by_name(self, lf_name):
         try:
@@ -927,8 +934,10 @@ class LifecycleManager(object):
     def state(self, state_xpath):
         """Return a list of states that matches state_xpath.
 
-        :param state_xpath: A xpath that can match multiple states
-        :param state_xpath: a xpath that matches states.
+        :param state_xpath: xpath that can match multiple states
+        :type state_xpath: str
+
+        :return: list of :class:`State`
         :rtype: [:py:class:`State`]
         """
         elts = XmlRegister.find_all_elts(state_xpath)
@@ -943,9 +952,11 @@ class LifecycleManager(object):
     def state_current(self, lifecycle_xpath):
         """Get the current state name of matched lifecycles.
 
-        :param lifecyle_xpath: A xpath that can match multiple lifecycles
+        :param lifecyle_xpath: xpath that can match multiple :class:`Lifecycle`
+
         :rtype: [:class:`State`]
         """
+        # TODO return (Lifecycle, State)
         elts = XmlRegister.find_all_elts(lifecycle_xpath)
         acc = []
         for e in elts:
@@ -958,9 +969,11 @@ class LifecycleManager(object):
         """From the current state, returns all paths to goto states that
         match state_xpath.
 
-        :param state_xpath: A xpath that can match multiple states
-        :rtype: [(:py:class:`State`, [path])]
+        :param state_xpath: xpath that can match multiple states
+        :type state_xpath: str
 
+        :return: list of paths for every state matched by state_xpath
+        :rtype: [(:class:`State`, [path])]
         """
         elts = XmlRegister.find_all_elts(state_xpath)
         acc = []
@@ -976,10 +989,13 @@ class LifecycleManager(object):
         """Return the list a special provide required to go from the current
         state to the state that match state_xpath_uri.
 
-        :param state_xpath_uri: A xpath that matches a unique state.
-        :param path_idx: (Not yet implemented)
-        :rtype: [:py:class:`Provide`]
+        :param state_xpath_uri: unique state xpath
+        :type state_xpath_uri: str
+        :param path_idx: path to use when there is multiple paths
+            to go to the provide
+        :type path_idx: int
 
+        :rtype: [:py:class:`Provide`]
         """
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
@@ -989,11 +1005,15 @@ class LifecycleManager(object):
     def state_goto(self, state_xpath_uri, requires=[], path_idx=0):
         """From the current state go to state.
 
-        :param xpath: The xpath of a state. Must be unique.
+        :param xpath: unique xpath of a state
         :type xpath: str
-        :param requires: Requires needed to go to the target state
-        :type requires: dict
-        :rtype: None"""
+        :param requires: list of of tuples (variable_xpath, variable_values):
+            variable_xpath is a full xpath
+            variable_values is dict of index=value
+        :type requires: list
+
+        :rtype: None
+        """
         requires = format_input_variables(requires)
         lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
         state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
@@ -1007,6 +1027,7 @@ class LifecycleManager(object):
         :param provide_xpath: xpath to provide
         :type provide_xpath: str
 
+        :return: list of provides that match provide_xpath
         :rtype: [:py:class:`Provide`]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
@@ -1026,10 +1047,11 @@ class LifecycleManager(object):
 
         :param provide_xpath_uri: unique xpath to provide
         :type provide_xpath_uri: str
-        :param path_idx: the path to use when there is multiple paths
+        :param path_idx: path to use when there is multiple paths
             to go to the provide
         :type path_idx: int
 
+        :return: list of provides to call it order to call provide_xpath_uri
         :rtype: [:py:class:`Provide`]
         """
         lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
@@ -1042,6 +1064,7 @@ class LifecycleManager(object):
         :param provide_xpath: xpath to provide
         :type provide_xpath: str
 
+        :return: list of paths to call provides that match provide_xpath
         :rtype: [(:py:class:`Provide`, [path, ...])]
         """
         matches = mss.xml_register.XmlRegister.find_all_elts(provide_xpath)
@@ -1061,13 +1084,14 @@ class LifecycleManager(object):
     def provide_call_validate(self, provide_xpath_uri, requires=[], path_idx=0):
         """Validate requires to call the provide
 
-        :param xpath: The xpath og the provide to call
+        :param xpath: unique xpath of the provide to call
         :type xpath: str
-        :param requires: A list of of tuples (variable_xpath, variable_values):
+        :param requires: list of of tuples (variable_xpath, variable_values):
             variable_xpath is a full xpath
             variable_values is dict of index=value
         :type requires: list
 
+        :return: list of validated provides to call in order to call provide_xpath_uri
         :rtype {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
         """
         variables_values = format_input_variables(requires)
@@ -1091,12 +1115,13 @@ class LifecycleManager(object):
     def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
         """Call a provide of a lifecycle and go to provider state if needed
 
-        :param xpath: The xpath of the provide to call
+        :param xpath: xpath of the provide to call
         :type xpath: str
-        :param requires: A list of of tuples (variable_xpath, variable_values):
+        :param requires: list of of tuples (variable_xpath, variable_values):
             variable_xpath is a full xpath
             variable_values is dict of index=value
-        :type requires: list
+
+        :return: provide_xpath_uri call result
         """
         requires = format_input_variables(requires)
         logger.debug("Provide call %s" % provide_xpath_uri)
@@ -1118,34 +1143,38 @@ class LifecycleManager(object):
     def to_dot(self, lf_name, reachable=False):
         """Return the dot string of a lifecyle object
 
-        :param lf_name: The name of the lifecycle object
+        :param lf_name: name of the lifecycle object
         :type lf_name: str
+
         :rtype: dot file string"""
         return self.lifecycle_by_name(lf_name).to_dot(reachable=reachable)
 
     def to_primitive(self, lf_name, reachable=False):
-        """Return the dot string of a lifecyle object
+        """Return a serialized Lifecycle object
 
-        :param lf_name: The name of the lifecycle object
+        :param lf_name: name of the :class:`Lifecycle` object
         :type lf_name: str
-        :rtype: dot file string"""
+
+        :return: serialized :class:`Lifecycle` object
+        :rtype: dict"""
         return self.lifecycle_by_name(lf_name).to_primitive(reachable=reachable)
 
     def uri(self, xpath="//"):
-        """Return the list of uri that match this xpath.
+        """Return the list of xpath_uris that match this xpath.
 
         :param xpath: an xpath string
         :type xpath: str
-        :rtype: [uri]"""
+
+        :return: list of xpaths
+        :rtype: [xpath_uri]"""
         return mss.xml_register.XmlRegister.find_all_elts(xpath)
 
     def from_xpath(self, xpath, ret="lifecycle"):
-        """
-        From a xpath try to get the object of type
+        """From a xpath try to get the object of type ``ret``
 
-        :param xpath: the xpath to a ressource
+        :param xpath: xpath to a ressource
         :type xpath: str
-        :param ret: the object to return (lifecycle, state, provide, require, variable)
+        :param ret: object type to return (lifecycle, state, provide, require, variable)
         :type ret: str
 
         :rtype: :class:`Lifecycle` | :class:`State` | :class:`Provide` | :class:`Require` | :class:`Variable`
@@ -1163,5 +1192,5 @@ class LifecycleManager(object):
         return mss.xml_register.XmlRegister.xpath(xpath)
 
     def to_xml(self, xpath=None):
-        """Return the xml representation of agent."""
+        """Return the xml representation of the :class:`LifecyleManager`."""
         return mss.xml_register.XmlRegister.to_string(xpath)
