@@ -1,0 +1,110 @@
+<!-- To know if ressource supports commands -->
+<iq type='get'
+    to='test1@im.aeolus.org'
+    from='test2@im.aeolus.org'>
+  <query xmlns='http://jabber.org/protocol/disco#info'/>
+</iq>
+
+
+<!-- To list available comamnds -->
+<iq type='get'
+    to='mss-master@im.aeolus.org/master'
+    from='test2@im.aeolus.org'>
+  <query xmlns='http://jabber.org/protocol/disco#items'
+         node='http://jabber.org/protocol/commands'/>
+</iq>
+
+<iq type='get'
+    to='test1@im.aeolus.org/master'
+    from='test2@im.aeolus.org'>
+  <query xmlns='http://jabber.org/protocol/disco#items'
+         node='http://jabber.org/protocol/commands'/>
+</iq>
+
+
+<!-- To call the command provides -->
+<iq type='set' to='test1@im.aeolus.org/master' id='exec1'>
+  <command xmlns='http://jabber.org/protocol/commands'
+           node='provides'
+           action='execute'/>
+</iq>
+
+
+<!-- BUILD -->
+<iq type='set' to='test1@im.aeolus.org/master' id='exec1'>
+  <command xmlns='http://jabber.org/protocol/commands'
+           node='build'
+           action='execute'/>
+</iq>
+
+
+
+
+
+<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="next">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field var='xpath'>
+        <value>//Varnish//start</value>
+      </field>
+    </x>
+  </command>
+</iq>
+
+
+
+
+<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="next">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field var='manage'>
+        <value>true</value>
+      </field>
+    </x>
+  </command>
+</iq>
+
+
+
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec1'>
+  <command xmlns='http://jabber.org/protocol/commands'
+           node='provides'
+           action='execute'/>
+</iq>
+
+
+<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='provides'
+	   action="complete">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field var='xpath'>
+        <value>//Varnish//start</value>
+      </field>
+    </x>
+  </command>
+</iq>
+
+
+<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="execute">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field var='xpath'>
+        <value>//Varnish//start</value>
+      </field>
+    </x>
+  </command>
+</iq>
+
+
+<iq to="test1@im.aeolus.org/30835477601394189897745948" type="set" id="c21eda45-7460-42b2-aae7-1a718d6cdd95-5"><command xmlns="http://jabber.org/protocol/commands" node="greeting" action="complete" sessionid="1394190275.52-e77486a5-3043-498a-b054-71b657622427-5"><x xmlns="jabber:x:data" type="submit"><field var="greeting"><value>&quot;iop&quot;</value></field></x></command></iq>
