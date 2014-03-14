@@ -62,7 +62,7 @@ else:
 
 import armonic.utils
 from armonic.serialize import Serialize
-lfm = Serialize(modules_dir="armonic/modules/",os_type=armonic.utils.OsType("Mandriva Business Server"))
+lfm = Serialize(modules_dir="../armonic/modules/",os_type=armonic.utils.OsType("Mandriva Business Server"))
 
 from armonic.client.iter_smart import Provide, walk
 
@@ -82,12 +82,8 @@ while True:
         provide.manage(ret)
 
     elif provide.step == "specialize":
-        matches = provide.matches()
-        if len(matches) > 1:
-            ret = user_input_choose_amongst(matches, "")
-            provide.specialize(ret)
-        else:
-            provide.specialize(matches[0])
+        ret = user_input_choose_amongst(args, "")
+        generator.send(ret)
 
     elif provide.step == "set_dependancies":
         pass

@@ -92,12 +92,15 @@ class Provide(object):
         return ret
 
     def manage(self, boolean):
+        """Set true if this provide has to be managed"""
         self.ignore = not boolean
 
     def matches(self):
+        """Return the list of xpaths that matched the generic_xpath"""
         return self.lfm.uri(xpath=self.generic_xpath)
 
     def specialize(self, xpath):
+        """Used to specialize the generic_xpath"""
         self.specialized_xpath = xpath
     
     def call(self):
@@ -130,18 +133,26 @@ def walk(root_scope):
                 continu = yield (scope, scope.step, None)
                 scope._next_step()
 
-            if scope.step == "set_dependancies":
+            elif scope.step == "set_dependancies":
                 scope.build_requires()
                 yield(scope, scope.step, None)
                 scope._next_step()
 
-            if scope.step == "call":
+            elif scope.step == "call":
                 confirm = yield(scope, scope.step, None)
                 if confirm:
                     scope.call()
                 scope._next_step()
 
-                
+            elif scope.step == "specialize":
+                m = scope.matches()
+                if len(m) > 1:
+                    specialized = yield(scope, scope.step, m)
+                else:
+                    specialized = m[0]
+                scope.specialize(specialized)
+                scope._next_step()
+
             elif scope.step == "multiplicity":
                 if scope._current_require is None:
                     # For each require, provides are built
