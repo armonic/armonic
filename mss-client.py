@@ -12,7 +12,7 @@ from prettytable import PrettyTable
 import argcomplete
 import json
 
-from mss.client.sock import ClientSocket
+from armonic.client.sock import ClientSocket
 
 import os
 
@@ -184,7 +184,7 @@ def ModuleCompleter(prefix, parsed_args, **kwargs):
     try:
         client = ClientSocket(parsed_args.host, parsed_args.port)
     except Exception as e:
-        argcomplete.warn("Connection error to mss agent %e" % e)
+        argcomplete.warn("Connection error to armonic agent %e" % e)
     ret = client.call('lf_list')
     return (m for m in ret if m.startswith(prefix))
 
@@ -192,7 +192,7 @@ def StateCompleter(prefix, parsed_args, **kwargs):
     try:
         client = ClientSocket(parsed_args.host, parsed_args.port)
     except Exception as e:
-        argcomplete.warn("Connection error to mss agent %e" % e)
+        argcomplete.warn("Connection error to armonic agent %e" % e)
     ret = client.call('state_list',parsed_args.module)
     return (m for m in ret if m.startswith(prefix))
 
@@ -201,7 +201,7 @@ def ProvideCompleter(prefix, parsed_args, **kwargs):
     try:
         client = ClientSocket(parsed_args.host, parsed_args.port)
     except Exception as e:
-        argcomplete.warn("Connection error to mss agent %e" % e)
+        argcomplete.warn("Connection error to armonic agent %e" % e)
     try :
         state = parsed_args.state
     except AttributeError:
@@ -219,7 +219,7 @@ def ProvideCompleter(prefix, parsed_args, **kwargs):
 
 
 parser = argparse.ArgumentParser(
-    prog='mss-client',
+    prog='armonic-client',
     description=("A simple client to contact a MSS3 agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
@@ -284,7 +284,7 @@ parser_provide_call.set_defaults(func=cmd_provide_call)
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
 parser_plot.add_argument('module' , type=str, nargs='?', help='a module').completer = ModuleCompleter
 parser_plot.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
-parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe mss stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
+parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe armonic stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
 parser_plot.set_defaults(func=cmd_plot)
 
 
@@ -292,7 +292,7 @@ argcomplete.autocomplete(parser)
 args = parser.parse_args()
 
 if args.protocol == "xmlrpc":
-    from mss.client_xmlrpc import ClientXMLRPC, XMLRPCError
+    from armonic.client_xmlrpc import ClientXMLRPC, XMLRPCError
     client = ClientXMLRPC(args.host, args.port)
     try:
         args.func(args)
@@ -301,7 +301,7 @@ if args.protocol == "xmlrpc":
         exit(1)
 
 elif args.protocol == "socket":
-    from mss.client.sock import ClientSocket
+    from armonic.client.sock import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
     format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'

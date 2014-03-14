@@ -2,12 +2,12 @@ import os
 import unittest
 import logging
 
-from mss.lifecycle import State, LifecycleManager, Lifecycle, Transition
-from mss.require import Require
-from mss.provide import Provide
-from mss.variable import VString, Hostname
-from mss.common import DoesNotExist
-from mss.xml_register import XpathMultipleMatch
+from armonic.lifecycle import State, LifecycleManager, Lifecycle, Transition
+from armonic.require import Require
+from armonic.provide import Provide
+from armonic.variable import VString, Hostname
+from armonic.common import DoesNotExist
+from armonic.xml_register import XpathMultipleMatch
 
 
 class StateA(State):

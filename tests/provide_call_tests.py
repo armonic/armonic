@@ -2,11 +2,11 @@ import os
 import unittest
 import logging
 
-from mss.lifecycle import State, LifecycleManager, Lifecycle, Transition
-from mss.require import Require
-from mss.provide import Provide
-from mss.variable import VString
-from mss.common import ValidationError, ProvideError
+from armonic.lifecycle import State, LifecycleManager, Lifecycle, Transition
+from armonic.require import Require
+from armonic.provide import Provide
+from armonic.variable import VString
+from armonic.common import ValidationError, ProvideError
 
 
 class StateA(State):

@@ -1,27 +1,27 @@
 Module Lifecycle: To manage lifecycle of a service
 ==================================================
 
-.. automodule:: mss.lifecycle
-.. autoclass:: mss.lifecycle.LifecycleManager
+.. automodule:: armonic.lifecycle
+.. autoclass:: armonic.lifecycle.LifecycleManager
    :members:
 
-.. autoclass:: mss.lifecycle.Lifecycle
+.. autoclass:: armonic.lifecycle.Lifecycle
    :members:
 
 
 
 
-.. automodule:: mss.provide
+.. automodule:: armonic.provide
     :members:
 
-.. automodule:: mss.require
+.. automodule:: armonic.require
     :members:
 
-.. automodule:: mss.states
+.. automodule:: armonic.states
     :members:
 
 
 Augeas Configuration
 ====================
-.. automodule:: mss.configuration_augeas
+.. automodule:: armonic.configuration_augeas
     :members:

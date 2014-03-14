@@ -46,7 +46,7 @@ def user_input_choose_amongst(choices, prefix=''):
 
 
 import argparse
-parser = argparse.ArgumentParser(prog='mss3-iter-smart')
+parser = argparse.ArgumentParser(prog='armonic-iter-smart')
 parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
 parser.add_argument('--verbose',"-v", action="store_true")
 args = parser.parse_args()
@@ -60,11 +60,11 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 
-import mss.utils
-from mss.serialize import Serialize
-lfm = Serialize(modules_dir="mss/modules/",os_type=mss.utils.OsType("Mandriva Business Server"))
+import armonic.utils
+from armonic.serialize import Serialize
+lfm = Serialize(modules_dir="armonic/modules/",os_type=armonic.utils.OsType("Mandriva Business Server"))
 
-from mss.client.iter_smart import Provide, walk
+from armonic.client.iter_smart import Provide, walk
 
 root_provide = Provide(generic_xpath=args.xpath, lfm=lfm)
 

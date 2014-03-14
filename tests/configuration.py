@@ -2,16 +2,16 @@ import logging
 # import augeas
 
 
-import mss.modules.shorewall.configuration
-import mss.modules.apache.configuration
-import mss.configuration_augeas
+import armonic.modules.shorewall.configuration
+import armonic.modules.apache.configuration
+import armonic.configuration_augeas
 
-# mss.configuration_augeas.log_off()
+# armonic.configuration_augeas.log_off()
 
 
 print "Shorewall demo"
 print "-----------"
-s = mss.modules.shorewall.configuration.Shorewall(augeas_root="/tmp",
+s = armonic.modules.shorewall.configuration.Shorewall(augeas_root="/tmp",
                                                   autoload=True)
 print "Rules:"
 for r in s.rules:
@@ -24,14 +24,14 @@ s.save()
 
 print "Log verbosity: %s (after saving)" % s.logVerbosity.value
 print "Append a new rule ACCEPT lan0"
-newRule = mss.modules.shorewall.configuration.Rule()
+newRule = armonic.modules.shorewall.configuration.Rule()
 newRule.setRule("ACCEPT", "lan0")
 s.rules.append(newRule)
 s.save()
 
 print "Apache demo"
 print "-----------"
-a = mss.modules.apache.configuration.Apache(augeas_root="/tmp",
+a = armonic.modules.apache.configuration.Apache(augeas_root="/tmp",
                                             autoload=True)
 print "Listen port %s " % a.port.value
 

@@ -1,8 +1,8 @@
 import unittest
 import logging
 
-from mss.require import Require, RequireLocal, RequireExternal
-from mss.variable import VString
+from armonic.require import Require, RequireLocal, RequireExternal
+from armonic.variable import VString
 
 
 v = VString('var1')

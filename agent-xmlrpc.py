@@ -2,8 +2,8 @@ import os
 import argparse
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
-import mss.lifecycle
-import mss.common
+import armonic.lifecycle
+import armonic.common
 
 
 # Restrict to a particular path.
@@ -30,7 +30,7 @@ class XMLRPCServer(SimpleXMLRPCServer):
 
 
 if __name__ == "__main__":
-    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules')
+    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'armonic', 'modules')
 
     parser = argparse.ArgumentParser(prog=__file__)
     parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
@@ -38,8 +38,8 @@ if __name__ == "__main__":
     parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s))')
     args = parser.parse_args()
 
-    mss.common.load_lifecycles(os.path.abspath(args.modules_dir))
-    lfm = mss.lifecycle.LifecycleManager()
+    armonic.common.load_lifecycles(os.path.abspath(args.modules_dir))
+    lfm = armonic.lifecycle.LifecycleManager()
 
     server = XMLRPCServer((args.host, args.port),
                           requestHandler=RequestHandler,

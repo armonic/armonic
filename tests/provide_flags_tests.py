@@ -1,9 +1,9 @@
 import unittest
 import logging
 
-from mss.lifecycle import State, Lifecycle, Transition
-from mss.provide import Flags, Provide
-from mss.common import ProvideError
+from armonic.lifecycle import State, Lifecycle, Transition
+from armonic.provide import Flags, Provide
+from armonic.common import ProvideError
 
 
 class StateA(State):

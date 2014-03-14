@@ -1,7 +1,7 @@
 import unittest
 
-from mss.variable import VList, VString, VInt, VBool, VFloat, Port, Hostname
-from mss.common import ValidationError
+from armonic.variable import VList, VString, VInt, VBool, VFloat, Port, Hostname
+from armonic.common import ValidationError
 
 
 class TestVariable(unittest.TestCase):

@@ -1,8 +1,8 @@
 import unittest
 import logging
 
-from mss.lifecycle import Lifecycle, State, Transition, MetaState
-from mss.utils import OsTypeDebian, OsTypeMBS, OS_TYPE
+from armonic.lifecycle import Lifecycle, State, Transition, MetaState
+from armonic.utils import OsTypeDebian, OsTypeMBS, OS_TYPE
 
 
 class a(State):

@@ -4,12 +4,12 @@ Clients
 
 Socket client
 -------------
-.. automodule:: mss.client.sock
+.. automodule:: armonic.client.sock
    :members:
 
 Smart client
 ------------
-.. automodule:: mss.client.smart
+.. automodule:: armonic.client.smart
    :members:
 
 

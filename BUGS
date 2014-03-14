@@ -1,4 +1,0 @@
-- OSTypeAll doesn't work. Need to be fixed.
-- When value are set in a external require, we must dinb the varaible to the target require.
-  This problem appears if several variable has the same name
- 

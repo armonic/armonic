@@ -1,10 +1,10 @@
 import unittest
 import logging
 
-from mss.lifecycle import State
-from mss.provide import Flags, Provide
-from mss.require import Require
-from mss.variable import VString
+from armonic.lifecycle import State
+from armonic.provide import Flags, Provide
+from armonic.require import Require
+from armonic.variable import VString
 
 
 class StateA(State):

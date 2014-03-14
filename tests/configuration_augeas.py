@@ -1,13 +1,13 @@
 import unittest
-import mss.configuration_augeas
+import armonic.configuration_augeas
 
-import mss.modules.mysql.configuration
+import armonic.modules.mysql.configuration
 
 
 class TestAugeas(unittest.TestCase):
 
     def setUp(self):
-        self.conf = mss.modules.mysql.configuration.Mysql(autoload=True)
+        self.conf = armonic.modules.mysql.configuration.Mysql(autoload=True)
 
     def test_listNodes(self):
         ns = self.conf.listNodes()

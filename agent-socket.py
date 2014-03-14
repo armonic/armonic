@@ -23,8 +23,8 @@ import SocketServer
 import struct
 import argparse
 
-import mss.serialize
-import mss.common
+import armonic.serialize
+import armonic.common
 
 PACKET_INFO_SIZE = 5
 
@@ -37,7 +37,7 @@ ch.setLevel(logging.DEBUG)
 ch.setFormatter(logging.Formatter(format))
 
 format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
-fh = logging.handlers.RotatingFileHandler("/tmp/mss.log", maxBytes=10485760, backupCount=5)
+fh = logging.handlers.RotatingFileHandler("/tmp/armonic.log", maxBytes=10485760, backupCount=5)
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(logging.Formatter(format))
 
@@ -93,8 +93,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self._logHandler = MyStreamHandler(socketIO)
         self._logHandler.setLevel(logging.DEBUG)
 #        self._logHandler.setFormatter(logging.Formatter(format))
-        self._logHandler.addFilter(mss.common.NetworkFilter())
-        self._logHandler.addFilter(mss.common.XpathFilter())
+        self._logHandler.addFilter(armonic.common.NetworkFilter())
+        self._logHandler.addFilter(armonic.common.XpathFilter())
         self._logger.addHandler(self._logHandler)
 
     def finish(self):
@@ -130,7 +130,7 @@ class MyTCPServer(SocketServer.TCPServer):
     allow_reuse_address=True
 
 if __name__ == "__main__":
-    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mss', 'modules')
+    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'armonic', 'modules')
 
     parser = argparse.ArgumentParser(prog=__file__)
     parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
 
     args = parser.parse_args()
-    lfm = mss.serialize.Serialize(
+    lfm = armonic.serialize.Serialize(
         modules_dir=args.modules_dir,
         include_modules=args.module)
 

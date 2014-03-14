@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from mss.client.smart import Provide, update_empty, LocalProvide
-import mss.client.smart
-import mss.require
+from armonic.client.smart import Provide, update_empty, LocalProvide
+import armonic.client.smart
+import armonic.require
 import readline
 from itertools import repeat
 import termcolor
@@ -28,7 +28,7 @@ class ShowAble(object):
         print "%s%s" % (self.sep(offset=indent) , str)
 
 
-class RequireSimple(mss.client.smart.Require, ShowAble):
+class RequireSimple(armonic.client.smart.Require, ShowAble):
     def build_values(self):
         return update_empty(self.helper_suggested_values(),
                             self.helper_needed_values())
@@ -59,7 +59,7 @@ class RequireSimple(mss.client.smart.Require, ShowAble):
 
 
 
-class RequireUser(mss.client.smart.RequireUser, ShowAble):
+class RequireUser(armonic.client.smart.RequireUser, ShowAble):
     def build_values(self):
         # Here we generate require value
         host = self.provide_caller.host
@@ -84,7 +84,7 @@ class RequireUser(mss.client.smart.RequireUser, ShowAble):
         values.update(user_input_variable(variable_name = err_variable, message = msg, prefix=self.sep()))
         return values
 
-class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
+class RequireWithProvide(armonic.client.smart.RequireSmartWithProvide):
     def build_provide_class(self):
         return provide_cls
 
@@ -105,7 +105,7 @@ class RequireWithProvide(mss.client.smart.RequireSmartWithProvide):
         xpath_abs = "/" + self.provide_caller.host + "/" + xpath_rel
         Variables.append((xpath_abs,variable.value))
 
-class RequireLocal(mss.client.smart.RequireLocal, RequireWithProvide, ShowAble):
+class RequireLocal(armonic.client.smart.RequireLocal, RequireWithProvide, ShowAble):
     def on_validation_error(self,err_variable,values):
         msg = "Variable '%s' of require '%s' of provide '%s' has been set with wrong value.\n'%s' = '%s'\nPlease change it:"%(
             err_variable, self.name, self.provide_name,
@@ -115,7 +115,7 @@ class RequireLocal(mss.client.smart.RequireLocal, RequireWithProvide, ShowAble):
             prefix=self.sep(), 
             message = msg))
 
-class RequireExternal(mss.client.smart.RequireExternal, RequireWithProvide, ShowAble):
+class RequireExternal(armonic.client.smart.RequireExternal, RequireWithProvide, ShowAble):
     def on_validation_error(self,err_variable,values):
         try :
             value = values[err_variable]
@@ -189,10 +189,10 @@ class MyProvide(Provide, ShowAble):
 class MyLocalProvide(LocalProvide, MyProvide):
     def _lf_manager(self):
         if args.os_type is not None:
-            os_type = mss.utils.OsType(args.os_type)
+            os_type = armonic.utils.OsType(args.os_type)
         else :
             os_type = None
-        return mss.lifecycle.LifecycleManager(modules_dir="mss/modules", os_type=os_type)
+        return armonic.lifecycle.LifecycleManager(modules_dir="armonic/modules", os_type=os_type)
 
 
 
@@ -237,12 +237,12 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
 
 
 description="""
-mss-smart calls a provide and try to automatically fill its
+armonic-smart calls a provide and try to automatically fill its
 requires. If provides have to be called to satisfate these requires, it
 does it recursively.
 """
 
-parser = argparse.ArgumentParser(prog='mss3-smart', description=description)
+parser = argparse.ArgumentParser(prog='armonic-smart', description=description)
 parser.add_argument('--host', type=str, default=None,help='Host where to call the provide')
 parser.add_argument('--xpath','-x', type=str, required=True, help='A provide Xpath')
 parser.add_argument('--os-type','-o', type=str, default=None, help='The os type to use')

@@ -1,7 +1,7 @@
 import unittest
 import logging
 
-from mss.variable import VString
+from armonic.variable import VString
 
 
 class TestVariableSerialization(unittest.TestCase):
