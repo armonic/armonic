@@ -6,23 +6,23 @@ API documentation
 Lifecycle
 ================
 
-.. automodule:: mss.lifecycle
+.. automodule:: armonic.lifecycle
    :members:
 
 Provide
 =======
 
-.. automodule:: mss.provide
+.. automodule:: armonic.provide
    :members:
 
 Require
 =======
 
-.. automodule:: mss.require
+.. automodule:: armonic.require
    :members:
 
 Variables
 =========
 
-.. automodule:: mss.variable
+.. automodule:: armonic.variable
    :members:

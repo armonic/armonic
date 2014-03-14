@@ -1,6 +1,6 @@
 .. _variable:
 
-.. module:: mss.variable
+.. module:: armonic.variable
 
 Variables
 #########
@@ -46,7 +46,7 @@ Custom validation
 
 To specifiy a custom validation method subclass the variable type of your
 choice and implement a validate function. If the validation fails you must
-raise :class:`mss.common.ValidationError` with an error message::
+raise :class:`armonic.common.ValidationError` with an error message::
 
     from armonic.common import ValidationError
     from armonic.variable import VString
@@ -77,4 +77,4 @@ arguments in the variable constructor::
      'value': None,
      'xpath': None}
 
-These extra infos can be used in clients that consume the :class:`mss.lifecycle.Lifecycle` API.
+These extra infos can be used in clients that consume the :class:`armonic.lifecycle.Lifecycle` API.

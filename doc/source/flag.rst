@@ -3,7 +3,7 @@
 Flags usage
 ###########
 
-Given the following :class:`mss.lifecycle.Lifecycle`:
+Given the following :class:`armonic.lifecycle.Lifecycle`:
 
 .. code-block:: python
     :emphasize-lines: 5,10

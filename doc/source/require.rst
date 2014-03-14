@@ -1,6 +1,6 @@
 .. _require:
 
-.. module:: mss.require
+.. module:: armonic.require
 
 Requires
 ########

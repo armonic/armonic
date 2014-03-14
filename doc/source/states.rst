@@ -1,6 +1,6 @@
 .. _states:
 
-.. module:: mss.states
+.. module:: armonic.states
 
 Predefined States
 #################
