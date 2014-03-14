@@ -1,13 +1,13 @@
 import json
 from functools import wraps
 
-from armonic.lifecycle import LifecycleManager
+from armonic import LifecycleManager
 from armonic.common import expose, is_exposed
 
 
 class Serialize(object):
     def __init__(self, *args, **kwargs):
-        self.lf_manager = LifecycleManager(self, *args, **kwargs)
+        self.lf_manager = LifecycleManager(*args, **kwargs)
 
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager`
