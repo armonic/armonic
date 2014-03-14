@@ -441,10 +441,7 @@ class Configuration(object):
         Return an augeas object.
         """
         if not self._augeasInstance:
-#            loadpath="augeas_lenses" # FIXME
-            loadpath = "/".join([os.path.dirname(
-                                            inspect.getfile(self.__class__)),
-                                 "augeas_lenses"])
+            loadpath = os.path.dirname(inspect.getfile(self.__class__))
             logging.debug("augtool -r %s -I %s -A -L" % (augeas_root,
                                                          loadpath))
             self._augeasInstance = augeas.Augeas(root=augeas_root,
