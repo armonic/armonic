@@ -138,7 +138,7 @@ class XmlRegister(object):
 
             for e in request:
                 if type(e) == _Element:
-                    acc.append(tostring(e))
+                    acc.append(tostring(e, pretty_print=True))
                 else:
                     acc.append(str(e))
         except XPathEvalError:
