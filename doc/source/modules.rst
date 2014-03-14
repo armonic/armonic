@@ -2,5 +2,5 @@
 .. Don't edit it!
 .. It will be erased on next shinx doc generation.
 
-MSS3 modules documentation
-==========================
+armonic modules documentation
+=============================

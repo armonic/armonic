@@ -1,45 +1,44 @@
 .. _variable:
 
-.. module:: armonic.variable
-
 Variables
 #########
 
 Variables types
 ===============
 
-Armonic provides base classes for defining your own variables:
-
-* :class:`VString`
-* :class:`VInt`
-* :class:`VFloat`
-* :class:`VBool`
-* :class:`VList`
-
-They all inherit from :class:`Variable`. No dict like variable is
+Armonic provides base classes for defining your own variables. They all
+inherit from :class:`armonic.variable.Variable`. No dict like variable is
 provided since all variables have names.
 
-.. autoclass:: VString
+.. autoclass:: armonic.variable.VString
     :members: pattern, pattern_error
+    :noindex:
 
-.. autoclass:: VInt
+.. autoclass:: armonic.variable.VInt
     :members: min_val, max_val
+    :noindex:
 
-.. autoclass:: VFloat
+.. autoclass:: armonic.variable.VFloat
     :members: min_val, max_val
+    :noindex:
 
-.. autoclass:: VBool
+.. autoclass:: armonic.variable.VBool
+    :noindex:
 
-.. autoclass:: VList
+.. autoclass:: armonic.variable.VList
+    :noindex:
 
 Predefined variables
 ====================
 
-.. autoclass:: Host
+.. autoclass:: armonic.variable.Host
+    :noindex:
 
-.. autoclass:: Hostname
+.. autoclass:: armonic.variable.Hostname
+    :noindex:
 
-.. autoclass:: Port
+.. autoclass:: armonic.variable.Port
+    :noindex:
 
 Custom validation
 =================

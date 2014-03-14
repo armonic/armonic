@@ -1,14 +1,12 @@
 .. _require:
 
-.. module:: armonic.require
-
 Requires
 ########
 
 Require
 =======
 
-Example with :class:`Require`:
+Example with :class:`armonic.require.Require`:
 
 .. code-block:: python
     :emphasize-lines: 3
@@ -28,7 +26,7 @@ Example with :class:`Require`:
 RequireLocal
 ============
 
-Example with :class:`RequireLocal`:
+Example with :class:`armonic.require.RequireLocal`:
 
 .. code-block:: python
     :emphasize-lines: 3,4
@@ -51,3 +49,7 @@ Example with :class:`RequireLocal`:
 
 RequireExternal
 ===============
+
+:class:`armonic.require.RequireExternal` has the same usage as
+:class:`armonic.require.RequireLocal`. The only difference is that a host must
+be provided to :class:`armonic.require.RequireExternal`.

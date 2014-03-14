@@ -1,12 +1,21 @@
+import logging
+
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from armonic.xml_register import XmlRegister
 
-import logging
+
 logger = logging.getLogger(__name__)
 
 
 class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
-    """Basically, this describes a list of :py:class:`Require`."""
+    """Basically, this describes the method of a :class:`armonic.lifecycle.State`.
+
+    It contains the list of :class:`armonic.require.Require` needed to call the method.
+
+    :param name: name of the method
+    :param requires: list of requires
+    :param flags: flags to be propagated
+    """
     def __init__(self, name=None, requires=[], flags={}, **extra):
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
@@ -14,9 +23,7 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         self.flags = flags  # Should not be in Requires ...
 
     def __call__(self, func):
-        """
-        Used as a method decorator mark :py:class:`State` methods
-        as provide.
+        """Used as a method decorator mark state methods as provides.
         """
         if not hasattr(func, '_provide'):
             func._provide = self
@@ -50,19 +57,20 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
 
     def require_by_name(self, require_name):
         """
-        :param require_name: Require name
+        :param require_name: require name
         :type require_name: str
 
-        :rtype: :class:`Require`
+        :rtype: :class:`armonic.require.Require`
         """
         return self.get(require_name)
 
     def fill(self, variables_values):
-        """Fill the Provide with variables_values
+        """Fill the provide with variables values.
 
-        :param variables_values: list of tuple (variable_xpath, variable_values)
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
+        :param variables_values: list of tuple (variable_xpath, variable_values)::
+
+            ("//xpath/to/variable", {0: value}),
+            ("//xpath/to/variable", {0: value})
         """
         def _filter_values(variables_values):
             # Return only variables for this Provide
@@ -77,6 +85,10 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
             require.fill(_filter_values(variables_values))
 
     def validate(self):
+        """Validate the provide.
+
+        :raises ValidationError: when validation fails
+        """
         for require in self:
             logger.debug("Validating %s" % (require))
             try:
@@ -86,7 +98,6 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
                 raise e
 
     def has_variable(self, variable_name):
-        """Return True if variable_name is specified by this provide"""
         for r in self:
             try:
                 r.variables().get(variable_name)
@@ -103,6 +114,8 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         return acc
 
     def to_primitive(self):
+        """Serialize the provide to a python dict.
+        """
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
                 "requires": [r.to_primitive() for r in self],
@@ -115,7 +128,8 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
 
 
 class Flags(object):
-
+    """Decorator to define flags on a state method.
+    """
     def __init__(self, **flags):
         self.flags = dict(**flags)
 

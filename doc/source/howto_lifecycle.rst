@@ -56,18 +56,18 @@ restrict ssh connections to the ``admin`` user.
 
 States like :class:`Installed` or :class:`Active` uses already provided States by
 Armonic with standard python inheritance.
-The :class:`InstallPackagesApt` state will make sure the package ``openssh-server``
-is installed using Debian package management tools. The :class:`ActiveWithSystemV`
-state will verify that the ``sshd`` service is running using the classic SystemV
-init system.
+The :class:`armonic.states.InstallPackagesApt` state will make sure the package
+``openssh-server`` is installed using Debian package management tools.
+The :class:`armonic.states.ActiveWithSystemV` state will verify that the ``sshd``
+service is running using the classic SystemV init system.
 
 Requires
 --------
 
-What if we wanted to provide manually configuration values to the service.
-Using the :class:`Require` decorator you can define variables that need to be provided
-to enter a State. Lets rewrite the :class:`Configured` state to take a users list to be
-configured in the ``AllowUsers`` directive:
+What if we wanted to provide manually configuration values to the service ?
+Using the :class:`armonic.require.Require` decorator you can define variables
+that needs to be provided to enter a State. Lets rewrite the :class:`Configured`
+state to take a users list to be configured in the ``AllowUsers`` directive:
 
 .. code-block:: python
     :emphasize-lines: 7,8
@@ -85,25 +85,27 @@ configured in the ``AllowUsers`` directive:
                 f.write('AllowUsers %s' % users)
 
 We define that to enter in the :class:`Configured` state we need to provide
-a list of users in the ``allowed_users`` :class:`Require`. The list is named
-``users`` and is composed of strings. This :class:`Require` cannot be empty
-(``required=True``) and has a default value (``default=["admin"]``).
+a list of users in the ``allowed_users`` :class:`armonic.require.Require`.
+The list is named ``users`` and is composed of strings.
+This :class:`armonic.require.Require` cannot be empty (``required=True``)
+and has a default value (``default=["admin"]``).
 
 .. note:: Since the ``enter`` method has now a require you need add
           ``requires`` to the ``enter`` arguments.
 
-A :class:`Require` can be composed of multiple variables. In our case it is only
-composed of a :class:`VList`.
+A :class:`armonic.require.Require` can be composed of multiple variables.
+In our case it is only composed of a :class:`armonic.variable.VList`.
 
 Check the complete documentation about :ref:`require`.
 
 Variables
 ---------
 
-Variables of the :class:`Require` are also python classes provided by Armonic. This
-allows to create our own variables with custom validation. For example we could
+Variables of the :class:`armonic.require.Require` are also python classes provided by Armonic.
+This allows to create our own variables with custom validation. For example we could
 verify that each user provided in the list actually exist on the system. We can
-do that by simply inherit the :class:`VString` class and override the validate method::
+do that by simply inherit the :class:`armonic.variable.VString` class and override
+the validate method::
 
     from armonic.variable import VString
     from armonic.common import ValidationError
@@ -117,12 +119,13 @@ do that by simply inherit the :class:`VString` class and override the validate m
                 raise ValidationError("The user %s doesn't exists on the system" % value)
             return True
 
-Then it would be sufficient to change the :class:`Require` declaration to have a custom
-validation on the user list::
+Then it would be sufficient to change the :class:`armonic.require.Require` declaration
+to have a custom validation on the user list::
 
     @Require('allowed_users', [VList('users', SystemUser, default=["admin"], required=True)])
 
-Armonic provides the following base Variable classes: :class:`VString`, :class:`VInt`,
-:class:`VFloat`, :class:`VBool`, :class:`VList`.
+Armonic provides the following base Variable classes: :class:`armonic.variable.VString`,
+:class:`armonic.variable.VInt`, :class:`armonic.variable.VFloat`,
+:class:`armonic.variable.VBool`, :class:`armonic.variable.VList`.
 
 Check the complete documentation about :ref:`variable`.
