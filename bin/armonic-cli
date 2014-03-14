@@ -86,7 +86,7 @@ def state_to_table(state):
     x.add_row(["Xpath",state['xpath']])
     x.add_row(["Supported OS","\n".join(map(str,state['supported_os_type']))])
     x.add_row(["Provides","\n".join([p['name'] for p in state['provides']])])
-    x.add_row(["Enter Requires","\n".join([p['name'] for p in state['provide_enter']['require_list']])])
+    x.add_row(["Enter Requires","\n".join([p['name'] for p in state['provide_enter']['requires']])])
     print x
 
 def dict_to_table(dct):
@@ -100,12 +100,8 @@ def cmd_status(args):
     pass
 
 def cmd_lifecycle(args):
-    if args.long_description:
-        for m in client.call('lifecycle', xpath = args.xpath, doc = True):
-            dict_to_table(m)
-    else:
-        for m in client.call('lifecycle', xpath = args.xpath, doc = False):
-            print m
+    for m in client.call('lifecycle', args.xpath):
+        print m
 
 def cmd_xpath(args):
     if args.uri:
