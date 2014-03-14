@@ -5,7 +5,8 @@ import os
 import copy
 import sys
 
-from armonic.common import IterContainer, DoesNotExist, ProvideError, format_input_variables
+from armonic.common import IterContainer, DoesNotExist, ProvideError, \
+                           format_input_variables, load_lifecycles
 from armonic.provide import Provide
 from armonic.variable import ValidationError
 import armonic.utils
@@ -751,9 +752,14 @@ class LifecycleManager(object):
         # empty the XML register before proceeding
         XmlRegister.clear()
 
-        if modules_dir is not None:
-            armonic.common.load_lifecycles(os.path.abspath(modules_dir),
-                                       include_modules=include_modules)
+        if modules_dir is None:
+            # load default modules
+            load_lifecycles(os.path.join(os.path.dirname(__file__), 'modules'),
+                            include_modules=include_modules)
+        else:
+            # other module dir
+            load_lifecycles(os.path.abspath(modules_dir),
+                            include_modules=include_modules)
 
         self.os_type = os_type
         self.lf_loaded = {}
