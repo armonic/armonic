@@ -8,24 +8,22 @@ from armonic.xml_register import XmlRegister
 
 
 class Variable(XmlRegister, ExtraInfoMixin):
-    """A object :class:`Variable` is a container for a value used by a
-    provide. The minimal definition is just the name of the
-    variable. It is possbile to specify a default value. Moreover, it
-    is also possible to specify an xpath from where the value must be retreive.
+    """Describes a value used in a state provide.
 
-    The type of a variable is validate (with _validate_type method)
-    when the value is set. The value of a variable can be validate by
-    hand with validate method.
+    Only name is required.
 
-    About from_xpath parameter. The goal it to reuse a value already provided.
-    We can not directly use the value because at init time, it is not
-    been filled yet. So, another way is to use a lamdba but in this case
-    we must go to a state state per state if we want to know the value
-    before using it.
+    The type of a variable is validated (with :meth:`_validate_type()`)
+    when the value is set. The value of a variable can be validated by
+    hand with the :meth:`_validate()` method.
 
-    :param from_xpath: If this parameter is set, the client can reuse
-    a value already used by the varaible targeted by this xpath.
+    :param name: variable name
+    :type name: str
+    :param default: default value
+    :param required: required variable
+    :type required: bool
+    :param from_xpath: use the xpath value for this variable
     :type from_xpath: str
+    :param **extra: extra variable fields
     """
     type = None
 
@@ -104,7 +102,9 @@ class Variable(XmlRegister, ExtraInfoMixin):
 
     def validate(self):
         """Override for custom validation.
-        Raise ValidationError in case of error."""
+
+        :raises ValidationError: in case of error
+        """
         return True
 
     def has_error(self):
@@ -127,6 +127,16 @@ class VList(Variable):
 
     Running the validation on :class:`VList` will recursively run the
     validation for all contained instances.
+
+    :param name: variable name
+    :type name: str
+    :param inner: the type of variable used in the list
+    :type inner: all instances of :class:`Variable`
+    :param default: default value
+    :type default: list
+    :param required: required variable
+    :type required: bool
+    :param **extra: extra variable fields
     """
     type = 'list'
     _inner_class = None
@@ -225,6 +235,7 @@ class VString(Variable):
 
 
 class VInt(Variable):
+    """Variable of type int."""
     type = 'int'
     min_val = None
     """Minimum value"""
@@ -260,6 +271,7 @@ class VInt(Variable):
 
 
 class VFloat(VInt):
+    """Variable of type float."""
     type = 'float'
 
     def _validate_type(self, value):
@@ -276,6 +288,7 @@ class VFloat(VInt):
 
 
 class VBool(Variable):
+    """Variable of type boolean."""
     type = 'bool'
 
     def _validate(self, value=None):
