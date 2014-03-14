@@ -116,11 +116,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         try:
             ret = lfm._dispatch(request['method'], *request['args'], **request['kwargs'])
         except Exception as e:
-            # self._logger.exception doesn't go through the socket so we get
-            # the traceback and include it in an error log
-#            t, v, tb = sys.exc_info()
-#            self._logger.error("Error while processing %s:\n%s" % (request['method'],
-#                                                                   "".join(traceback.format_tb(tb))))
             self._logger.exception(e)
             sendString(self.request, {'exception': e}, True)
         else:
@@ -130,18 +125,16 @@ class MyTCPServer(SocketServer.TCPServer):
     allow_reuse_address=True
 
 if __name__ == "__main__":
-    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'armonic', 'modules')
-
     parser = argparse.ArgumentParser(prog=__file__)
     parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
     parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='MSS agent IP (default: %(default)s))')
-    parser.add_argument('--modules-dir', type=str, default=modules_dir, help='MSS modules location (default: %(default)s)')
+    parser.add_argument('--modules-dir', type=str, default=None, help='MSS modules location (default: %(default)s)')
     parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
 
+
     args = parser.parse_args()
-    lfm = armonic.serialize.Serialize(
-        modules_dir=args.modules_dir,
-        include_modules=args.module)
+    lfm = armonic.serialize.Serialize(modules_dir=args.modules_dir,
+                                      include_modules=args.module)
 
     print "Server listening on %s:%d" % (args.host, args.port)
     print "Using modules from %s " % args.modules_dir

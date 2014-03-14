@@ -1,3 +1,4 @@
+import os.path
 from setuptools import setup, find_packages
 
 setup(
@@ -11,7 +12,20 @@ setup(
     url="http://www.github.com/armonic",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['netifaces', 'lxml<=2.3', 'IPy'],
+    install_requires=[
+        'netifaces',
+        'lxml<=2.3',
+        'IPy',
+        'MySQL-python',
+        'argcomplete',
+        'prettytable'
+    ],
+    scripts=[
+        os.path.join('bin', 'armonic-agent-socket'),
+        os.path.join('bin', 'armonic-cli'),
+        os.path.join('bin', 'armonic-smart'),
+        os.path.join('bin', 'smartonic'),
+    ],
     license="GPLv2",
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

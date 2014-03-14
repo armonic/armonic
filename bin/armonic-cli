@@ -224,8 +224,7 @@ parser = argparse.ArgumentParser(
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
-parser.add_argument('--host','-H', type=str,
-                    default=os.environ.get('MSS_AGENT_HOST', "localhost")
+parser.add_argument('--host','-H', type=str, default=os.environ.get('MSS_AGENT_HOST', "localhost")
                     ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
 parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
