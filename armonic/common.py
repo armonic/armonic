@@ -117,11 +117,12 @@ def load_lifecycles(dir, include_modules=None):
                     and module not in include_modules):
                 continue
             if os.path.exists(os.path.join(dir, module, '__init__.py')):
+                logger.debug("Importing lifecycle %s..." % module)
                 try:
                     __import__(module)
-                    logger.info("Imported module %s" % module)
+                    logger.info("Imported lifecycle %s" % module)
                 except ImportError:
-                    logger.exception("Exception on import module %s:" % module)
+                    logger.exception("Exception on import lifecycle %s:" % module)
 
 
 class DoesNotExist(Exception):

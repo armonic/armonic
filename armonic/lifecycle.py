@@ -151,15 +151,15 @@ class State(XmlRegister):
 
     def enter(self):
         """Called when a state is applied"""
-        logger.debug("Entering state %s" % self.name)
+        logger.debug("Entering state %s" % self)
 
     def leave(self):
         """Called when a state is leaved"""
-        logger.debug("Leaving state %s" % self.name)
+        logger.debug("Leaving state %s" % self)
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
-        logger.info("State %s crossed but nothing to do" % self.name)
+        logger.info("State %s crossed" % self)
 
     def enter_doc(self):
         """NOT YET IMPLEMENTED.
@@ -195,7 +195,7 @@ class State(XmlRegister):
                                   (provide_name, self))
 
     def __repr__(self):
-        return "<State:%s>" % self.name
+        return "<%s:%s>" % (self.lf_name, self.name)
 
     def clear(self):
         """Init variables to default values in all requires"""
@@ -253,6 +253,7 @@ class Lifecycle(XmlRegister):
         instance = super(Lifecycle, cls).__new__(cls)
         # Update transitions to manage MetaState
         for ms in instance._state_list():
+            ms.lf_name = instance.name
             # For each MetaState ms
             if isinstance(ms, MetaState):
                 # Find transitions which involve a MetaState
@@ -268,6 +269,7 @@ class Lifecycle(XmlRegister):
                 created_states = [type('%s.%s' % (ms.__class__.__name__, s.__name__), (s,), {})
                                   for s in ms.implementations]
                 for s in created_states:
+                    s.lf_name = instance.name
                     logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name))
                 # For each transtion to MetaState ms
                 for t in transitions:
@@ -371,16 +373,15 @@ class Lifecycle(XmlRegister):
         if self._stack != []:
             if not self._is_transition_allowed(self.state_current(), state):
                 raise TransitionNotAllowed("from %s to %s" % (self.state_current(), state))
-        state.lf_name = self.name
         logger.event({'event': 'state_appling',
                       'state': state.name,
                       'lifecycle': self.name})
         ret = state.safe_enter(requires)
+        logger.debug("push state %s" % state)
         self._stack.append(state)
         logger.event({'event': 'state_applied',
                       'state': state.name,
                       'lifecycle': self.name})
-        logger.debug("push state '%s'" % state.get_xpath())
         return ret
 
     def _pop_state(self):
