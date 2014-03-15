@@ -1,6 +1,11 @@
 #!/usr/bin/python
+import logging
+import argparse
 
-from pprint import pprint
+from armonic.serialize import Serialize
+from armonic.client.iter_smart import Provide, walk
+from armonic.utils import OsTypeMBS
+
 
 def user_input_confirm(msg, prefix=''):
     """Ask the user if he confirm the msg question.
@@ -28,82 +33,53 @@ def user_input_choose_amongst(choices, prefix=''):
             print "%sInvalid choice. Do it again!" % (prefix)
 
 
-def user_input_choose_amongst(choices, prefix=''):
-    """Ask the user if he confirm the msg question.
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog='armonic-iter-smart')
+    parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
+    parser.add_argument('--verbose',"-v", action="store_true")
+    args = parser.parse_args()
 
-    :rtype: True if user confirm, False if not"""
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    lfm = Serialize(os_type=OsTypeMBS())
+    root_provide = Provide(generic_xpath=args.xpath, lfm=lfm)
+    generator = walk(root_provide)
+
     while True:
-        print "%sYou must choose a provide amongst:" % prefix
-        for i, c in enumerate(choices) :
-            print "  %s%d) %s" % (prefix, i, c)
-        answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices)-1))
         try:
-            return choices[int(answer)]
-        except Exception as e:
-            print e
-            print "%sInvalid choice. Do it again!" % (prefix)
+            (provide, step, args) = generator.next()
+        except StopIteration:
+            break
+        if provide.tree_id == None:
+            print provide.generic_xpath
+        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step.ljust(12), provide.tree_id)
+        if provide.step == "manage":
+            ret = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
+            provide.manage(ret)
 
+        elif provide.step == "specialize":
+            ret = user_input_choose_amongst(args, "")
+            generator.send(ret)
 
+        elif provide.step == "set_dependancies":
+            pass
 
-import argparse
-parser = argparse.ArgumentParser(prog='armonic-iter-smart')
-parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
-parser.add_argument('--verbose',"-v", action="store_true")
-args = parser.parse_args()
+        elif provide.step == "multiplicity":
+            require = args
+            while True:
+                answer = raw_input("How many time to call %s? " % require.provide_xpath)
+                try:
+                    answer = int(answer)
+                    break
+                except Exception as e:
+                    print e
+                    print "Invalid choice. Do it again!"
+            generator.send(answer)
 
-
-import logging
-
-if args.verbose:
-    logging.basicConfig(level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
-
-
-import armonic.utils
-from armonic.serialize import Serialize
-lfm = Serialize(modules_dir="../armonic/modules/",os_type=armonic.utils.OsType("Mandriva Business Server"))
-
-from armonic.client.iter_smart import Provide, walk
-
-root_provide = Provide(generic_xpath=args.xpath, lfm=lfm)
-
-generator = walk(root_provide)
-while True:
-    try:
-        (provide, step, args) = generator.next()
-    except StopIteration:
-        break
-    if provide.tree_id == None:
-        print provide.generic_xpath
-    print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step.ljust(12), provide.tree_id)
-    if provide.step == "manage":
-        ret = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
-        provide.manage(ret)
-
-    elif provide.step == "specialize":
-        ret = user_input_choose_amongst(args, "")
-        generator.send(ret)
-
-    elif provide.step == "set_dependancies":
-        pass
-
-    elif provide.step == "multiplicity":
-        require = args
-        while True:
-            answer = raw_input("How many time to call %s? " % require.provide_xpath)
-            try:
-                answer = int(answer)
-                break
-            except Exception as e:
-                print e
-                print "Invalid choice. Do it again!"
-        generator.send(answer)
-
-    elif provide.step == "done":
-        ret = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
-        if ret:
-            print "Configuration requires of %s" %provide.generic_xpath
-
-
-
+        elif provide.step == "done":
+            ret = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
+            if ret:
+                print "Configuration requires of %s" %provide.generic_xpath
