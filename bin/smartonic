@@ -97,7 +97,8 @@ if __name__ == "__main__":
             break
         if provide.tree_id == None:
             print provide.generic_xpath
-        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step.ljust(12), provide.tree_id)
+        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
+                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
             data = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)

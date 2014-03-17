@@ -25,9 +25,12 @@ def build_require_from_call_require(dct_json):
                 
 
 class Provide(object):
-    """:param child_number: if this Provide is a dependancies, this is
-    the number of this child.
+    """
 
+    :param child_number: if this Provide is a dependancies, this is
+    the number of this child.
+    :param requirer: the provide that require this require
+    :param require: the require of the requirer
     """
     STEPS = ["manage", 
              "lfm",
@@ -39,9 +42,10 @@ class Provide(object):
              "call",
              "done"]
 
-    def __init__(self, generic_xpath, requirer=None, child_num=None):
+    def __init__(self, generic_xpath, requirer=None, child_num=None, require=None):
         self.generic_xpath = generic_xpath
         self.requirer = requirer
+        self.require = require
         
         if requirer is not None:
             self.depth = requirer.depth + 1
@@ -62,9 +66,15 @@ class Provide(object):
         self._children_generator = None
 
         # Provide configuration variables.
-        self._lfm = None
-
-
+        #
+        # If this provide comes from a local require, the lfm is taken
+        # from the requirer.
+        if ((require is not None and 
+             require.type == "local")):
+            self._lfm = requirer.lfm
+        else:
+            self._lfm = None
+            
     def has_requirer(self):
         return self.requirer is not None
  
@@ -94,10 +104,11 @@ class Provide(object):
            
         return self._children_generator
 
-    def build_child(self, generic_xpath, child_num):
+    def build_child(self, generic_xpath, child_num, require):
         ret = self.__class__(generic_xpath=generic_xpath, 
-                             requirer=self, 
-                             child_num=child_num)
+                             requirer=self,
+                             child_num=child_num,
+                             require=require)
         return ret
 
     @property
@@ -192,11 +203,13 @@ def walk(root_scope):
                             for i in range(0,number):
                                 req.provides.append(scope.build_child(
                                     generic_xpath=req.provide_xpath, 
-                                    child_num=req.child_num))
+                                    child_num=req.child_num,
+                                    require=req))
                         else:
                             req.provides.append(scope.build_child(
                                 generic_xpath=req.provide_xpath, 
-                                child_num=req.child_num))
+                                child_num=req.child_num,
+                                require=req))
                         scope._current_require = req
                     except StopIteration:
                         pass
