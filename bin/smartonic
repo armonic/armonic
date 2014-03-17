@@ -70,6 +70,14 @@ if __name__ == "__main__":
             @property
             def lfm(self):
                 return lfm
+            @property
+            def manage(self):
+                return True
+            @property
+            def call(self):
+                return False
+
+
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
         from armonic.client.sock import ClientSocket
@@ -128,9 +136,8 @@ if __name__ == "__main__":
                 except Exception as e:
                     print e
                     print "Invalid choice. Do it again!"
-            generator.send(answer)
+            data = answer
 
-        elif provide.step == "done":
-            ret = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
-            if ret:
-                print "Configuration requires of %s" %provide.generic_xpath
+        elif provide.step == "call":
+            data = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
+

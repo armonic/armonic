@@ -38,7 +38,7 @@ class Provide(object):
              "set_dependancies",
              # This is a private step
              "multiplicity", 
-             "prepare_requires",
+             #"prepare_requires",
              "call",
              "done"]
 
@@ -74,6 +74,9 @@ class Provide(object):
             self._lfm = requirer.lfm
         else:
             self._lfm = None
+
+        self._manage = None
+        self._call = None
             
     def has_requirer(self):
         return self.requirer is not None
@@ -120,9 +123,27 @@ class Provide(object):
     def lfm(self, lfm):
         self._lfm = lfm
 
-    def manage(self, boolean):
+    @property
+    def manage(self):
+        """If it returns None, walk function yields."""
+        return self._manage
+        
+    @manage.setter
+    def manage(self, manage):
         """Set true if this provide has to be managed"""
-        self.ignore = not boolean
+        self._manage = manage
+        # Used to stop the genreator
+        self.ignore = not manage
+
+    @property
+    def call(self):
+        """If it returns None, walk function yields."""
+        return self._call
+        
+    @call.setter
+    def call(self, call):
+        """Set true if this provide has to be called"""
+        self._call = call
 
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
@@ -132,7 +153,7 @@ class Provide(object):
         """Used to specialize the generic_xpath"""
         self.specialized_xpath = xpath
     
-    def call(self):
+    def lfm_call(self):
         self.provide_ret = self.lfm.provide_call(
             xpath=self.specialized_xpath,
             requires={},
@@ -146,6 +167,8 @@ def walk(root_scope):
     scope = root_scope
     while True:
         # Stop and Pop conditions
+        if scope.step == "done":
+            yield (scope, scope.step, None)
         if scope.step == "done" or scope.ignore:
             # If all dependencies of root node have been threated we
             # break the loop
@@ -159,27 +182,25 @@ def walk(root_scope):
 
         if not scope.ignore:
             if scope.step == "manage":
-                continu = yield (scope, scope.step, None)
-                scope.manage(continu)
+                if scope.manage is None: 
+                    scope.manage = yield (scope, scope.step, None)
                 scope._next_step()
 
             elif scope.step == "lfm":
-                if scope.lfm is not None:
-                    pass
-                else:
-                    lfm = yield(scope, scope.step, None)
-                    scope.lfm = lfm
+                if scope.lfm is None:
+                    scope.lfm = yield(scope, scope.step, None)
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
                 scope.build_requires()
-                yield(scope, scope.step, None)
+                #yield(scope, scope.step, None)
                 scope._next_step()
 
             elif scope.step == "call":
-                confirm = yield(scope, scope.step, None)
-                if confirm:
-                    scope.call()
+                if scope.call is None:
+                    scope.call = yield(scope, scope.step, None)
+                if scope.call:
+                    scope.lfm_call()
                 scope._next_step()
 
             elif scope.step == "specialize":
