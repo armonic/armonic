@@ -30,6 +30,7 @@ class Provide(object):
 
     """
     STEPS = ["manage", 
+             "lfm",
              "specialize",
              "set_dependancies",
              # This is a private step
@@ -38,10 +39,9 @@ class Provide(object):
              "call",
              "done"]
 
-    def __init__(self, generic_xpath, lfm, requirer=None, child_num=None):
+    def __init__(self, generic_xpath, requirer=None, child_num=None):
         self.generic_xpath = generic_xpath
         self.requirer = requirer
-        self.lfm = lfm
         
         if requirer is not None:
             self.depth = requirer.depth + 1
@@ -60,6 +60,13 @@ class Provide(object):
 
         self._current_require = None
         self._children_generator = None
+
+        # Provide configuration variables.
+        self._lfm = None
+
+
+    def has_requirer(self):
+        return self.requirer is not None
  
     @property
     def step(self):
@@ -88,11 +95,19 @@ class Provide(object):
         return self._children_generator
 
     def build_child(self, generic_xpath, child_num):
-        ret = Provide(generic_xpath=generic_xpath, 
-                      lfm=self.lfm, 
-                      requirer=self, 
-                      child_num=child_num)
+        ret = self.__class__(generic_xpath=generic_xpath, 
+                             requirer=self, 
+                             child_num=child_num)
         return ret
+
+    @property
+    def lfm(self):
+        """If it returns None, walk function yields."""
+        return self._lfm
+        
+    @lfm.setter
+    def lfm(self, lfm):
+        self._lfm = lfm
 
     def manage(self, boolean):
         """Set true if this provide has to be managed"""
@@ -113,7 +128,6 @@ class Provide(object):
             provide_args={})
 
 
-            
 def walk(root_scope):
     """Return a generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
@@ -136,6 +150,14 @@ def walk(root_scope):
             if scope.step == "manage":
                 continu = yield (scope, scope.step, None)
                 scope.manage(continu)
+                scope._next_step()
+
+            elif scope.step == "lfm":
+                if scope.lfm is not None:
+                    pass
+                else:
+                    lfm = yield(scope, scope.step, None)
+                    scope.lfm = lfm
                 scope._next_step()
 
             elif scope.step == "set_dependancies":

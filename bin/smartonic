@@ -2,6 +2,8 @@
 import logging
 import argparse
 
+import readline
+
 from armonic.serialize import Serialize
 from armonic.client.iter_smart import Provide, walk
 from armonic.utils import OsTypeMBS
@@ -33,6 +35,20 @@ def user_input_choose_amongst(choices, prefix=''):
             print "%sInvalid choice. Do it again!" % (prefix)
 
 
+def user_input_variable(variable_name, message, prefix="", prefill=""):
+    """
+    :param variable_name: The name of the variable that user must set
+    :param message: A help message
+    :rtype: {variable_name:value}
+    """
+    prompt = "%s%s\n%s%s = " % (prefix, message, prefix, variable_name)
+    readline.set_startup_hook(lambda: readline.insert_text(prefill))
+    try:
+        return {variable_name:raw_input(prompt)}
+    finally:
+        readline.set_startup_hook()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='armonic-iter-smart')
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
@@ -50,16 +66,25 @@ if __name__ == "__main__":
 
     if args.host is None:
         lfm = Serialize(os_type=OsTypeMBS())
+        class MyProvide(Provide):
+            @property
+            def lfm(self):
+                return lfm
+        root_provide = MyProvide(generic_xpath=args.xpath)
     else:
         from armonic.client.sock import ClientSocket
         lfm = ClientSocket(host=args.host)
-    
-    root_provide = Provide(generic_xpath=args.xpath, lfm=lfm)
+        class MyProvide(Provide):
+            pass
+        root_provide = MyProvide(generic_xpath=args.xpath)
+        root_provide.lfm = lfm
+            
+        
+
     generator = walk(root_provide)
     
     # Data sent to the generator
     data = None
-
 
     while True:
         try:
@@ -77,6 +102,15 @@ if __name__ == "__main__":
         if provide.step == "manage":
             data = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
 
+        elif provide.step == "lfm":
+            msg = "Choose a location"
+            if provide.has_requirer():
+                prefill = provide.requirer.lfm._host
+            else:
+                prefill = ""
+            host = user_input_variable(variable_name = "location", message = msg, prefill=prefill)
+            data = ClientSocket(host=host['location'])
+            
         elif provide.step == "specialize":
             data = user_input_choose_amongst(args, "")
 
