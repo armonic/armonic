@@ -6,18 +6,20 @@ from sleekxmpp import ClientXMPP
 
 from sleekxmpp.thirdparty import OrderedDict
 
-import mss.serialize
-from mss.client.iter_smart import Provide, walk
+import armonic.serialize
+from armonic.client.iter_smart import Provide, walk
+from armonic.utils import OsTypeMBS
 
 
-lfm = mss.serialize.Serialize(
-    modules_dir="mss/modules/",
-    os_type=mss.utils.OsType("Mandriva Business Server"))
+lfm = armonic.serialize.Serialize(
+    modules_dir="armonic/modules/",
+    os_type=OsTypeMBS())
 
-
-root_provide = Provide(generic_xpath="//Varnish//start", lfm=lfm)
-smart = walk(root_provide)
-
+class MyProvide(Provide):
+    @property
+    def lfm(self):
+        return lfm
+        
 class Master(ClientXMPP):
 
     def __init__(self, jid, password, lfm):
@@ -68,7 +70,7 @@ class Master(ClientXMPP):
         form.add_field(var="xpath")
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
-        session['has_next'] = False
+        session['has_next'] = True
         session['id'] = "session_id_pour_test"
 
         self.smart = None
@@ -82,15 +84,18 @@ class Master(ClientXMPP):
         if self.smart is None:
             print "Step: Create root_provide"
             xpath = payload['values']['xpath']
-            self.root_provide = Provide(generic_xpath=xpath, lfm=self.lfm)
+            self.root_provide = MyProvide(generic_xpath=xpath)
             self.smart = walk(self.root_provide)
 
-        try:
-            print "Tring to configure step %s by smart.sending value %s" % (
-                self.current_step, payload['values'][self.current_step])
-            provide, step, args = self.smart.send(payload['values'][self.current_step])
-        except KeyError:
+        if self.current_step == "manage":
+            provide, step, args = self.smart.send(True)
+        elif self.current_step == "specialize":
+            provide, step, args = self.smart.send(payload['values']["specialize"])
+        elif self.current_step == "multiplicity":
+            provide, step, args = self.smart.send(int(payload['values']["multiplicity"]))
+        else:
             provide, step, args = self.smart.next()
+        
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step
@@ -98,24 +103,26 @@ class Master(ClientXMPP):
 
         form['instructions'] = step
         form.add_field(var="provide", ftype="fixed", value=provide.generic_xpath)
+        form.add_field(var="tree_id", ftype="fixed", value=str(provide.tree_id))
+        
 
-        if step == 'manage':
-            form.add_field(var="manage", ftype="boolean", desc="manage this provide")
-
-        elif step == 'specialize':
+        if step == 'specialize':
             form.add_field(var="specialize", 
                            ftype="list-single", 
                            desc="specialize the provide",
                            options=provide.matches())
+        elif step == 'multiplicity':
+            form.add_field(var="multiplicity", 
+                           #ftype="", 
+                           desc="how many time to provide this require")
+
             
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
-        session['has_next'] = False
+        session['has_next'] = True
         session['id'] = "session_id_pour_test"
 
         return session
-
-
 
 
 

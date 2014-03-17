@@ -31,7 +31,7 @@
 
 
 <!-- BUILD -->
-<iq type='set' to='test1@im.aeolus.org/master' id='exec1'>
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec1'>
   <command xmlns='http://jabber.org/protocol/commands'
            node='build'
            action='execute'/>
@@ -41,7 +41,7 @@
 
 
 
-<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
   <command xmlns='http://jabber.org/protocol/commands'
 	   sessionid='session_id_pour_test'
            node='build'
@@ -57,16 +57,25 @@
 
 
 
-<iq type='set' to='test1@im.aeolus.org/master' id='exec2'>
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
   <command xmlns='http://jabber.org/protocol/commands'
 	   sessionid='session_id_pour_test'
            node='build'
 	   action="next">
     <x xmlns='jabber:x:data' type='submit'>
-      <field var='manage'>
-        <value>true</value>
+      <field var='multiplicity'>
+        <value>1</value>
       </field>
     </x>
+  </command>
+</iq>
+
+
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="next">
   </command>
 </iq>
 
