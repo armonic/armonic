@@ -67,6 +67,8 @@ class State(XmlRegister):
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
+            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
+
             # init provides
             cls._provides = IterContainer()
 
@@ -84,9 +86,7 @@ class State(XmlRegister):
             for (fname, f) in funcs:
                 if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
                     cls._provides.append(f._provide)
-                    logger.debug("Registered %s in %s" % (f._provide, cls._instance))
-
-            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
+                    logger.debug("Registered %s in state %s" % (f._provide, cls.__name__))
 
         return cls._instance
 
