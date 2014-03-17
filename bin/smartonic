@@ -37,6 +37,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='armonic-iter-smart')
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
     parser.add_argument('--verbose',"-v", action="store_true")
+    parser.add_argument('--host', type=str, 
+                        default=None,
+                        help='Host where to call the provide')
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -44,25 +48,37 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    lfm = Serialize(os_type=OsTypeMBS())
+    if args.host is None:
+        lfm = Serialize(os_type=OsTypeMBS())
+    else:
+        from armonic.client.sock import ClientSocket
+        lfm = ClientSocket(host=args.host)
+    
     root_provide = Provide(generic_xpath=args.xpath, lfm=lfm)
     generator = walk(root_provide)
+    
+    # Data sent to the generator
+    data = None
+
 
     while True:
         try:
-            (provide, step, args) = generator.next()
+            if data is None:
+                (provide, step, args) = generator.next()
+            else: 
+                (provide, step, args) = generator.send(data)
+                data = None
         except StopIteration:
             break
         if provide.tree_id == None:
             print provide.generic_xpath
         print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), provide.step.ljust(12), provide.tree_id)
+
         if provide.step == "manage":
-            ret = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
-            provide.manage(ret)
+            data = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
 
         elif provide.step == "specialize":
-            ret = user_input_choose_amongst(args, "")
-            generator.send(ret)
+            data = user_input_choose_amongst(args, "")
 
         elif provide.step == "set_dependancies":
             pass

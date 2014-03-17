@@ -88,7 +88,10 @@ class Provide(object):
         return self._children_generator
 
     def build_child(self, generic_xpath, child_num):
-        ret = Provide(generic_xpath=generic_xpath, lfm=self.lfm, requirer=self, child_num=child_num)
+        ret = Provide(generic_xpath=generic_xpath, 
+                      lfm=self.lfm, 
+                      requirer=self, 
+                      child_num=child_num)
         return ret
 
     def manage(self, boolean):
@@ -108,6 +111,7 @@ class Provide(object):
             xpath=self.specialized_xpath,
             requires={},
             provide_args={})
+
 
             
 def walk(root_scope):
@@ -131,6 +135,7 @@ def walk(root_scope):
         if not scope.ignore:
             if scope.step == "manage":
                 continu = yield (scope, scope.step, None)
+                scope.manage(continu)
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
@@ -163,9 +168,13 @@ def walk(root_scope):
                         if req.nargs == "*":
                             number = yield (scope, scope.step, req)
                             for i in range(0,number):
-                                req.provides.append(scope.build_child(generic_xpath=req.provide_xpath, child_num=req.child_num))
+                                req.provides.append(scope.build_child(
+                                    generic_xpath=req.provide_xpath, 
+                                    child_num=req.child_num))
                         else:
-                            req.provides.append(scope.build_child(generic_xpath=req.provide_xpath, child_num=req.child_num))
+                            req.provides.append(scope.build_child(
+                                generic_xpath=req.provide_xpath, 
+                                child_num=req.child_num))
                         scope._current_require = req
                     except StopIteration:
                         pass

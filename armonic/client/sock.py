@@ -54,10 +54,7 @@ class ClientSocket(object):
         return self._send_and_receive(request)
 
     def provide_call_requires(self, xpath):
-        return self.call("provide_call_requires", xpath=xpath)
-
-    def provide_call_args(self, xpath):
-        return self.call("provide_call_args", xpath=xpath)
+        return self.call("provide_call_requires", provide_xpath_uri=xpath)
 
     def provide_call(self, xpath, requires, provide_args):
         return self.call("provide_call", 
