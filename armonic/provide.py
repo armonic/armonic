@@ -126,6 +126,12 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
                 "requires": [r.to_primitive() for r in self],
                 "flags": self.flags}
 
+    def _clear(self):
+        """Reset variables to default values in all reauires.
+        """
+        for r in self:
+            r._init_variables()
+
     def __repr__(self):
         return "<Provide:%s(%s,flags=%s)>" % (self.name,
                                               IterContainer.__repr__(self),

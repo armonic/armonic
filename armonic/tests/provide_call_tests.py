@@ -1,4 +1,3 @@
-import os
 import unittest
 import logging
 
@@ -68,6 +67,18 @@ class TestProvideCall(unittest.TestCase):
         with self.assertRaisesRegexp(ProvideError, 'object has no attribute'):
             self.lfm.state_goto("//ProvideCallLF/StateC",
                                 requires=[("//ProvideCallLF//bar/foo", "test1")])
+
+    def test_provide_clear(self):
+        self.lfm.state_goto("//ProvideCallLF/StateA")
+        provide1 = self.lfm.from_xpath("//ProvideCallLF//provide1", ret="provide")
+        enter = self.lfm.from_xpath("//ProvideCallLF/StateB/enter", ret="provide")
+        print provide1
+        self.assertEqual(provide1.foo1.variables().bar.value, None)
+        self.assertEqual(enter.bar.variables().foo.value, None)
+        self.assertEqual(self.lfm.provide_call("//ProvideCallLF//provide1",
+                                               requires=[("//ProvideCallLF//bar/foo", "test1"), ("//ProvideCallLF//foo1/bar", "test1")]), (1, 2))
+        self.assertEqual(provide1.foo1.variables().bar.value, None)
+        self.assertEqual(enter.bar.variables().foo.value, None)
 
 
 if __name__ == '__main__':

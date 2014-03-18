@@ -55,14 +55,6 @@ class TestLFMPickle(unittest.TestCase):
         lfm_pickle.state_goto("//LFMPickle/StateA")
         self.assertEqual(lfm_pickle.state_current('//LFMPickle')[0].name, "StateA")
 
-    def test_variable_value(self):
-        lfm = LifecycleManager()
-        lfm.state_goto("//LFMPickle/StateC", requires=[('//LFMPickle//bar/foo', 'test')])
-        state = pickle.dumps(lfm)
-        lfm_pickle = pickle.loads(state)
-        self.assertEqual(lfm_pickle.from_xpath('//LFMPickle//bar/foo', ret="variable").value,
-                         lfm.from_xpath('//LFMPickle//bar/foo', ret="variable").value)
-
     def test_validation_error(self):
         lfm = LifecycleManager()
         try:
@@ -79,9 +71,7 @@ class TestLFMPickle(unittest.TestCase):
                                                        ('//LFMPickle//foo/bar', 'test2')])
         state = pickle.dumps(lfm)
         lfm_pickle = pickle.loads(state)
-        self.assertEqual(lfm_pickle.from_xpath('//LFMPickle//foo/bar', ret="variable").value, "test2")
-
-
+        self.assertEqual(lfm_pickle.state_current('//LFMPickle')[0].name, "StateE")
 
 
 if __name__ == '__main__':

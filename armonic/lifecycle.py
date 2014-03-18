@@ -140,7 +140,7 @@ class State(XMLRessource):
     def lf_name(self, name):
         self._lf_name = name
 
-    def safe_enter(self, requires=[]):
+    def _enter(self, requires=[]):
         """Check all state requires are satisfated and enter into State
 
         :param requires: A list of of tuples (variable_xpath, variable_values)
@@ -152,13 +152,15 @@ class State(XMLRessource):
         self.provide_enter.validate()
         try:
             if self.provide_enter:
-                return self.enter(self.provide_enter)
+                ret = self.enter(self.provide_enter)
             else:
-                return self.enter()
+                ret = self.enter()
+            self._clear_provide('enter')
         except ValidationError:
             raise
         except Exception, e:
             raise ProvideError(self.provide_by_name('enter'), e.message, sys.exc_info())
+        return ret
 
     def enter(self):
         """Called when a state is applied"""
@@ -208,13 +210,15 @@ class State(XMLRessource):
     def __repr__(self):
         return "<%s:%s>" % (self.lf_name, self.name)
 
-    def clear(self):
-        """Init variables to default values in all requires"""
-        for p in self.provides:
-            for r in p:
-                r._init_variables()
-        for r in self.provide_enter:
-            r._init_variables()
+    def _clear_provides(self):
+        """Reset variables to default values in all state provides"""
+        for provide in self.provides:
+            provide._clear()
+        self.provide_enter._clear()
+
+    def _clear_provide(self, provide_name):
+        """Reset variables to default values in state provide"""
+        self.provide_by_name(provide_name)._clear()
 
     def to_primitive(self):
         return {"name": self.name,
@@ -387,7 +391,7 @@ class Lifecycle(XMLRessource):
         logger.event({'event': 'state_appling',
                       'state': state.name,
                       'lifecycle': self.name})
-        ret = state.safe_enter(requires)
+        ret = state._enter(requires)
         logger.debug("push state %s" % state)
         self._stack.append(state)
         logger.event({'event': 'state_applied',
@@ -642,6 +646,8 @@ class Lifecycle(XMLRessource):
             logger.debug("Propagate flags %s to upper states" % provide.flags)
             for s in self._stack[state_index:]:
                 s.cross(**(provide.flags))
+        # reset provide variables on success
+        self._clear_state_provide(state, provide_name)
         return ret
 
     def to_dot(self, cross=False,
@@ -718,10 +724,15 @@ class Lifecycle(XMLRessource):
     def __repr__(self):
         return "<Lifecycle:%s>" % self.name
 
-    def clear(self):
-        """Init variables to default values in all requires of all states"""
+    def _clear_states_provides(self):
+        """Reset variables to default values in all states"""
         for s in self.state_list():
-            s.clear()
+            s._clear_provides()
+
+    def _clear_state_provide(self, state, provide_name):
+        """Reset variables to default values in all states"""
+        state = self._get_state_class(state)
+        state._clear_provide(provide_name)
 
     def to_primitive(self, reachable=False):
         state_list = self.state_list(reachable=reachable)
@@ -833,7 +844,7 @@ class LifecycleManager(XMLRessource):
             lf = self.lf[lf_name]()
             # Reset variables values in all States
             # since States are Singleton
-            lf.clear()
+            lf._clear_states_provides()
             if self.os_type is not None:
                 lf.os_type = self.os_type
         except KeyError:
