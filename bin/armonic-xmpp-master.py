@@ -19,6 +19,10 @@ class MyProvide(Provide):
     @property
     def lfm(self):
         return lfm
+    @property
+    def call(self):
+        return False
+
         
 class Master(ClientXMPP):
 
@@ -92,7 +96,7 @@ class Master(ClientXMPP):
         elif self.current_step == "specialize":
             provide, step, args = self.smart.send(payload['values']["specialize"])
         elif self.current_step == "multiplicity":
-            provide, step, args = self.smart.send(int(payload['values']["multiplicity"]))
+            provide, step, args = self.smart.send(1)
         else:
             provide, step, args = self.smart.next()
         
@@ -111,11 +115,6 @@ class Master(ClientXMPP):
                            ftype="list-single", 
                            desc="specialize the provide",
                            options=provide.matches())
-        elif step == 'multiplicity':
-            form.add_field(var="multiplicity", 
-                           #ftype="", 
-                           desc="how many time to provide this require")
-
             
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
