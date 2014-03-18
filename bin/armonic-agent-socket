@@ -12,18 +12,15 @@ Protocol:
 2) send message
 
 """
-
-import sys
-import traceback
-import os
 import logging
 import logging.handlers
 import pickle
 import SocketServer
 import struct
 import argparse
+import os.path
 
-import armonic.serialize
+from armonic.serialize import Serialize
 import armonic.common
 
 PACKET_INFO_SIZE = 5
@@ -126,23 +123,42 @@ class MyTCPServer(SocketServer.TCPServer):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
-    parser.add_argument('--port','-P', type=int, default=8000, help='MSS agent port (default: %(default)s))')
-    parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='MSS agent IP (default: %(default)s))')
-    parser.add_argument('--modules-dir', type=str, default=None, help='MSS modules location (default: %(default)s)')
-    parser.add_argument('--include-module', dest="module", type=str, nargs="*", default=None, help='Specify which module directory name to import (by default all modules are imported)')
-
-
+    parser.add_argument('--port','-P', type=int, default=8000, help='Armonic agent port (default: %(default)s))')
+    parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='Armonic agent IP (default: %(default)s))')
+    parser.add_argument('--lifecycles-dir', '-d', dest="lifecycles_dirs", type=str, default=[], nargs="*", help='Lifecycles directory')
+    parser.add_argument('--lifecycles-include', '-i', dest="lifecycles_includes", type=str, nargs="*", default=[], help='Lifecycles names to import')
+    parser.add_argument('--no-default-lifecycles', dest="no_default_lifecycles", action="store_true", default=False, help="Don't load provided lifecycles (default: %(default)s))")
+    parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
+    parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
+    parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic.state", help='Armonic agent state file path (default: %(default)s))')
     args = parser.parse_args()
-    lfm = armonic.serialize.Serialize(modules_dir=args.modules_dir,
-                                      include_modules=args.module)
+
+    if not args.no_default_lifecycles:
+        armonic.common.load_lifecycles(lifecycle_includes=args.lifecycles_includes)
+    for dir in args.lifecycles_dirs:
+        armonic.common.load_lifecycles(dir, lifecycle_includes=args.lifecycles_includes)
+
+    if not args.no_load_state and os.path.exists(args.state_path):
+        print "Loading state from %s..." % args.state_path
+        with open(args.state_path) as f:
+            lfm = pickle.load(f)
+            lfm.lf_manager.register()
+    else:
+        lfm = Serialize()
 
     print "Server listening on %s:%d" % (args.host, args.port)
-    if args.modules_dir:
-        print "Using modules from %s " % args.modules_dir
     server = MyTCPServer((args.host, args.port), MyTCPHandler)
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        if not args.no_save_state:
+            print "Saving state to %s..." % args.state_path
+            with open(args.state_path, 'w') as f:
+                pickle.dump(lfm, f)
+        else:
+            if os.path.exists(args.state_path):
+                print "Removing state file %s..." % args.state_path
+                os.unlink(args.state_path)
         print "Exiting."

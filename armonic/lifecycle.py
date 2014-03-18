@@ -6,7 +6,7 @@ import sys
 from platform import uname
 
 from armonic.common import IterContainer, DoesNotExist, ProvideError, \
-                           format_input_variables, load_lifecycles
+                           format_input_variables
 from armonic.provide import Provide
 from armonic.variable import ValidationError
 import armonic.utils
@@ -761,18 +761,6 @@ class LifecycleManager(XMLRessource):
         If it is not specified, the os type is automatically discovered.
     """
     def __init__(self, modules_dir=None, include_modules=None, os_type=None, autoload=True):
-        # empty the XML register before proceeding
-        XmlRegister.clear()
-
-        if modules_dir is None:
-            # load default modules
-            load_lifecycles(os.path.join(os.path.dirname(__file__), 'modules'),
-                            include_modules=include_modules)
-        else:
-            # other module dir
-            load_lifecycles(os.path.abspath(modules_dir),
-                            include_modules=include_modules)
-
         self.os_type = os_type
         self.lf_loaded = {}
         self.lf = {}
