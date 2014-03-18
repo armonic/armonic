@@ -529,7 +529,7 @@ class Lifecycle(XMLRessource):
         try:
             path = self.state_goto_path_list(state)[path_idx]
         except IndexError:
-            raise StateNotApply()
+            raise StateNotApply("No path to go to state %s" % state)
         if func is not None:
             for state, method in path:
                 func(state)
