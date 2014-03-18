@@ -56,11 +56,10 @@ class ClientSocket(object):
     def provide_call_requires(self, xpath):
         return self.call("provide_call_requires", provide_xpath_uri=xpath)
 
-    def provide_call(self, xpath, requires, provide_args):
+    def provide_call(self, provide_xpath_uri, requires):
         return self.call("provide_call", 
-                         xpath=xpath, 
-                         requires=requires, 
-                         provide_args=provide_args)
+                         provide_xpath_uri=provide_xpath_uri, 
+                         requires=requires)
         
     def uri(self, xpath):
         return self.call("uri", 

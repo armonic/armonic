@@ -104,8 +104,8 @@ class Serialize(object):
         return result
 
     @expose
-    def provide_call(self, xpath, requires=[], path_idx=0):
-        return self.lf_manager.provide_call(xpath, requires, path_idx)
+    def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
+        return self.lf_manager.provide_call(provide_xpath_uri, requires, path_idx)
 
     @expose
     def to_dot(self, lf_name, reachable=False):
