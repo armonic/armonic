@@ -307,31 +307,6 @@ class Require(XMLRessource, ExtraInfoMixin):
                                                      self._variables)
 
 
-class RequireUser(Require):
-    """To specify a require which has to be known by user. For
-    instance, mysql password is just know by user who must remember
-    it."""
-    def __init__(self, name, provided_by, variables, **extra):
-        Require.__init__(self, name, variables, **extra)
-        self.type = "user"
-        self.provided_by = provided_by
-
-    def __repr__(self):
-        return "<RequireUser(name=%s, variables=%s)>" % (self.name,
-                                                         self._variables)
-
-    def to_primitive(self):
-        primitive = Require.to_primitive(self)
-        primitive.update({
-            "name": self.name,
-            "xpath": self.get_xpath_relative(),
-            "variables": [a.to_primitive() for a in self._variables[0]],
-            "type": "user",
-            "provided_by_xpath": self.provided_by}
-        )
-        return primitive
-
-
 class RequireLocal(Require):
     """To specify a configuration variable which can be provided
     by a *provide_name* of a local Lifecycle object.
