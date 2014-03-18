@@ -1,9 +1,9 @@
 import inspect
 import logging
 import pprint
-import os
 import copy
 import sys
+from platform import uname
 
 from armonic.common import IterContainer, DoesNotExist, ProvideError, \
                            format_input_variables, load_lifecycles
@@ -11,8 +11,9 @@ from armonic.provide import Provide
 from armonic.variable import ValidationError
 import armonic.utils
 
-from xml_register import XmlRegister, Element, SubElement
+from xml_register import XMLRessource, XMLRegistery, Element, SubElement
 
+XMLRegistery = XMLRegistery()
 logger = logging.getLogger(__name__)
 STATE_RESERVED_METHODS = ('enter', 'leave', 'cross')
 STATE_RESERVED_PROVIDES = ('enter',)
@@ -219,7 +220,7 @@ class MetaState(State):
     implementations = []
 
 
-class Lifecycle(XmlRegister):
+class Lifecycle(XMLRessource):
     """The Lifecycle of a service or application is represented
     by transitions between :class:`State` classes.
     The transitions list is specified in the class attribute
@@ -726,7 +727,7 @@ class LifecycleNotExist(Exception):
     pass
 
 
-class LifecycleManager(object):
+class LifecycleManager(XMLRessource):
     """The :class:`LifecyleManager` is used to manage :py:class:`Lifecyle`
     objects. It permits to interact with lifecycles by provinding xpaths.
 
@@ -773,6 +774,26 @@ class LifecycleManager(object):
                     self.load(lf.__name__)
             else:
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
+        self.register()
+
+    def register(self):
+        """Register the manager in the XMLRegistery.
+        """
+        logger.debug("Register %s" % self)
+        XMLRegistery._xml_register(self)
+
+    @property
+    def name(self):
+        return uname()[1]
+
+    def _xml_ressource_name(self):
+        return "location"
+
+    def _xml_tag(self):
+        return self.name
+
+    def _xml_children(self):
+        return [lf for lf_name, lf in self.lf_loaded.items()]
 
     def info(self):
         """Get info of armonic agent
@@ -791,10 +812,10 @@ class LifecycleManager(object):
         :return: list of :class:`Lifecycle`
         :rtype: [:class:`Lifecycle`]
         """
-        elts = XmlRegister.find_all_elts(lifecycle_xpath)
+        elts = XMLRegistery.find_all_elts(lifecycle_xpath)
         acc = []
         for e in elts:
-            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            lf_name = XMLRegistery.get_ressource(e, "lifecycle")
             lf = self.lifecycle_by_name(lf_name)
             acc.append(lf)
         return acc
@@ -817,7 +838,6 @@ class LifecycleManager(object):
             lf.clear()
             if self.os_type is not None:
                 lf.os_type = self.os_type
-            lf._xml_register()
         except KeyError:
             raise LifecycleNotExist("Lifecycle '%s' doesn't exist" % lf_name)
         self.lf_loaded.update({lf_name: lf})
@@ -842,11 +862,11 @@ class LifecycleManager(object):
         :return: list of :class:`State`
         :rtype: [:py:class:`State`]
         """
-        elts = XmlRegister.find_all_elts(state_xpath)
+        elts = XMLRegistery.find_all_elts(state_xpath)
         acc = []
         for e in elts:
-            lf_name = XmlRegister.get_ressource(e, "lifecycle")
-            state_name = XmlRegister.get_ressource(e, "state")
+            lf_name = XMLRegistery.get_ressource(e, "lifecycle")
+            state_name = XMLRegistery.get_ressource(e, "state")
             state = self.lifecycle_by_name(lf_name)._get_state_class(state_name)
             acc.append(state)
         return acc
@@ -859,10 +879,10 @@ class LifecycleManager(object):
         :rtype: [:class:`State`]
         """
         # TODO return (Lifecycle, State)
-        elts = XmlRegister.find_all_elts(lifecycle_xpath)
+        elts = XMLRegistery.find_all_elts(lifecycle_xpath)
         acc = []
         for e in elts:
-            lf_name = XmlRegister.get_ressource(e, "lifecycle")
+            lf_name = XMLRegistery.get_ressource(e, "lifecycle")
             lf = self.lifecycle_by_name(lf_name)
             acc.append(lf.state_current())
         return acc
@@ -877,11 +897,11 @@ class LifecycleManager(object):
         :return: list of paths for every state matched by state_xpath
         :rtype: [(:class:`State`, [path])]
         """
-        elts = XmlRegister.find_all_elts(state_xpath)
+        elts = XMLRegistery.find_all_elts(state_xpath)
         acc = []
         for e in elts:
-            lf_name = XmlRegister.get_ressource(e, "lifecycle")
-            state_name = XmlRegister.get_ressource(e, "state")
+            lf_name = XMLRegistery.get_ressource(e, "lifecycle")
+            state_name = XMLRegistery.get_ressource(e, "state")
             state = self.lifecycle_by_name(lf_name)._get_state_class(state_name)
             paths = self.lifecycle_by_name(lf_name).state_goto_path_list(state_name)
             acc.append((state, paths))
@@ -899,8 +919,8 @@ class LifecycleManager(object):
 
         :rtype: [:py:class:`Provide`]
         """
-        lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
-        state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
+        lf_name = XMLRegistery.get_ressource(state_xpath_uri, "lifecycle")
+        state_name = XMLRegistery.get_ressource(state_xpath_uri, "state")
         lf = self.lifecycle_by_name(lf_name)
         return lf.state_goto_requires(state_name)
 
@@ -917,8 +937,8 @@ class LifecycleManager(object):
         :rtype: None
         """
         requires = format_input_variables(requires)
-        lf_name = XmlRegister.get_ressource(state_xpath_uri, "lifecycle")
-        state_name = XmlRegister.get_ressource(state_xpath_uri, "state")
+        lf_name = XMLRegistery.get_ressource(state_xpath_uri, "lifecycle")
+        state_name = XMLRegistery.get_ressource(state_xpath_uri, "state")
         logger.debug("state-goto %s %s %s" % (
                      lf_name, state_name, requires))
         return self.lifecycle_by_name(lf_name).state_goto(state_name, requires)
@@ -932,14 +952,14 @@ class LifecycleManager(object):
         :return: list of provides that match provide_xpath
         :rtype: [:py:class:`Provide`]
         """
-        matches = armonic.xml_register.XmlRegister.find_all_elts(provide_xpath)
+        matches = XMLRegistery.find_all_elts(provide_xpath)
         acc = IterContainer()
         for m in matches:
-            if XmlRegister.is_ressource(m, "provide"):
-                provide_name = XmlRegister.get_ressource(m, "provide")
+            if XMLRegistery.is_ressource(m, "provide"):
+                provide_name = XMLRegistery.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
-                    lf_name = XmlRegister.get_ressource(m, "lifecycle")
-                    state_name = XmlRegister.get_ressource(m, "state")
+                    lf_name = XMLRegistery.get_ressource(m, "lifecycle")
+                    state_name = XMLRegistery.get_ressource(m, "state")
                     state = self.lifecycle_by_name(lf_name).state_by_name(state_name)
                     acc.append(state.provide_by_name(provide_name))
         return acc
@@ -956,8 +976,8 @@ class LifecycleManager(object):
         :return: list of provides to call it order to call provide_xpath_uri
         :rtype: [:py:class:`Provide`]
         """
-        lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
-        state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
+        lf_name = XMLRegistery.get_ressource(provide_xpath_uri, "lifecycle")
+        state_name = XMLRegistery.get_ressource(provide_xpath_uri, "state")
         return self.lifecycle_by_name(lf_name).provide_call_requires(state_name, path_idx)
 
     def provide_call_path(self, provide_xpath):
@@ -969,15 +989,15 @@ class LifecycleManager(object):
         :return: list of paths to call provides that match provide_xpath
         :rtype: [(:py:class:`Provide`, [path, ...])]
         """
-        matches = armonic.xml_register.XmlRegister.find_all_elts(provide_xpath)
+        matches = XMLRegistery.find_all_elts(provide_xpath)
         acc = []
         for m in matches:
-            if XmlRegister.is_ressource(m, "provide"):
-                provide_name = XmlRegister.get_ressource(m, "provide")
+            if XMLRegistery.is_ressource(m, "provide"):
+                provide_name = XMLRegistery.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
-                    lf_name = XmlRegister.get_ressource(m, "lifecycle")
+                    lf_name = XMLRegistery.get_ressource(m, "lifecycle")
                     lf = self.lifecycle_by_name(lf_name)
-                    state_name = XmlRegister.get_ressource(m, "state")
+                    state_name = XMLRegistery.get_ressource(m, "state")
                     state = lf.state_by_name(state_name)
                     provide = state.provide_by_name(provide_name)
                     acc.append((provide, lf.provide_call_path(state_name)))
@@ -1035,9 +1055,9 @@ class LifecycleManager(object):
             logger.error("Provided values doesn't met provide requires")
             raise ValidationError("Provided values doesn't met provide requires")
         requires = format_input_variables(requires)
-        lf_name = XmlRegister.get_ressource(provide_xpath_uri, "lifecycle")
-        state_name = XmlRegister.get_ressource(provide_xpath_uri, "state")
-        provide_name = XmlRegister.get_ressource(provide_xpath_uri, "provide")
+        lf_name = XMLRegistery.get_ressource(provide_xpath_uri, "lifecycle")
+        state_name = XMLRegistery.get_ressource(provide_xpath_uri, "state")
+        provide_name = XMLRegistery.get_ressource(provide_xpath_uri, "provide")
         logger.debug("Calling provide %s" % provide_xpath_uri)
         return self.lifecycle_by_name(lf_name).provide_call(state_name,
                                                             provide_name,
@@ -1071,7 +1091,7 @@ class LifecycleManager(object):
 
         :return: list of xpaths
         :rtype: [xpath_uri]"""
-        return armonic.xml_register.XmlRegister.find_all_elts(xpath)
+        return XMLRegistery.find_all_elts(xpath)
 
     def from_xpath(self, xpath, ret="lifecycle"):
         """From a xpath try to get the object of type ``ret``
@@ -1086,15 +1106,18 @@ class LifecycleManager(object):
         ressource_obj = self
         ressources_types = ("lifecycle", "state", "provide", "require", "variable")
         for ressource_type in ressources_types:
-            ressource_name = XmlRegister.get_ressource(xpath, ressource_type)
+            ressource_name = XMLRegistery.get_ressource(xpath, ressource_type)
             ressource_obj = getattr(ressource_obj, "%s_by_name" % ressource_type)(ressource_name)
             if ressource_type == ret:
                 return ressource_obj
         raise DoesNotExist("Can't find object")
 
     def xpath(self, xpath):
-        return armonic.xml_register.XmlRegister.xpath(xpath)
+        return XMLRegistery.xpath(xpath)
 
     def to_xml(self, xpath=None):
         """Return the xml representation of the :class:`LifecyleManager`."""
-        return armonic.xml_register.XmlRegister.to_string(xpath)
+        return XMLRegistery.to_string(xpath)
+
+    def __repr__(self):
+        return "<LifecyleManager:%s>" % self.name

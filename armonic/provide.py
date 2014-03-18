@@ -1,13 +1,14 @@
 import logging
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
-from armonic.xml_register import XmlRegister
+from armonic.xml_register import XMLRegistery, XMLRessource
 
 
+XMLRegistery = XMLRegistery()
 logger = logging.getLogger(__name__)
 
 
-class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
+class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     """Basically, this describes the method of a :class:`armonic.lifecycle.State`.
 
     It contains the list of :class:`armonic.require.Require` needed to call the method.
@@ -75,9 +76,13 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         def _filter_values(variables_values):
             # Return only variables for this Provide
             for xpath, values in variables_values:
-                provide_name = XmlRegister.get_ressource(xpath, "provide")
-                require_name = XmlRegister.get_ressource(xpath, "require")
-                if not (provide_name == self.name and self.require_by_name(require_name)):
+                provide_name = XMLRegistery.get_ressource(xpath, "provide")
+                if not provide_name == self.name:
+                    continue
+                require_name = XMLRegistery.get_ressource(xpath, "require")
+                try:
+                    self.require_by_name(require_name)
+                except DoesNotExist:
                     continue
                 yield (xpath, values)
 

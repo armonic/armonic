@@ -18,16 +18,16 @@ be used. Note that this method is automatically called when a state is
 reached. :meth:`Require.fill` take a dict (or a list) of primitive
 types to fill values of a require.
 """
-
 import logging
+import copy
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from armonic.variable import Host
 from armonic.provide import Provide
-import copy
+from armonic.xml_register import XMLRegistery, XMLRessource
 
-from armonic.xml_register import XmlRegister
 
+XMLRegistery = XMLRegistery()
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +63,7 @@ class RequireDefinitionError(Exception):
     pass
 
 
-class Require(XmlRegister, ExtraInfoMixin):
+class Require(XMLRessource, ExtraInfoMixin):
     """Basically, a require is a set of
     :class:`armonic.variable.Variable`. They are defined in a state and
     are used to specify, verify and store values needed to enter in
@@ -153,9 +153,13 @@ class Require(XmlRegister, ExtraInfoMixin):
         def _filter_values(variables_values):
             # Return only variables for this Require
             for xpath, values in variables_values:
-                require_name = XmlRegister.get_ressource(xpath, "require")
-                variable_name = XmlRegister.get_ressource(xpath, "variable")
-                if not (require_name == self.name and self.variable_by_name(variable_name)):
+                require_name = XMLRegistery.get_ressource(xpath, "require")
+                if not require_name == self.name:
+                    continue
+                variable_name = XMLRegistery.get_ressource(xpath, "variable")
+                try:
+                    self.variable_by_name(variable_name)
+                except DoesNotExist:
                     continue
                 yield (xpath, variable_name, values)
 
