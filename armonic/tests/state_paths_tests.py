@@ -42,15 +42,15 @@ class j(State):
 
 
 class h(MetaState):
-    implementations = [i, j]
+    implementations = [i(), j()]
 
 
 class TestPathGeneration(unittest.TestCase):
 
     def test_simple_path(self):
-        """
-        a -> b -> c -> d
-        """
+        #
+        # a -> b -> c -> d
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -74,11 +74,11 @@ class TestPathGeneration(unittest.TestCase):
                          [])
 
     def test_multiple_paths(self):
-        """
-             b ------>
-        a ->           e -> f
-             c -> d ->
-        """
+        #
+        #      b ------>
+        # a ->           e -> f
+        #      c -> d ->
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -105,11 +105,11 @@ class TestPathGeneration(unittest.TestCase):
                          [[(f(), 'leave'), (e(), 'leave'), (b(), 'leave')]])
 
     def test_multiple_ends(self):
-        """
-        a -> b ->        -> f
-                  d -> e
-             c ->        -> g
-        """
+        #
+        # a -> b ->        -> f
+        #           d -> e
+        #      c ->        -> g
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -133,11 +133,11 @@ class TestPathGeneration(unittest.TestCase):
                          [])
 
     def test_metastates(self):
-        """
-             i (debian) ->
-        a ->               h (meta) -> g
-             j (mbs)    ->
-        """
+        #
+        #      i (debian) ->
+        # a ->               h (meta) -> g
+        #      j (mbs)    ->
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -150,14 +150,14 @@ class TestPathGeneration(unittest.TestCase):
         lf = TestLifecycle()
         path = lf._get_from_state_paths(a(), g())[0]
         path = [(state.name, method) for state, method in path]
-        self.assertEqual(path, [('h.j', 'enter'), ('h', 'enter'), ('g', 'enter')])
+        self.assertEqual(path, [('j', 'enter'), ('h', 'enter'), ('g', 'enter')])
 
         OS_TYPE.name = "debian"
         OS_TYPE.version = "wheezy"
         lf = TestLifecycle()
         path = lf._get_from_state_paths(a(), g())[0]
         path = [(state.name, method) for state, method in path]
-        self.assertEqual(path, [('h.i', 'enter'), ('h', 'enter'), ('g', 'enter')])
+        self.assertEqual(path, [('i', 'enter'), ('h', 'enter'), ('g', 'enter')])
 
 
 if __name__ == '__main__':

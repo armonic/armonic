@@ -118,4 +118,4 @@ class InstallPackages(MetaState):
     """Install packages using the available package management tool
     on the system.
     """
-    implementations = [InstallPackagesUrpm, InstallPackagesApt]
+    implementations = [InstallPackagesUrpm(), InstallPackagesApt()]
