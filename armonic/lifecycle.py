@@ -51,7 +51,42 @@ class StateNotExist(Exception):
     pass
 
 
-class State(XmlRegister):
+class StateFactory(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        # States are Singletons
+        if cls not in cls._instances:
+            cls._instances[cls] = super(StateFactory, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+    def __new__(cls, *args, **kwargs):
+        state_class = super(StateFactory, cls).__new__(cls, *args, **kwargs)
+
+        # init provides
+        state_class._provides = IterContainer()
+
+        # setup reserved provides
+        for method_name in STATE_RESERVED_PROVIDES:
+            method = getattr(state_class, method_name).__func__
+            if not hasattr(method, "_provide"):
+                setattr(method, "_provide", Provide(method_name))
+            # setup class properties to access reserved provides
+            # cls.provide_enter etc...
+            setattr(state_class, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
+
+        # register custom provides
+        funcs = inspect.getmembers(state_class, predicate=inspect.ismethod)
+        for (fname, f) in funcs:
+            if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
+                state_class._provides.append(f._provide)
+                logger.debug("Registered %s in state %s" % (f._provide, state_class.__name__))
+
+        return state_class
+
+
+class State(XMLRessource):
+    __metaclass__ = StateFactory
     """A State describes a step during the life of a :class:`Lifecycle`.
 
     Each State can have some Requires. :class:`Require` objects
@@ -65,31 +100,6 @@ class State(XmlRegister):
     _lf_name = ""
     _instance = None
     supported_os_type = [armonic.utils.OsTypeAll()]
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(State, cls).__new__(cls, *args, **kwargs)
-
-            # init provides
-            cls._provides = IterContainer()
-
-            # setup reserved provides
-            for method_name in STATE_RESERVED_PROVIDES:
-                method = getattr(cls, method_name).__func__
-                if not hasattr(method, "_provide"):
-                    setattr(method, "_provide", Provide(method_name))
-                # setup class properties to access reserved provides
-                # cls.provide_enter etc...
-                setattr(cls, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
-
-            # register custom provides
-            funcs = inspect.getmembers(cls, predicate=inspect.ismethod)
-            for (fname, f) in funcs:
-                if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
-                    cls._provides.append(f._provide)
-                    logger.debug("Registered %s in state %s" % (f._provide, cls.__name__))
-
-        return cls._instance
 
     def _xml_tag(self):
         return self.name
