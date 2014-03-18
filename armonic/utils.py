@@ -95,8 +95,11 @@ def ethernet_ifs():
     return ifs
 
 
-def get_ip():
-    return ethernet_ifs()[0][1]
+def get_first_ip():
+    try:
+        return ethernet_ifs()[0][1]
+    except IndexError:
+        return '127.0.0.1'
 
 
 def get_subclasses(c):

@@ -6,7 +6,7 @@ import traceback
 import itertools
 import copy
 
-from armonic.utils import ethernet_ifs
+from armonic.utils import get_first_ip
 
 
 class NetworkFilter(logging.Filter):
@@ -17,10 +17,7 @@ class NetworkFilter(logging.Filter):
 
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
-        try:
-            record.ip = ethernet_ifs()[0][1]
-        except IndexError:
-            record.ip = ""
+        record.ip = get_first_ip()
         return True
 
 
