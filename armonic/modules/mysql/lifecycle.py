@@ -62,7 +62,7 @@ class SetRootPassword(State):
 
     @Require('auth', [VString("password", default="root")])
     def enter(self, requires):
-        pwd = self.requires.auth.variables().password.value  # password.value
+        pwd = requires.auth.variables().password.value  # password.value
         thread_mysqld = ProcessThread("mysql",
                                       None,
                                       "test",
@@ -240,9 +240,9 @@ class Active(MetaState):
         cur.execute("DROP DATABASE %s;" % database)
         return True
 
-    @Require('auth', [VString('user'), VString('password')])
-    @Require('user', [VString('username'), VString('userpassword')])
-    def addUser(self, requires):
+    #@Require('auth', [VString('user'), VString('password')])
+    #@Require('user', [VString('username'), VString('userpassword')])
+    def addUser(self, user, password, newUser, userPassword):
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;" % (newUser, userPassword)
