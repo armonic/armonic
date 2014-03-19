@@ -99,7 +99,10 @@ if __name__ == "__main__":
 
         lfm = ClientSocket(host=args.host, handlers=[handler])
         class MyProvide(Provide):
-            pass
+            def on_lfm(self, host):
+                self.host = host
+                self._lfm = ClientSocket(host=host)                
+                
         root_provide = MyProvide(generic_xpath=args.xpath)
         root_provide.lfm = lfm
             
@@ -134,7 +137,7 @@ if __name__ == "__main__":
             else:
                 prefill = ""
             host = user_input_variable(variable_name = "location", message = msg, prefill=prefill)
-            data = ClientSocket(host=host['location'])
+            data = host['location']
             
         elif provide.step == "specialize":
             data = user_input_choose_amongst(args, "")
@@ -152,11 +155,11 @@ if __name__ == "__main__":
             print
 
             print "Variables to fill are:"
-            for v in provide._variables:
+            for v in provide.variables():
                 print "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath)
             print
 
-            for v in provide._variables:
+            for v in provide.variables():
                 if v.value is None:
                     if v.from_xpath is not None:
                         print v.from_xpath

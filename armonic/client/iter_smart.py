@@ -20,6 +20,17 @@ class Variable(object):
         # All variable are added to a global list
         self.from_require.from_provide.Variables.append(self)
 
+        self._value = None
+
+    @property
+    def value(self):
+        if self._value is None:
+            self._resolve(self.from_require.from_provide._scope_variables)
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
     @classmethod
     def from_json(cls, dct_json, **kwargs):
@@ -30,16 +41,13 @@ class Variable(object):
         this.default = dct_json['default']
         this.value = this.default
 
+        # Add this variable to the scope
         if this.value is not None:
             this.from_require.from_provide._scope_variables[this.name] = this
-        this.from_require.from_provide._variables.append(this)
-
-        this.resolve(this.from_require.from_provide._scope_variables)
 
         return this
 
-
-    def resolve(self, scope):
+    def _resolve(self, scope):
         """Try to assign a value to this variable. If from_xpath is not None,
         it tries to to find back the corresponding
         variable. Otherwise, it tries to find a value in the scope.
@@ -50,17 +58,26 @@ class Variable(object):
         if self.from_xpath is not None:
             for v in self.from_require.from_provide.Variables:
                 if v.xpath == self.from_xpath:
-                    self.value = v.value
+                    self._value = v.value
                     logger.debug("Variable [%s] value comes from [%s] with value %s" %(
                         self.xpath, v.xpath, v.value))
                     return
             logger.info("Variable [%s] from_xpath [%s] not found" %(
                 self.xpath, self.from_xpath))
+            
+        # If the variable is host, try to find it from called provide
+        if self.name == 'host' and self._value is None:
+            if self.from_require.type == 'external':
+                try:
+                    self._value = self.from_require.provides[0].host
+                except IndexError:
+                    pass
 
+        # Try to assign a value from the provide scope
         if self.name in scope:
             logger.debug("Variable [%s] resolved by [%s] with value %s" %(
                 self.xpath, scope[self.name].xpath, scope[self.name].value))
-            self.value = scope[self.name].value
+            self._value = scope[self.name].value
 
 
     def pprint(self):
@@ -87,24 +104,29 @@ class Require(object):
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
         
-        this.variables = []
+        this._variables = []
         for v in dct_json['variables_skel']:
-            this.variables.append(Variable.from_json(v, from_require=this))
+            this._variables.append(Variable.from_json(v, from_require=this))
             
         this.json = dct_json
         return this
 
     def pprint(self):
         return {"xpath": self.xpath,
-                "variables": [v.pprint() for v in self.variables]}
+                "variables": [v.pprint() for v in self._variables]}
 
     def get_variables(self):
         """To get a list of all variables which can be submitted to
         provide_call_validate"""
         acc = []
-        for v in self.variables:
+        for v in self._variables:
             acc.append((v.xpath, {0: v.value}))
         return acc
+
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        return self._variables
+
 
 class Remote(Require):
     def __init__(self, from_provide, child_num):
@@ -136,6 +158,10 @@ class Remote(Require):
             acc.append((v.xpath, {0: v.value}))
         return acc
 
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        return self.provide_args
+
 
 class Provide(object):
     """
@@ -165,10 +191,6 @@ class Provide(object):
 
         # This dict contains variables that belongs to this scope.
         self._scope_variables = {}
-
-        # The list of variable that needs to be filled
-        self._variables = []
-
 
         if requirer is not None:
             self.depth = requirer.depth + 1
@@ -206,6 +228,9 @@ class Provide(object):
         self._manage = None
         self._call = None
 
+        # Attribute host is required for external Provide
+        self.host = None
+
 
     def get_variables(self):
         """Get variables in the format for provide_call"""
@@ -214,10 +239,17 @@ class Provide(object):
             acc += r.get_variables()
         return acc
         
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        acc = []
+        for v in self.remotes + self.requires:
+            acc += v.variables()
+        return acc
 
     def has_requirer(self):
         """To know if it is the root provide."""
         return self.requirer is not None
+
  
     @property
     def step(self):
@@ -267,12 +299,21 @@ class Provide(object):
 
     @property
     def lfm(self):
-        """If it returns None, walk function yields."""
         return self._lfm
-        
     @lfm.setter
     def lfm(self, lfm):
         self._lfm = lfm
+        
+    def do_lfm(self):
+        """The step lfm is applied if it returns True."""
+        return self._lfm is None
+
+    def on_lfm(self, lfm):
+        self._lfm = lfm
+
+    def _test_lfm(self):
+        if self._lfm is None:
+            raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
 
     @property
     def manage(self):
@@ -342,8 +383,10 @@ def walk(root_scope):
                 scope._next_step()
 
             elif scope.step == "lfm":
-                if scope.lfm is None:
-                    scope.lfm = yield(scope, scope.step, None)
+                if scope.do_lfm():
+                    data = yield(scope, scope.step, None)
+                    scope.on_lfm(data)
+                    scope._test_lfm()
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
