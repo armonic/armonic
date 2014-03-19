@@ -167,7 +167,7 @@ if __name__ == "__main__":
                     v.value = ret[v.name]
 
             print "Variable to send"
-            pprint(provide.get_variables())
+            pprint(provide.variables_serialized())
             
             print
                     

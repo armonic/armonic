@@ -115,9 +115,8 @@ class Require(object):
         return {"xpath": self.xpath,
                 "variables": [v.pprint() for v in self._variables]}
 
-    def get_variables(self):
-        """To get a list of all variables which can be submitted to
-        provide_call_validate"""
+    def variables_serialized(self):
+        """Get variables in the format for provide_call"""
         acc = []
         for v in self._variables:
             acc.append((v.xpath, {0: v.value}))
@@ -152,7 +151,8 @@ class Remote(Require):
         return {"xpath": self.xpath,
                 "variables": [v.pprint() for v in self.provide_args]}
 
-    def get_variables(self):
+    def variables_serialized(self):
+        """Get variables in the format for provide_call"""
         acc = []
         for v in self.provide_args:
             acc.append((v.xpath, {0: v.value}))
@@ -203,7 +203,6 @@ class Provide(object):
             # They will be upgraded when requires are built.
             for (k, v) in requirer._scope_variables.items():
                 self._scope_variables[k] = v
-                
             
         else:
             self.depth = 0
@@ -232,11 +231,11 @@ class Provide(object):
         self.host = None
 
 
-    def get_variables(self):
+    def variables_serialized(self):
         """Get variables in the format for provide_call"""
         acc = []
         for r in self.remotes + self.requires:
-            acc += r.get_variables()
+            acc += r.variables_serialized()
         return acc
         
     def variables(self):
@@ -249,7 +248,6 @@ class Provide(object):
     def has_requirer(self):
         """To know if it is the root provide."""
         return self.requirer is not None
-
  
     @property
     def step(self):
@@ -261,7 +259,7 @@ class Provide(object):
         self._step_current += 1
 
 
-    def build_require_from_call_require(self, dct_json):
+    def _build_require_from_call_require(self, dct_json):
         """From a json dict, build Require and Remote require."""
         self.remotes = []
         self.requires = []
@@ -273,13 +271,13 @@ class Provide(object):
                 elif require['type'] in ['simple']:
                     self.requires.append(Require.from_json(require, child_num=idx, from_provide=self))
                 idx += 1
-
-    def build_requires(self):
+                
+    def _build_requires(self):
         """Get all requires"""
         provides = self.lfm.provide_call_requires(self.specialized_xpath)
-        self.build_require_from_call_require(provides)
+        self._build_require_from_call_require(provides)
                     
-    def requirator(self):
+    def _requirator(self):
         """Be careful, this function always returns the same generator."""
         def c():
             for r in self.remotes:
@@ -348,10 +346,10 @@ class Provide(object):
     def lfm_call(self):
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.specialized_xpath,
-            requires=self.get_variables())
+            requires=self.variables_serialized())
         # self.provide_ret = self.lfm.call("provide_call_validate",
         #                                  provide_xpath_uri=self.specialized_xpath,
-        #                                  requires=self.get_variables())
+        #                                  requires=self.variables_serialized())
         # from pprint import pprint
         # pprint(self.provide_ret)
 
@@ -390,7 +388,7 @@ def walk(root_scope):
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
-                scope.build_requires()
+                scope._build_requires()
                 #yield(scope, scope.step, None)
                 scope._next_step()
 
@@ -419,7 +417,7 @@ def walk(root_scope):
                     # For each require, provides are built
                     try:
                         # Get the next require to manage
-                        req = scope.requirator().next()
+                        req = scope._requirator().next()
                         req.provides = []
                         if req.nargs == "*":
                             number = yield (scope, scope.step, req)
