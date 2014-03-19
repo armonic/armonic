@@ -5,7 +5,7 @@ import argparse
 import readline
 
 from armonic.serialize import Serialize
-from armonic.client.iter_smart import Provide, walk
+from armonic.client.iter_smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
 from pprint import pprint
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             
         
 
-    generator = walk(root_provide)
+    generator = smart_call(root_provide)
     
     # Data sent to the generator
     data = None

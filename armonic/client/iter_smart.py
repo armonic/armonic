@@ -1,3 +1,14 @@
+"""Smart module offers a high level way to call a provide. Function
+:func:`smart_call` generates steps to help the user to
+
+* define LifecycleManager,
+* specialize xpath provide,
+* specify variable value,
+* ...
+
+
+"""
+
 # Limitiations
 # 
 # It's not able to manage several require (nargs) variable.
@@ -164,12 +175,20 @@ class Remote(Require):
 
 
 class Provide(object):
-    """
+    """This class describe a provide and its requires and remotes requires
+    contains provide. Thus, this object can describe a tree. To build
+    the tree, the function :func:`smart_call` must be used.
+
+    To adapt the behavior of this class, redefine methods on_step and
+    do_step, where step is manage, lfm, specialize, etc.
+    If method do_step returns True, this step is 'yielded'.
+    Method on_step takes as input the sent data.
 
     :param child_number: if this Provide is a dependancies, this is
     the number of this child.
     :param requirer: the provide that need this require
     :param require: the remote require of the requirer that leads to this provide.
+
     """
     STEPS = ["manage", 
              "lfm",
@@ -225,7 +244,7 @@ class Provide(object):
             self._lfm = None
 
         self._manage = None
-        self._call = None
+        self.call = None
 
         # Attribute host is required for external Provide
         self.host = None
@@ -313,6 +332,16 @@ class Provide(object):
         if self._lfm is None:
             raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
 
+
+    def do_call(self):
+        return self.call is None
+
+    def on_call(self, call):
+        """
+        :type call: boolean
+        """
+        self.call = call
+
     @property
     def manage(self):
         """If it returns None, walk function yields."""
@@ -325,15 +354,7 @@ class Provide(object):
         # Used to stop the genreator
         self.ignore = not manage
 
-    @property
-    def call(self):
-        """If it returns None, walk function yields."""
-        return self._call
-        
-    @call.setter
-    def call(self, call):
-        """Set true if this provide has to be called"""
-        self._call = call
+
 
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
@@ -354,11 +375,11 @@ class Provide(object):
         # pprint(self.provide_ret)
 
 
-def walk(root_scope):
+def smart_call(root_provide):
     """Return a generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
 
-    scope = root_scope
+    scope = root_provide
     while True:
         # Stop and Pop conditions
         if scope.step == "done":
@@ -397,8 +418,9 @@ def walk(root_scope):
                 scope._next_step()
 
             elif scope.step == "call":
-                if scope.call is None:
-                    scope.call = yield(scope, scope.step, None)
+                if scope.do_call():
+                    data = yield(scope, scope.step, None)
+                    scope.on_call(data)
                 if scope.call:
                     scope.lfm_call()
                 scope._next_step()
