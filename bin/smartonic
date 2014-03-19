@@ -83,7 +83,21 @@ if __name__ == "__main__":
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
         from armonic.client.sock import ClientSocket
-        lfm = ClientSocket(host=args.host)
+
+
+        # To have colorized agent log
+        import sys
+        import termcolor
+        class ColorFormatter(logging.Formatter):
+            def format(self,record):
+                ret = logging.Formatter.format(self, record)
+                return termcolor.colored(ret, 'grey')
+        handler = logging.StreamHandler(sys.stdout)
+        format = '%(levelname)5s %(ip)15s - %(message)s'
+        handler.setFormatter(ColorFormatter(format))
+
+
+        lfm = ClientSocket(host=args.host, handlers=[handler])
         class MyProvide(Provide):
             pass
         root_provide = MyProvide(generic_xpath=args.xpath)
@@ -106,9 +120,9 @@ if __name__ == "__main__":
         except StopIteration:
             break
         if provide.tree_id == None:
-            print provide.generic_xpath
-        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
-                               provide.step.ljust(16), provide.tree_id)
+            pass
+#        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
+#                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
             data = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
