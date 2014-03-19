@@ -1,36 +1,149 @@
-class Remote(object):
-    def __init__(self):
+# Limitiations
+# 
+# It's not able to manage several require (nargs) variable.
+# It's not able to manage path
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+class Variable(object):
+    """
+    :param from_require: The require that holds this variable.
+
+    """
+
+    def __init__(self, name, from_require):
+        self.from_require = from_require
+        self.name = name
+        
+        # All variable are added to a global list
+        self.from_require.from_provide.Variables.append(self)
+
+
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        logger.debug("Creating variable %s" % dct_json['xpath'])
+        this = cls(dct_json['name'], **kwargs)
+        this.xpath = dct_json['xpath']
+        this.from_xpath = dct_json['from_xpath']
+        this.default = dct_json['default']
+        this.value = this.default
+
+        if this.value is not None:
+            this.from_require.from_provide._scope_variables[this.name] = this
+        this.from_require.from_provide._variables.append(this)
+
+        this.resolve(this.from_require.from_provide._scope_variables)
+
+        return this
+
+
+    def resolve(self, scope):
+        """Try to assign a value to this variable. If from_xpath is not None,
+        it tries to to find back the corresponding
+        variable. Otherwise, it tries to find a value in the scope.
+
+        """
+        # If the variable has a from_xpath attribute,
+        # try to find back its value
+        if self.from_xpath is not None:
+            for v in self.from_require.from_provide.Variables:
+                if v.xpath == self.from_xpath:
+                    self.value = v.value
+                    logger.debug("Variable [%s] value comes from [%s] with value %s" %(
+                        self.xpath, v.xpath, v.value))
+                    return
+            logger.info("Variable [%s] from_xpath [%s] not found" %(
+                self.xpath, self.from_xpath))
+
+        if self.name in scope:
+            logger.debug("Variable [%s] resolved by [%s] with value %s" %(
+                self.xpath, scope[self.name].xpath, scope[self.name].value))
+            self.value = scope[self.name].value
+
+
+    def pprint(self):
+        return {"name": self.name,
+                "xpath": self.xpath,
+                "default": self.default,
+                "value": self.value}
+
+
+class Require(object):
+    """
+    :param from_provide: The provide that holds this require.
+
+    """
+
+    def __init__(self, from_provide, child_num):
+        self.child_num = child_num
+        self.from_provide = from_provide
+    
+
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        this = cls(**kwargs)
+        this.xpath = dct_json['xpath']
+        this.type = dct_json['type']
+        
+        this.variables = []
+        for v in dct_json['variables_skel']:
+            this.variables.append(Variable.from_json(v, from_require=this))
+            
+        this.json = dct_json
+        return this
+
+    def pprint(self):
+        return {"xpath": self.xpath,
+                "variables": [v.pprint() for v in self.variables]}
+
+    def get_variables(self):
+        """To get a list of all variables which can be submitted to
+        provide_call_validate"""
+        acc = []
+        for v in self.variables:
+            acc.append((v.xpath, {0: v.value}))
+        return acc
+
+class Remote(Require):
+    def __init__(self, from_provide, child_num):
+        self.child_num = child_num
+        self.from_provide = from_provide
         self.provides = []
 
     @classmethod
-    def from_json(cls, dct_json, child_num):
-        this = cls()
-        this.child_num = child_num
+    def from_json(cls, dct_json, **kwargs):
+        this = cls(**kwargs)
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
         this.nargs = dct_json['nargs']
         this.provide_xpath = dct_json['provide_xpath']
-        this.provide_args = dct_json['provide_args']
+        this.provide_args = []
+        for v in dct_json['provide_args']:
+            this.provide_args.append(Variable.from_json(v, from_require=this))
+        
+        this.json = dct_json
         return this
 
-def build_require_from_call_require(dct_json):
-    acc = []
-    idx = 0
-    for p in dct_json:
-        for require in p['requires']:
-            if require['type'] in ['external', 'local']:
-                acc.append(Remote.from_json(require, child_num=idx))
-                idx += 1
-    return acc
-                
+    def pprint(self):
+        return {"xpath": self.xpath,
+                "variables": [v.pprint() for v in self.provide_args]}
+
+    def get_variables(self):
+        acc = []
+        for v in self.provide_args:
+            acc.append((v.xpath, {0: v.value}))
+        return acc
+
 
 class Provide(object):
     """
 
     :param child_number: if this Provide is a dependancies, this is
     the number of this child.
-    :param requirer: the provide that require this require
-    :param require: the require of the requirer
+    :param requirer: the provide that need this require
+    :param require: the remote require of the requirer that leads to this provide.
     """
     STEPS = ["manage", 
              "lfm",
@@ -38,21 +151,36 @@ class Provide(object):
              "set_dependancies",
              # This is a private step
              "multiplicity", 
-             #"prepare_requires",
+             "validation",
              "call",
              "done"]
+
+    # Contains all variables. This is used to find back from_xpath value.
+    Variables = []
 
     def __init__(self, generic_xpath, requirer=None, child_num=None, require=None):
         self.generic_xpath = generic_xpath
         self.requirer = requirer
         self.require = require
-        
+
+        # This dict contains variables that belongs to this scope.
+        self._scope_variables = {}
+
+        # The list of variable that needs to be filled
+        self._variables = []
+
+
         if requirer is not None:
             self.depth = requirer.depth + 1
             self.tree_id = []
             for i in requirer.tree_id:
                 self.tree_id.append(i)
             self.tree_id.append(child_num)
+
+            # We copy variables dict from parent the scope.
+            # They will be upgraded when requires are built.
+            for (k, v) in requirer._scope_variables.items():
+                self._scope_variables[k] = v
                 
             
         else:
@@ -77,8 +205,18 @@ class Provide(object):
 
         self._manage = None
         self._call = None
-            
+
+
+    def get_variables(self):
+        """Get variables in the format for provide_call"""
+        acc = []
+        for r in self.remotes + self.requires:
+            acc += r.get_variables()
+        return acc
+        
+
     def has_requirer(self):
+        """To know if it is the root provide."""
         return self.requirer is not None
  
     @property
@@ -89,14 +227,27 @@ class Provide(object):
         if self._step_current+1 > len(Provide.STEPS)-1:
             raise IndexError
         self._step_current += 1
-        
+
+
+    def build_require_from_call_require(self, dct_json):
+        """From a json dict, build Require and Remote require."""
+        self.remotes = []
+        self.requires = []
+        idx = 0
+        for p in dct_json:
+            for require in p['requires']:
+                if require['type'] in ['external', 'local']:
+                    self.remotes.append(Remote.from_json(require, child_num=idx, from_provide=self))
+                elif require['type'] in ['simple']:
+                    self.requires.append(Require.from_json(require, child_num=idx, from_provide=self))
+                idx += 1
+
     def build_requires(self):
+        """Get all requires"""
         provides = self.lfm.provide_call_requires(self.specialized_xpath)
-        #pprint(self.lfm.provide_call_args(provide.specialized_xpath))
-        self._requires = []
-        self.remotes = build_require_from_call_require(provides)
+        self.build_require_from_call_require(provides)
                     
-    def requires(self):
+    def requirator(self):
         """Be careful, this function always returns the same generator."""
         def c():
             for r in self.remotes:
@@ -155,9 +306,13 @@ class Provide(object):
     
     def lfm_call(self):
         self.provide_ret = self.lfm.provide_call(
-            xpath=self.specialized_xpath,
-            requires={},
-            provide_args={})
+            provide_xpath_uri=self.specialized_xpath,
+            requires=self.get_variables())
+        # self.provide_ret = self.lfm.call("provide_call_validate",
+        #                                  provide_xpath_uri=self.specialized_xpath,
+        #                                  requires=self.get_variables())
+        # from pprint import pprint
+        # pprint(self.provide_ret)
 
 
 def walk(root_scope):
@@ -196,6 +351,10 @@ def walk(root_scope):
                 #yield(scope, scope.step, None)
                 scope._next_step()
 
+            elif scope.step == "validation":
+                yield(scope, scope.step, None)
+                scope._next_step()
+
             elif scope.step == "call":
                 if scope.call is None:
                     scope.call = yield(scope, scope.step, None)
@@ -217,7 +376,7 @@ def walk(root_scope):
                     # For each require, provides are built
                     try:
                         # Get the next require to manage
-                        req = scope.requires().next()
+                        req = scope.requirator().next()
                         req.provides = []
                         if req.nargs == "*":
                             number = yield (scope, scope.step, req)

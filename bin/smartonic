@@ -8,6 +8,8 @@ from armonic.serialize import Serialize
 from armonic.client.iter_smart import Provide, walk
 from armonic.utils import OsTypeMBS
 
+from pprint import pprint
+
 
 def user_input_confirm(msg, prefix=''):
     """Ask the user if he confirm the msg question.
@@ -125,6 +127,33 @@ if __name__ == "__main__":
 
         elif provide.step == "set_dependancies":
             pass
+
+                
+        elif provide.step == "validation":
+            print
+            print "Provide %s" % provide.generic_xpath
+            print "Variable scope is:" 
+            for (k, v) in provide._scope_variables.items():
+                print "\t%s : %s [%s]" % (k.ljust(25), str(v.value).ljust(25), v.xpath)
+            print
+
+            print "Variables to fill are:"
+            for v in provide._variables:
+                print "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath)
+            print
+
+            for v in provide._variables:
+                if v.value is None:
+                    if v.from_xpath is not None:
+                        print v.from_xpath
+                    ret = user_input_variable(variable_name=v.name, message="Fill it:")
+                    v.value = ret[v.name]
+
+            print "Variable to send"
+            pprint(provide.get_variables())
+            
+            print
+                    
 
         elif provide.step == "multiplicity":
             require = args
