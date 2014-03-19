@@ -710,7 +710,7 @@ class Lifecycle(XMLRessource):
             # Enter Requires
             acc += "| { enter\l | {%s}}" % list_to_table([r.name for r in
                                                           s.provide_enter])
-            for p in s.get_provides():
+            for p in s.provides:
                 acc += " | { %s }" % dot_provide(p)
             # End of label
             acc += '}"\n'
