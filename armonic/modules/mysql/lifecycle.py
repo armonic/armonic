@@ -188,7 +188,7 @@ class EnsureMysqlIsStopped(ActiveWithSystemd):
 
 class Active(MetaState):
     """Launch mysql server and provide some actions on databases."""
-    implementations = [ActiveOnDebian(), ActiveOnMBS()]
+    implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require("auth", [VString('user'), VString('password')])
     def getDatabases(self, requires):
@@ -280,7 +280,7 @@ class ActiveAsSlave(MetaState):
     # as VFileMSS3. This would be an url such as
     # http://ip_master/dump.file or anything else.  Then, in VFileMSS3
     # would have a get_file_in_local method to proceed to downloading.
-    implementations = [ActiveOnDebian(), ActiveOnMBS()]
+    implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require('auth_root',
              variables=[Password(
@@ -366,7 +366,7 @@ class ConfiguredAsMaster(State):
 
 
 class ActiveAsMaster(MetaState):
-    implementations = [ActiveOnDebian(), ActiveOnMBS()]
+    implementations = [ActiveOnDebian, ActiveOnMBS]
 
     @Require('slave_id', [VString('user', default='replication'),
                           VString('password', default='password')])
@@ -484,7 +484,7 @@ class InstalledOnDebian(InstallPackagesApt):
 
 class Installed(armonic.lifecycle.MetaState):
     """Install mysql package (metastate)"""
-    implementations = [InstalledOnMBS(), InstalledOnDebian()]
+    implementations = [InstalledOnMBS, InstalledOnDebian]
 
 
 class Mysql(Lifecycle):

@@ -265,45 +265,41 @@ class Lifecycle(XMLRessource):
     """The initial state for this Lifecycle"""
 
     def __new__(cls):
-        class_transitions = copy.copy(cls.transitions)
         instance = super(Lifecycle, cls).__new__(cls)
         # Update transitions to manage MetaState
-        for state in set([s for (s, d) in class_transitions] + [d for (s, d) in class_transitions]):
-            # Set Lifecycle name in state
-            state.lf_name = instance.name
-            # Build MetaState transitions
-            if isinstance(state, MetaState):
-                # Find transitions which involve MetaState state
+        for ms in instance._state_list():
+            ms.lf_name = instance.name
+            # For each MetaState ms
+            if isinstance(ms, MetaState):
+                # Find transitions which involve a MetaState
                 # Ignore already done MetaState transitions
-                meta_transitions = [(s, d) for (s, d) in
-                                    class_transitions if d == state and not getattr(s, '_meta_state', False)]
-                if not meta_transitions:
+                transitions = [(s, i) for (s, i) in
+                               instance.transitions if i == ms and not "%s." % i.name in s.name]
+                if not transitions:
                     continue
                 # We create new state suffixed by metaclass name This
                 # permits to create specical path.  If two metastate
                 # has same implementation, we need to create special
                 # implementations for each metastate.
-                inject_states = []
-                for implementation_state in state.implementations:
-                    implementation_state.lf_name = instance.name
-                    implementation_state._meta_state = state
-                    logger.debug("State %s has been created from MetaState %s" % (implementation_state, state))
-                    inject_states.append(implementation_state)
-                # For each transtion to MetaState state
-                for src, dst in meta_transitions:
+                created_states = [type('%s.%s' % (ms.__class__.__name__, s.__name__), (s,), {})
+                                  for s in ms.implementations]
+                for s in created_states:
+                    s.lf_name = instance.name
+                    logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name))
+                # For each transtion to MetaState ms
+                for t in transitions:
                     update_transitions = []
                     # And for each state implementations
-                    for s in inject_states:
+                    for d in created_states:
                         # We create transition to this implementation
-                        update_transitions += [(src, s)]
+                        update_transitions += [(t[0], d())]
                         # And from this implementation to metastate
-                        update_transitions += [(s, state)]
+                        update_transitions += [(d(), ms)]
                     # Finally, we remove useless transitions and add new ones.
                     if update_transitions != []:
-                        class_transitions.remove((src, dst))
-                        class_transitions += update_transitions
+                        instance.transitions.remove(t)
+                        instance.transitions += update_transitions
 
-        instance._transitions = class_transitions
         return instance
 
     def __init__(self):
@@ -342,6 +338,10 @@ class Lifecycle(XMLRessource):
     def name(self):
         return self.__class__.__name__
 
+    @classmethod
+    def _state_list(cls):
+        return list(set([s for (s, d) in cls.transitions] + [d for (s, d) in cls.transitions]))
+
     def state_list(self, reachable=False):
         """To get all available states.
 
@@ -350,7 +350,7 @@ class Lifecycle(XMLRessource):
 
         :rtype: [:class:`State`]
         """
-        states = list(set([s for (s, d) in self._transitions] + [d for (s, d) in self._transitions]))
+        states = self.__class__._state_list()
         if reachable:
             acc = []
             for s in states:
@@ -378,7 +378,7 @@ class Lifecycle(XMLRessource):
         type."""
         return (self.os_type in d.supported_os_type
                 and self.os_type in s.supported_os_type
-                and (s, d) in self._transitions)
+                and (s, d) in self.transitions)
 
     def _push_state(self, state, requires):
         """Go to a state if transition from current state to state is allowed
@@ -409,7 +409,7 @@ class Lifecycle(XMLRessource):
         paths = []
 
         def _find_next_state(state, paths, path=[]):
-            for (src, dst) in self._transitions:
+            for (src, dst) in self.transitions:
                 if src == state and self._is_transition_allowed(src, dst):
                     new_path = copy.copy(path)
                     new_path.append((dst, 'enter'))
@@ -715,7 +715,7 @@ class Lifecycle(XMLRessource):
             # End of label
             acc += '}"\n'
             acc += "];\n"
-        for (s, d) in self._transitions:
+        for (s, d) in self.transitions:
             if s in state_list and d in state_list:
                 acc += '"%s" -> "%s";\n' % (s.name, d.name)
         acc += "}\n"
@@ -740,7 +740,7 @@ class Lifecycle(XMLRessource):
                 'xpath': self.get_xpath_relative(),
                 'states': [s.to_primitive() for s in state_list],
                 "transitions": [(s.name, d.name) for (s, d) in
-                                self._transitions if s in
+                                self.transitions if s in
                                 state_list and d in state_list]}
 
 
