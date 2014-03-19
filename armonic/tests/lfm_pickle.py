@@ -31,7 +31,7 @@ class StateD(State):
 
 
 class StateE(MetaState):
-    implementations = [StateD()]
+    implementations = [StateD]
 
 
 class LFMPickle(Lifecycle):
