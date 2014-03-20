@@ -1,677 +1,490 @@
-"""This module consists of several bases classes which can be used to
-build a client that will automatically satisfate all requires of the
-called provide.
+"""Smart module offers a high level way to call a provide. Function
+:func:`smart_call` generates steps to help the user to
 
-Basicaly, you have to implement the class :py:class:`Provide` and
-classes :py:class:`RequireSmart`. The class :py:class:`Provide` permits to
-define how and where a provide is called. Classes :py:class:`RequireSmart`
-and :py:class:`RequireWithProvide` permits to define how require
-values are built.
+* define LifecycleManager,
+* specialize xpath provide,
+* specify variable value,
+* ...
 
-How it works on a example::
 
-1. User wants to call a provide. \
-   For instance, Wordpress//get_website;
-2. This provide xpath matches several provides. \
-   Suppose the user chooses Wordpress/Active/get_website;
-3. The user confirm the call to this provide;
-4. The provide Wordpress/Active/get_website requires \
-   a call to Mysql.addDatabase provide
-
-   a. The user confirms if he really wants Mysql.addDatabase.
-      If he doesn't, we continue to the next Require \
-      of Wordpress/Active/get_site
-   b. We fill Requires of Mysql.addDatabase with (in order).\
-      See in :py:class:`RequireSmart` for more informations \
-      about how to fill a require.
-
-5. Once all requires have been treated, the user confirms the \
-   call to the provide Wordpress/Active/get_website with the \
-   filled requires.
-
-6. Finally, the provide /Wordpress/Active/get_website is called.
 """
 
-from armonic.common import ValidationError
-from armonic.client.sock import ClientSocket
-import armonic.lifecycle
-
-import types
+# Limitiations
+# 
+# It's not able to manage several require (nargs) variable.
+# It's not able to manage path
 
 import logging
-logger = logging.getLogger()
 
-###############################################################################
-#                                  REQUIRE CLASSES                            #
-###############################################################################
+logger = logging.getLogger(__name__)
 
-import armonic.require
-
-
-class RequireSmart(object):
-    """This class has to be used to handle how a require is built.  For
-    external or local requires, this class is specialized in
-    :py:class:`RequireWithProvide`.
-
-    So, basically we have to handle :
-
-    * how values of a require are built \
-    (see :py:meth:`RequireSmart.build_values`)
-    * what happen if a variable is not validated \
-    (see :py:meth:`RequireSmart.on_validation_error`)
-    * how values used to fill this require are saved \
-    (see :py:meth:`RequireSmart.build_save_to`)
-
-    To fill this require, several helpers can be used:
-
-    * :py:meth:`helper_needed_values` permits to get the dict of \
-    variable names (and their default values)
-    * :py:meth:`helper_suggested_values` permits to get values \
-    suggested by the requirer.
-
-    Sometimes, a require can be called several times. This is handle
-    by the method :py:meth:`handle_many_requires`. If this method
-    return True, then, the require will be filled one time more.
-
-    How from_xpath variable parameter is managed.  All variable are
-    stored in class variable Provide._Variable.  When a variable has a
-    from_xpath atrtibute not equal to None, the value of this xpath is
-    retreived from this list and the value of the variable is set to
-    the previoulsly used value.
+class Variable(object):
+    """
+    :param from_require: The require that holds this variable.
 
     """
 
-    def build_values(self):
-        """Redefine it to build the value that has been used by this requires.
+    def __init__(self, name, from_require):
+        self.from_require = from_require
+        self.name = name
+        
+        # All variable are added to a global list
+        self.from_require.from_provide.Variables.append(self)
 
-        :rtype: A dict of variable name and values.
-        """
-        raise NotImplementedError(
-            "%s.build_values must be implemented" % self.__class__.__name__)
+        self._value = None
+        
+    @property
+    def value(self):
+        if self._value is None:
+            self._resolve(self.from_require._scope_variables)
+        return self._value
 
-    def handle_validation_error(self):
-        """Redefine it if you don't want to validate values. This can ben
-        useful to run some kind of simulation, ie. the provide is not
-        called. By default, it returns True. If it returns false, the
-        validation process is not realized.
+    @value.setter
+    def value(self, value):
+        self._value = value
 
-        :rtype: bool
-        """
-        return True
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        logger.debug("Creating variable %s" % dct_json['xpath'])
+        this = cls(dct_json['name'], **kwargs)
+        this.xpath = dct_json['xpath']
+        this.from_xpath = dct_json['from_xpath']
+        this.default = dct_json['default']
+        this.value = this.default
 
-    def on_validation_error(self, err_variable_name, values):
-        """This method is called when the validation of a variable is
-        not satisfated. Redefine it to adapt its behavior.
+        return this
 
-        :param err_variable_name: The variable name of not filled variable
-        :param values: The dict of current values
-        :rtype: A updated dict of 'values' variable name and values
-        """
-        raise NotImplementedError(
-            "You must implement %s.on_validation_error" % (
-                self.__class__.__name__))
-
-    def build_save_to(self, variable):
-        """Redefine it we want to make actions (show, print, save...)
-        on validated variables.
-
-        :param variable: the variable that we want to save
-        :type variable: subclass of :py:meth:`armonic.variable.Variable`
-        """
-        logger.debug("%s.build_save_to(%s)" % (
-            self.__class__.__name__,
-            variable))
-        pass
-
-    def handle_many_requires(self, counter):
-        """Return True if a new set of variable has to be provided."""
-        return False
-
-    def _build_one_validate(self):
-        values = self._build_one()
-        while self.handle_validation_error():
-            try:
-                self.validate_one_set(self.factory_variable(), values)
-            except ValidationError as e:
-                logger.debug(
-                    "Variable %s has not been validated." % e.variable_name)
-                values = self.on_validation_error(e.variable_name, values)
-                continue
-            break
-        return values
-
-    def _build_one(self):
-        """
-        Build one set a variables.
-
-        :rtype: a dict of values
-        """
-        values = self.build_values()
-        return values
-
-    def _build_many(self):
-        """Build value for many variables set.
-        This manages the nargs arguments or this require.
-
-        :rtype: a list of dict of values
-        """
-        require_values = []
-        for v in self.variables():
-            if v.from_xpath is not None:
-                v.value = self.provide_caller.__class__.find_xpath(
-                    v.from_xpath)
-
-        while (self.nargs in ['?', '*']
-               or len(require_values) < int(self.nargs)):
-            if (require_values == [] or
-                    self.handle_many_requires(len(require_values))):
-                pass
-            else:
-                break
-            values = self._build_one_validate()
-            require_values.append(values)
-
-        return require_values
-
-    def _build(self, provide_caller):
-        """Build values of this require"""
-        self.provide_caller = provide_caller
-        self.depth = provide_caller.depth
-        # We validate this require with values returned by provide.
-
-        require_values = self._build_many()
-
-        self._build_validate(require_values)
-        self._build_save_variables()
-
-    def _build_validate(self, values):
-        if values is None:
-            values = []
-        self.fill(values)
-
-        if self.handle_validation_error():
-            try:
-                self.validate()
-            except ValidationError as e:
-                for value in values:
-                    logger.error(e.msg)
-                    value = self.on_validation_error(e.variable_name, value)
-                self._build_validate(values)
-
-    def _build_save_variables(self):
-        for vs in self._variables:
-            for v in vs:
-                self.provide_caller.__class__._Variables.append(
-                    (v.get_xpath(), v.value))
-                self.build_save_to(v)
-
-    def helper_needed_values(self):
-        """
-        To get all values needed by this require. The returned dict
-        contains variable_name and the value is the current value or
-        the default value.
-
-        This is generally used as the base dict for require value
-        building.
-
-        :rtype: a dict of {variable_name : value}
-        """
-        return self.get_values()[0]
-
-    def helper_suggested_values(self):
-        """
-        To get the variable value suggested by the local or external
-        require that is the origin of the provide of this require.
-
-        For instance, suppose that we have a external require::
-
-          RequireExternal("external", xpath=/a_provide,
-                          variables[VString("variable_name",default=value)])
-
-        This require can generate a provide call.
-        Suppose the provide 'a_provide' have the require::
-
-          require=Require("this")
-
-        Then, require.helper_suggested_value() will return::
-
-          {'variable_name':value}
-
-        :rtype: a dict of {variable_name : value}
+    def _resolve(self, scope):
+        """Try to assign a value to this variable. If from_xpath is not None,
+        it tries to to find back the corresponding
+        variable. Otherwise, it tries to find a value in the scope.
 
         """
-        suggested = {}
-        #To ensure this require is not a goto state require
-        if self in self.provide_caller.provide_requires:
-            acc = []
-            requirer = self.provide_caller
-            while requirer is not None:
-                tmp = (dict([(s.name, s.value)
-                             for s in requirer.suggested_args
-                             if s.value is not None]))
-                acc.append(tmp)
-                requirer = requirer.requirer
-            for s in reversed(acc):
-                suggested.update(s)
-        return suggested
+        # If the variable has a from_xpath attribute,
+        # try to find back its value
+        if self.from_xpath is not None:
+            for v in self.from_require.from_provide.Variables:
+                if v.xpath == self.from_xpath:
+                    self._value = v.value
+                    logger.debug("Variable [%s] value comes from [%s] with value %s" %(
+                        self.xpath, v.xpath, v.value))
+                    return
+            logger.info("Variable [%s] from_xpath [%s] not found" %(
+                self.xpath, self.from_xpath))
+            
+        # If the variable is host, try to find it from called provide
+        if self.name == 'host' and self._value is None:
+            if self.from_require.type == 'external':
+                try:
+                    self._value = self.from_require.provides[0].host
+                except IndexError:
+                    pass
+
+        for v in scope:
+            if self.name == v.name:
+                logger.debug("Variable [%s] resolved by [%s] with value %s" %(
+                    self.xpath, v.xpath, v.value))
+                self._value = v.value
 
 
-class RequireSmartWithProvide(RequireSmart):
-    """This class is a subclass of :class:`RequireSmart` and can be use if
-    the require needs to call a provide. See :class:`RequireSmart` for more
-    common informations.
+    def pprint(self):
+        return {"name": self.name,
+                "xpath": self.xpath,
+                "default": self.default,
+                "value": self.value}
 
-    When value of this kind of require are built, first a provide
-    object is built and called. Then, value from this provide can be
-    used to fill this require.
 
-    This class inherits helper from
-    :py:class:`RequireSmart`. Moreover, a other helper is defined:
-
-    * :py:meth:`helper_current_provide_result_values` which permits to \
-    get the return values of the current call.
+class Require(object):
+    """
+    :param from_provide: The provide that holds this require.
 
     """
-    def build_provide_class(self):
-        """Can be redefined. It must return the class that has to be
-        used to build the provide needed by this require.
 
-        By default, it returns the class of the provide that has
-        called this requirer.
+    def __init__(self, from_provide, child_num):
+        self.child_num = child_num
+        self.from_provide = from_provide
 
-        :rtype: class that inherit from Provide
+        self._scope_variables = []
+        # We copy variables dict from parent the scope.
+        # They will be upgraded when requires are built.
+        if from_provide.require is not None:
+            for v in from_provide.require._scope_variables:
+                self._scope_variables.append(v)
+    
 
-        """
-        return self.provide_caller.__class__
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        this = cls(**kwargs)
+        this.xpath = dct_json['xpath']
+        this.type = dct_json['type']
+        
+        this._variables = []
+        for v in dct_json['variables_skel']:
+            this._variables.append(Variable.from_json(v, from_require=this))
+            
+        this.json = dct_json
+        return this
 
-    def _provide_call(self):
-        provide = self.build_provide_class()(xpath=self.xpath,
-                                             requirer=self.provide_caller,
-                                             requirer_type=self.type,
-                                             suggested_args=self.provide_args,
-                                             depth=self.depth + 1)
-        # Maybe, we don't want to call the proposed require. Moreover,
-        # we have to choose the provide host.
-        provide.call()
-        return provide
+    def pprint(self):
+        return {"xpath": self.xpath,
+                "variables": [v.pprint() for v in self._variables]}
 
-    def _build_one(self):
-        provide = self._provide_call()
-        self._provide_current = provide
-        if not hasattr(self, "provides"):
-            self.provides = []
-        self.provides.append(provide)
+    def variables_serialized(self):
+        """Get variables in the format for provide_call"""
+        acc = []
+        for v in self._variables:
+            acc.append((v.xpath, {0: v.value}))
+        return acc
 
-        values = self.build_values()
-        return values
-
-    def helper_current_provide_result_values(self):
-        """
-        To get the dict of value returned by the last provide call.
-
-        :rtype: a dict of {variable_name : value}
-        """
-        return self._provide_current.provide_ret
-
-
-class Require(armonic.require.Require, RequireSmart):
-    pass
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        return self._variables
 
 
-class RequireUser(armonic.require.RequireUser, RequireSmart):
-    pass
+class Remote(Require):
+    def __init__(self, from_provide, child_num):
+        Require.__init__(self, from_provide, child_num)
+        self.provides = []
 
 
-class RequireLocal(armonic.require.RequireLocal, RequireSmartWithProvide):
-    def _provide_call(self):
-        provide = self.build_provide_class()(xpath=self.xpath,
-                                             requirer=self.provide_caller,
-                                             requirer_type=self.type,
-                                             suggested_args=self.provide_args,
-                                             depth=self.depth + 1,
-                                             host=self.provide_caller.host)
-        # Maybe, we don't want to call the proposed require. Moreover,
-        # we have to choose the provide host.
-        provide.call()
-        return provide
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        this = cls(**kwargs)
+        this.xpath = dct_json['xpath']
+        this.type = dct_json['type']
+        this.nargs = dct_json['nargs']
+        this.provide_xpath = dct_json['provide_xpath']
+        this.provide_args = []
+        for v in dct_json['provide_args']:
+            var = Variable.from_json(v, from_require=this)
+            this.provide_args.append(var)
+            
+            # This variable is added to the scope.
+            this._scope_variables.append(var)
+            
+        this.json = dct_json
+        return this
 
+    def pprint(self):
+        return {"xpath": self.xpath,
+                "variables": [v.pprint() for v in self.provide_args]}
 
-class RequireExternal(armonic.require.RequireExternal, RequireSmartWithProvide):
-    pass
+    def variables_serialized(self):
+        """Get variables in the format for provide_call"""
+        acc = []
+        for v in self.provide_args:
+            acc.append((v.xpath, {0: v.value}))
+        return acc
+
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        return self.provide_args
 
 
 class Provide(object):
-    """This class describes a Provide and permit to fill its require
-    by creating instances of :class:`Require`.
+    """This class describe a provide and its requires and remotes requires
+    contains provide. Thus, this object can describe a tree. To build
+    the tree, the function :func:`smart_call` must be used.
 
-    A initial Provide is created accorded to the user request. If this
-    provide requires to call provides (external or local), these
-    provides are created, their requires are satisfated and they are
-    called. Then the initial provide is called.
+    To adapt the behavior of this class, redefine methods on_step and
+    do_step, where step is manage, lfm, specialize, etc.
+    If method do_step returns True, this step is 'yielded'.
+    Method on_step takes as input the sent data.
 
-    So, to call a provide, you have to define the ip address of the
-    agent, and choose a absolute wpath if the given provide xpath is
-    ambigous.
-
-    To use this class, we have to:
-
-    * specialize method :py:meth:`Provide.handle_call`,
-    * specialize method :py:meth:`Provide.confirm_call`,
-    * specialize method :py:meth:`Provide.handle_provide_xpath`,
-    * bind specialized Require classes to require type by using the static \
-    method :py:meth:`set_require_class`.
-
-    By redefining this class, you can control the host where the
-    provide (via :py:meth:`Provide.handle_call`) will be called, and
-    control if the provide has to be call or not (via
-    :py:meth:`Provide.confirm_call`).
-
-
-    .. note:: You would NEVER have to manually create a Provide,\
-    except the initial provide.
-
-    :param xpath: A xpath that can match several provides.
-    :type xpath: String
-    :param host: Host where the provide has to be call
-    :type host: String
-    :param requirer: Provide that has called this one.
-    :type requirer: Subclass of :class:`Provide`
-    :param requirer_type: The type of the require that calls this provide.
-    :type requirer_type: str
-    :param suggested_args: Suggested args provided by the caller. This\
-    corresponds to the require (that expect this provide) variables.
-    :type suggested_args: List of Variable.
-    :param depth: The depth in provide call tree
-    :type depth: Integer
+    :param child_number: if this Provide is a dependancies, this is
+    the number of this child.
+    :param requirer: the provide that need this require
+    :param require: the remote require of the requirer that leads to this provide.
 
     """
+    STEPS = ["manage", 
+             "lfm",
+             "specialize",
+             "set_dependancies",
+             # This is a private step
+             "multiplicity", 
+             "validation",
+             "call",
+             "done"]
 
-    #Contain user specified require classes.
-    _require_classes = {"external": RequireExternal,
-                        "local": RequireLocal,
-                        "simple": Require,
-                        "user": RequireUser}
+    # Contains all variables. This is used to find back from_xpath value.
+    Variables = []
 
-    # Class variable that contains all xpath and value filled for the main
-    #provide.
-    _Variables = []
-
-    def __init__(self, xpath, host=None, requirer=None,
-                 requirer_type=None,
-                 suggested_args=[], depth=0):
-        self.xpath = xpath
-        # This describes the xpath that will be really called.
-        # It can be set by the return value of handle_provide_xpath()
-        self.used_xpath = xpath
-
-        self.lf_name = None
-        self.provide_name = None
-        self.requires = None
-        self.suggested_args = suggested_args
-        self.host = host
-        self.depth = depth
+    def __init__(self, generic_xpath, requirer=None, child_num=None, require=None):
+        self.generic_xpath = generic_xpath
         self.requirer = requirer
-        self.requirer_type = requirer_type
+        self.require = require
 
-        # This is filled by self.call(). This contains the dict of
-        # returned value by this provide.
-        self.provide_ret = {}
+        # This dict contains variables that belongs to this scope.
+        self._scope_variables = {}
 
-    def handle_connection_error(self):
-        """This method is called when a armonic connection occurs.
-        If it return True, the armonic call is triyed again.
-        If False, exception is raised.
-        By default, it returns false."""
-        return False
+        if requirer is not None:
+            self.depth = requirer.depth + 1
+            self.tree_id = []
+            for i in requirer.tree_id:
+                self.tree_id.append(i)
+            self.tree_id.append(child_num)
 
-    def handle_provide_xpath(self, xpath, matches):
-        """This method is called when the xpath doesn't match a unique
-        provide. Redefine it to choose the good one.
+            
+        else:
+            self.depth = 0
+            self.tree_id = [0]
 
-        :param xpath: submitted xpath
-        :param matches: list of xpath that match the submitted xpath
-        :rtype: a xpath (str)
+        self.ignore = False
+        self._step_current = 0
+
+        self._current_require = None
+        self._children_generator = None
+
+        # Provide configuration variables.
+        #
+        # If this provide comes from a local require, the lfm is taken
+        # from the requirer.
+        if ((require is not None and 
+             require.type == "local")):
+            self._lfm = requirer.lfm
+        else:
+            self._lfm = None
+
+        self._manage = None
+        self.call = None
+
+        # Attribute host is required for external Provide
+        self.host = None
+
+
+    def variables_serialized(self):
+        """Get variables in the format for provide_call"""
+        acc = []
+        for r in self.remotes + self.requires:
+            acc += r.variables_serialized()
+        return acc
+        
+    def variables(self):
+        """:rtype: [:class:`Variable`]"""
+        acc = []
+        for v in self.remotes + self.requires:
+            acc += v.variables()
+        return acc
+
+    def variables_scope(self):
+        """Return the variable scope of this provide.
+
+        :rtype: [:class:`Variable`]
+
         """
-        raise NotImplementedError(
-            "Method handle_provide_xpath must be implemented!")
-
-    def handle_call(self):
-        """Redefine it to validate that the inferred provide should be called.
-        Generally, the Provide.host variable of this provide is sets here.
-
-        :rtype: Return True if the provide must be called, false otherwise
-        """
-        raise NotImplementedError("Method handle_call is not implemented!")
-
-    def confirm_call(self):
-        """Redefine it to confirm the provide call after that requires
-        have been filled.
-        By default, it returns True.
-        :rtype: boolean"""
-        return True
-
-    def on_provide_call_begin(self):
-        """This can be redefine to do some action just before
-        the provide is called."""
-        logger.debug("on_call_provide_begin()")
-
-    def on_provide_call_end(self):
-        """This can be redefine to do some action just after the provide
-        has been called."""
-        logger.debug("on_call_provide_end()")
-
-    def set_logging_handlers(self):
-        """Redefine it to get agent logs.
-
-        :rtype: logging.Handler
-        """
+        if self.require is not None:
+            return self.require._scope_variables
         return []
 
-    def helper_requirer_type(self):
-        """Return the type of the requirer that has called this provide."""
-        return self.requirer_type
+    def has_requirer(self):
+        """To know if it is the root provide."""
+        return self.requirer is not None
+ 
+    @property
+    def step(self):
+        return Provide.STEPS[self._step_current]
+        
+    def _next_step(self):
+        if self._step_current+1 > len(Provide.STEPS)-1:
+            raise IndexError
+        self._step_current += 1
 
-    def helper_used_xpath(self):
-        """Return the xpath that is used, ie. the xpath that the user has
-        choosen amongst matched xpath.
 
-        :rtype: xpath (string)"""
-        return self.used_xpath
+    def _build_require_from_call_require(self, dct_json):
+        """From a json dict, build Require and Remote require."""
+        self.remotes = []
+        self.requires = []
+        idx = 0
+        for p in dct_json:
+            for require in p['requires']:
+                if require['type'] in ['external', 'local']:
+                    self.remotes.append(Remote.from_json(require, child_num=idx, from_provide=self))
+                elif require['type'] in ['simple']:
+                    self.requires.append(Require.from_json(require, child_num=idx, from_provide=self))
+                idx += 1
+                
+    def _build_requires(self):
+        """Get all requires"""
+        provides = self.lfm.provide_call_requires(self.specialized_xpath)
+        self._build_require_from_call_require(provides)
+                    
+    def _requirator(self):
+        """Be careful, this function always returns the same generator."""
+        def c():
+            for r in self.remotes:
+                yield r
+        
+        if self._children_generator is None:
+            self._children_generator = c()
+           
+        return self._children_generator
 
-
-    def _lf_manager(self):
-        return ClientSocket(host=self.host,
-                            handlers=self.set_logging_handlers())
-
-    def _get_requires(self):
-        logger.debug("Requires needed to call provide '%s' on '%s':" % (
-            self.used_xpath,
-            self.host))
-        self.lf_manager = self._lf_manager()
-
-        # We specialize the generic xpath
-        matches = self.lf_manager.uri(xpath=self.used_xpath)
-        # If the generic xpath matches several xpaths,
-        # the user has to choose one
-        if len(matches) != 1:
-            self.used_xpath = self.handle_provide_xpath(
-                self.used_xpath, matches)
-        else:
-            self.used_xpath = matches[0]
-        while True:
-            try:
-                self.provide_goto_requires = self.lf_manager.provide_call_requires(
-                    xpath=self.used_xpath)
-
-                self.provide_requires = self.lf_manager.provide_call_args(
-                    xpath=self.used_xpath)
-
-            except armonic.client.sock.ConnectionError:
-                if self.handle_connection_error():
-                    continue
-                else:
-                    raise
-            break
-        self.requires = self.provide_goto_requires + self.provide_requires
-
-    def call(self):
-        if self.handle_call():
-            self.on_provide_call_begin()
-
-            #if self.host is None:
-            #    raise TypeError("host can not be 'None'")
-            self._build_requires()
-
-            if self.confirm_call():
-                provide_requires_primitive = self._generate_requires_primitive(
-                    self.provide_goto_requires)
-                provide_args_primitive = self._generate_requires_primitive(
-                    self.provide_requires)
-                logger.debug("armonic.call(%s, %s, %s) ..." % (
-                    self.used_xpath,
-                    provide_requires_primitive,
-                    provide_args_primitive))
-
-                self.provide_ret = self.lf_manager.provide_call(
-                    xpath=self.used_xpath,
-                    requires=provide_requires_primitive,
-                    provide_args=provide_args_primitive)
-                self.on_provide_call_end()
-
-                logger.debug("armonic.call(%s, %s, %s) done." % (
-                    self.used_xpath,
-                    provide_requires_primitive,
-                    provide_args_primitive))
-
-                # Because provide return type is currently not strict.
-                # This must be FIXED because useless.
-                if self.provide_ret is None:
-                    self.provide_ret = {}
-        return self.provide_ret
-
-    def _generate_requires_primitive(self, require_list):
-        """From a require list, generate suitable require dict to be
-        passed to provide_call function.
-
-        :type require_list: [Require]
-        :rtype: {require1: {variable1:v1,...}, ...}
-        """
-        ret = {}
-        for r in require_list:
-            ret.update({r.name: r.get_values()})
+    def build_child(self, generic_xpath, child_num, require):
+        ret = self.__class__(generic_xpath=generic_xpath, 
+                             requirer=self,
+                             child_num=child_num,
+                             require=require)
         return ret
 
-    def _build_requires(self):
-        """This method makes the recursion. If external or local
-        Require are required, we build a provide, call it and use its
-        values to fill the Require."""
+    @property
+    def lfm(self):
+        return self._lfm
+    @lfm.setter
+    def lfm(self, lfm):
+        self._lfm = lfm
+        
+    def do_lfm(self):
+        """The step lfm is applied if it returns True."""
+        return self._lfm is None
 
-        self._get_requires()
-        requires_external = [r for r in self.requires if r.type == "external"]
-        requires_simple = [r for r in self.requires if r.type == "simple"]
-        requires_user = [r for r in self.requires if r.type == "user"]
-        requires_local = [r for r in self.requires if r.type == "local"]
+    def on_lfm(self, lfm):
+        self._lfm = lfm
 
-        for r in (requires_external + requires_local):
-            if r.type in self._require_classes:
-                r.__class__ = self._require_classes[r.type]
-                r._xml_register_children = types.MethodType(
-                    _xml_register_children, r)
-            r._build(self)
+    def _test_lfm(self):
+        if self._lfm is None:
+            raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
 
-        for r in (requires_simple + requires_user):
-            if r.type in self._require_classes:
-                r.__class__ = self._require_classes[r.type]
-                r._xml_register_children = types.MethodType(
-                    _xml_register_children, r)
-            r._build(self)
 
-    @classmethod
-    def find_xpath(cls, xpath):
-        """Try to find in the Provide._Variables array
-        the value associated to xpath.
+    def do_call(self):
+        return self.call is None
 
-        :rtype: a value, None otherwise.
+    def on_call(self, call):
         """
-        for v in cls._Variables:
-            if v[0].endswith(xpath):
-                return v[1]
-        return None
-
-    @classmethod
-    def set_require_class(cls, require_type, klass):
-        """Use this method to specify which Require subclass has to be
-        used for a require type.
-
-        Once Requires classes have been specialized, they are attach
-        to the specialized Provide class by calling the method.
+        :type call: boolean
         """
-        cls._require_classes.update({require_type: klass})
+        self.call = call
+
+    @property
+    def manage(self):
+        """If it returns None, walk function yields."""
+        return self._manage
+        
+    @manage.setter
+    def manage(self, manage):
+        """Set true if this provide has to be managed"""
+        self._manage = manage
+        # Used to stop the genreator
+        self.ignore = not manage
 
 
-# Really shitty hack!  Because _xml_elt is not forwarded via
-# pickling, we have to manually create xpath in order to be able
-# to save it.
-#
-# This method is just called when multiple variable
-# are filled by a client to validate them.
-def _xml_register_children(require):
-    if len(require.variables(all=True)) > 1:
-        for idx, vs in enumerate(require.variables(all=True)):
-            for v in vs:
-                xpath_relative = v.get_xpath_relative() + "[%s]" % (idx + 1)
-                xpath = v.get_xpath() + "[%s]" % (idx + 1)
 
-                v._xpath_relative = xpath_relative
-                v._xpath = xpath
+    def matches(self):
+        """Return the list of xpaths that matched the generic_xpath"""
+        return self.lfm.uri(xpath=self.generic_xpath)
 
-
-class LocalProvide(Provide):
-    def __init__(self, xpath, requirer=None,
-                 requirer_type=None,
-                 suggested_args=[], depth=0):
-        Provide.__init__(self, xpath, host=None, requirer=requirer,
-                         requirer_type=requirer_type,
-                         suggested_args=suggested_args, depth=depth)
-
-    def _lf_manager(self):
-        return armonic.lifecycle.LifecycleManager()
+    def specialize(self, xpath):
+        """Used to specialize the generic_xpath"""
+        self.specialized_xpath = xpath
+    
+    def lfm_call(self):
+        self.provide_ret = self.lfm.provide_call(
+            provide_xpath_uri=self.specialized_xpath,
+            requires=self.variables_serialized())
+        # self.provide_ret = self.lfm.call("provide_call_validate",
+        #                                  provide_xpath_uri=self.specialized_xpath,
+        #                                  requires=self.variables_serialized())
+        # from pprint import pprint
+        # pprint(self.provide_ret)
 
 
-###############################################################################
-#                            HELPERS                                          #
-###############################################################################
+def smart_call(root_provide):
+    """Return a generator which 'yields' a 3-uple (provide, step,
+    optionnal_args)."""
 
+    scope = root_provide
+    while True:
+        # Stop and Pop conditions
+        if scope.step == "done":
+            yield (scope, scope.step, None)
+        if scope.step == "done" or scope.ignore:
+            # If all dependencies of root node have been threated we
+            # break the loop
+            if scope.requirer == None:
+                break
+            # If all dependencies have been threated we
+            # go back to its requirer.
+            else:
+                scope = scope.requirer
+                continue
 
-def update_empty(origin, *dcts):
-    """Take a origin dict with some values equal to None. Fill these
-    value with values from other dicts.
+        if not scope.ignore:
+            if scope.step == "manage":
+                if scope.manage is None: 
+                    scope.manage = yield (scope, scope.step, None)
+                scope._next_step()
 
-    Example:
-    update_empty({'a':1,'b':None,'c':2}, {'a':4, 'b':1}, {'c':4, 'b':2})
-    >> {'a': 1, 'c': 2, 'b': 1}
-    """
-    for (ko, vo) in origin.items():
-        if vo is None:
-            found = False
-            for d in dcts:
-                if found:
-                    break
-                for (k, v) in d.items():
-                    if k == ko:
-                        origin.update({k: v})
-                        found = True
-                        break
-    return origin
+            elif scope.step == "lfm":
+                if scope.do_lfm():
+                    data = yield(scope, scope.step, None)
+                    scope.on_lfm(data)
+                    scope._test_lfm()
+                scope._next_step()
 
+            elif scope.step == "set_dependancies":
+                scope._build_requires()
+                #yield(scope, scope.step, None)
+                scope._next_step()
 
-def build_initial_provide(klass, host, xpath):
-    """Build a initial provide.
+            elif scope.step == "validation":
+                yield(scope, scope.step, None)
+                scope._next_step()
 
-    :param klass: the class of user definied Provide.
-    :type klass: inherit from :py:class:`Provide`.
-    :param host: the host where is located the agent.
-    :param xpath: a xpath that can match several provide.
-    """
-    provide = klass(xpath=xpath, host=host)
-    return provide
+            elif scope.step == "call":
+                if scope.do_call():
+                    data = yield(scope, scope.step, None)
+                    scope.on_call(data)
+                if scope.call:
+                    scope.lfm_call()
+                scope._next_step()
+
+            elif scope.step == "specialize":
+                m = scope.matches()
+                if len(m) > 1:
+                    specialized = yield(scope, scope.step, m)
+                else:
+                    specialized = m[0]
+                scope.specialize(specialized)
+                scope._next_step()
+
+            elif scope.step == "multiplicity":
+                if scope._current_require is None:
+                    # For each require, provides are built
+                    try:
+                        # Get the next require to manage
+                        req = scope._requirator().next()
+                        req.provides = []
+                        if req.nargs == "*":
+                            number = yield (scope, scope.step, req)
+                            for i in range(0,number):
+                                req.provides.append(scope.build_child(
+                                    generic_xpath=req.provide_xpath, 
+                                    child_num=req.child_num,
+                                    require=req))
+                        else:
+                            req.provides.append(scope.build_child(
+                                generic_xpath=req.provide_xpath, 
+                                child_num=req.child_num,
+                                require=req))
+                        scope._current_require = req
+                    except StopIteration:
+                        pass
+
+                    # If all requires have been treated, the
+                    # manage_dependancies step is done
+                    if scope._current_require is None:
+                        scope._next_step()
+                       
+                else:
+                    done = True
+                    for p in scope._current_require.provides:
+                        if p.ignore == False and not p.step == "done":
+                            done = False
+                            scope = p
+                            break
+                    if done:
+                        scope._current_require = None
+            else: 
+                yield (scope, scope.step, None)
+                scope._next_step()
+

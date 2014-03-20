@@ -5,7 +5,7 @@ import argparse
 import readline
 
 from armonic.serialize import Serialize
-from armonic.client.iter_smart import Provide, smart_call
+from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
 from pprint import pprint
