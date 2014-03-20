@@ -32,11 +32,11 @@ class Variable(object):
         self.from_require.from_provide.Variables.append(self)
 
         self._value = None
-
+        
     @property
     def value(self):
         if self._value is None:
-            self._resolve(self.from_require.from_provide._scope_variables)
+            self._resolve(self.from_require._scope_variables)
         return self._value
 
     @value.setter
@@ -51,10 +51,6 @@ class Variable(object):
         this.from_xpath = dct_json['from_xpath']
         this.default = dct_json['default']
         this.value = this.default
-
-        # Add this variable to the scope
-        if this.value is not None:
-            this.from_require.from_provide._scope_variables[this.name] = this
 
         return this
 
@@ -84,11 +80,11 @@ class Variable(object):
                 except IndexError:
                     pass
 
-        # Try to assign a value from the provide scope
-        if self.name in scope:
-            logger.debug("Variable [%s] resolved by [%s] with value %s" %(
-                self.xpath, scope[self.name].xpath, scope[self.name].value))
-            self._value = scope[self.name].value
+        for v in scope:
+            if self.name == v.name:
+                logger.debug("Variable [%s] resolved by [%s] with value %s" %(
+                    self.xpath, v.xpath, v.value))
+                self._value = v.value
 
 
     def pprint(self):
@@ -107,6 +103,13 @@ class Require(object):
     def __init__(self, from_provide, child_num):
         self.child_num = child_num
         self.from_provide = from_provide
+
+        self._scope_variables = []
+        # We copy variables dict from parent the scope.
+        # They will be upgraded when requires are built.
+        if from_provide.require is not None:
+            for v in from_provide.require._scope_variables:
+                self._scope_variables.append(v)
     
 
     @classmethod
@@ -140,9 +143,9 @@ class Require(object):
 
 class Remote(Require):
     def __init__(self, from_provide, child_num):
-        self.child_num = child_num
-        self.from_provide = from_provide
+        Require.__init__(self, from_provide, child_num)
         self.provides = []
+
 
     @classmethod
     def from_json(cls, dct_json, **kwargs):
@@ -153,8 +156,12 @@ class Remote(Require):
         this.provide_xpath = dct_json['provide_xpath']
         this.provide_args = []
         for v in dct_json['provide_args']:
-            this.provide_args.append(Variable.from_json(v, from_require=this))
-        
+            var = Variable.from_json(v, from_require=this)
+            this.provide_args.append(var)
+            
+            # This variable is added to the scope.
+            this._scope_variables.append(var)
+            
         this.json = dct_json
         return this
 
@@ -218,10 +225,6 @@ class Provide(object):
                 self.tree_id.append(i)
             self.tree_id.append(child_num)
 
-            # We copy variables dict from parent the scope.
-            # They will be upgraded when requires are built.
-            for (k, v) in requirer._scope_variables.items():
-                self._scope_variables[k] = v
             
         else:
             self.depth = 0
@@ -263,6 +266,16 @@ class Provide(object):
         for v in self.remotes + self.requires:
             acc += v.variables()
         return acc
+
+    def variables_scope(self):
+        """Return the variable scope of this provide.
+
+        :rtype: [:class:`Variable`]
+
+        """
+        if self.require is not None:
+            return self.require._scope_variables
+        return []
 
     def has_requirer(self):
         """To know if it is the root provide."""

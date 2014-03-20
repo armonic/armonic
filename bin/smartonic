@@ -91,7 +91,7 @@ if __name__ == "__main__":
         class ColorFormatter(logging.Formatter):
             def format(self,record):
                 ret = logging.Formatter.format(self, record)
-                return termcolor.colored(ret, 'grey')
+                return termcolor.colored(ret, 'blue')
         handler = logging.StreamHandler(sys.stdout)
         format = '%(levelname)5s %(ip)15s - %(message)s'
         handler.setFormatter(ColorFormatter(format))
@@ -150,8 +150,9 @@ if __name__ == "__main__":
             print
             print "Provide %s" % provide.generic_xpath
             print "Variable scope is:" 
-            for (k, v) in provide._scope_variables.items():
-                print "\t%s : %s [%s]" % (k.ljust(25), str(v.value).ljust(25), v.xpath)
+            
+            for v in provide.variables_scope():
+                print "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath)
             print
 
             print "Variables to fill are:"
