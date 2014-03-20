@@ -26,7 +26,6 @@ setup(
     scripts=[
         os.path.join('bin', 'armonic-agent-socket'),
         os.path.join('bin', 'armonic-cli'),
-        os.path.join('bin', 'armonic-smart'),
         os.path.join('bin', 'smartonic'),
     ],
     license="GPLv2",
