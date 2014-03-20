@@ -18,29 +18,11 @@ import pickle
 import SocketServer
 import struct
 import argparse
-import os.path
 
 from armonic.serialize import Serialize
 import armonic.common
 
 PACKET_INFO_SIZE = 5
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
-format = '%(asctime)s|%(levelname)7s - %(message)s'
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter(format))
-
-format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
-fh = logging.handlers.RotatingFileHandler("/tmp/armonic.log", maxBytes=10485760, backupCount=5)
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(logging.Formatter(format))
-
-logger.addHandler(ch)
-logger.addHandler(fh)
-
 
 def my_send(socket, string):
     send_size = len(string)
@@ -77,19 +59,20 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
     override the handle() method to implement communication to the
     client.
     """
+    logging_level = logging.INFO
 
     def redirect_log(self):
         # self.request is the TCP socket connected to the client
-        socketIO=SocketIO(self.request)
+        socketIO = SocketIO(self.request)
 
-        self._logger=logging.getLogger()
-        self._logger.setLevel(logging.DEBUG)
-#        format = '%(asctime)s|%(name)s|%(levelname)s: %(message)s'
-#        format = '%(asctime)s|%(levelname)7s %(ip)15s: %(message)s'
-#        self._logHandler = logging.StreamHandler(socketIO)
+        self._logger = logging.getLogger()
+        self._logger.setLevel(self.logging_level)
+#       format = '%(asctime)s|%(name)s|%(levelname)s: %(message)s'
+#       format = '%(asctime)s|%(levelname)7s %(ip)15s: %(message)s'
+#       self._logHandler = logging.StreamHandler(socketIO)
         self._logHandler = MyStreamHandler(socketIO)
-        self._logHandler.setLevel(logging.DEBUG)
-#        self._logHandler.setFormatter(logging.Formatter(format))
+        self._logHandler.setLevel(self.logging_level)
+#       self._logHandler.setFormatter(logging.Formatter(format))
         self._logHandler.addFilter(armonic.common.NetworkFilter())
         self._logHandler.addFilter(armonic.common.XpathFilter())
         self._logger.addHandler(self._logHandler)
@@ -107,7 +90,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
     def handle(self):
         data = self.request.recv(1024)
-        request=self.parseRequest(data)
+        request = self.parseRequest(data)
         self.redirect_log()
 
         try:
@@ -123,8 +106,9 @@ class MyTCPServer(SocketServer.TCPServer):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
-    parser.add_argument('--port','-P', type=int, default=8000, help='Armonic agent port (default: %(default)s))')
-    parser.add_argument('--host','-H', type=str, default="0.0.0.0", help='Armonic agent IP (default: %(default)s))')
+    parser.add_argument('--port', '-P', type=int, default=8000, help='Armonic agent port (default: %(default)s))')
+    parser.add_argument('--host', '-H', type=str, default="0.0.0.0", help='Armonic agent IP (default: %(default)s))')
+    parser.add_argument('--verbose', '-v', dest="verbose", default=False, action="store_true", help='Verbose mode (default: %(default)s))')
     parser.add_argument('--lifecycles-dir', '-d', dest="lifecycles_dirs", type=str, default=[], nargs="*", help='Lifecycles directory')
     parser.add_argument('--lifecycles-include', '-i', dest="lifecycles_includes", type=str, nargs="*", default=[], help='Lifecycles names to import')
     parser.add_argument('--no-default-lifecycles', dest="no_default_lifecycles", action="store_true", default=False, help="Don't load provided lifecycles (default: %(default)s))")
@@ -133,32 +117,39 @@ if __name__ == "__main__":
     parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic.state", help='Armonic agent state file path (default: %(default)s))')
     args = parser.parse_args()
 
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    format = '%(asctime)s|%(levelname)7s - %(message)s'
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter(format))
+    format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
+    fh = logging.handlers.RotatingFileHandler("/tmp/armonic.log", maxBytes=10485760, backupCount=5)
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(logging.Formatter(format))
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+
+    if args.verbose:
+        MyTCPHandler.logging_level = logging.DEBUG
+        logger.setLevel(logging.DEBUG)
+        fh.setLevel(logging.DEBUG)
+        ch.setLevel(logging.DEBUG)
+
     if not args.no_default_lifecycles:
         armonic.common.load_lifecycles(lifecycle_includes=args.lifecycles_includes)
     for dir in args.lifecycles_dirs:
         armonic.common.load_lifecycles(dir, lifecycle_includes=args.lifecycles_includes)
 
-    if not args.no_load_state and os.path.exists(args.state_path):
-        print "Loading state from %s..." % args.state_path
-        with open(args.state_path) as f:
-            lfm = pickle.load(f)
-            lfm.lf_manager.register()
-    else:
-        lfm = Serialize()
+    save_state = not args.no_save_state
+    load_state = not args.no_load_state
 
-    print "Server listening on %s:%d" % (args.host, args.port)
-    server = MyTCPServer((args.host, args.port), MyTCPHandler)
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        if not args.no_save_state:
-            print "Saving state to %s..." % args.state_path
-            with open(args.state_path, 'w') as f:
-                pickle.dump(lfm, f)
-        else:
-            if os.path.exists(args.state_path):
-                print "Removing state file %s..." % args.state_path
-                os.unlink(args.state_path)
-        print "Exiting."
+    with Serialize(load_state=load_state, save_state=save_state, state_file=args.state_path) as lfm:
+        print "Server listening on %s:%d" % (args.host, args.port)
+        server = MyTCPServer((args.host, args.port), MyTCPHandler)
+        # Activate the server; this will keep running until you
+        # interrupt the program with Ctrl-C
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print "Exiting."

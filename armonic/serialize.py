@@ -9,6 +9,12 @@ class Serialize(object):
     def __init__(self, *args, **kwargs):
         self.lf_manager = LifecycleManager(*args, **kwargs)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.lf_manager.close()
+
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager`
         methods.

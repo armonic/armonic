@@ -1,4 +1,3 @@
-import os
 import unittest
 import logging
 
@@ -67,7 +66,7 @@ class ProvideValidationLF(Lifecycle):
 class TestProvideValidation(unittest.TestCase):
 
     def setUp(self):
-        self.lfm = LifecycleManager(modules_dir=os.getcwd(), autoload=True, include_modules="")
+        self.lfm = LifecycleManager()
 
     def test_no_require_provide(self):
         validation = self.lfm.provide_call_validate("//ProvideValidationLF//provide",
