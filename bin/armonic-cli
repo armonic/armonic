@@ -153,7 +153,7 @@ def cmd_provide(args):
         return
     ret=client.call('provide', args.xpath)
     for provide in ret:
-        print provide.get_xpath()
+        print provide['xpath']
         if args.long_description:
             provide_to_table(provide)
             req=client.call('provide_call_requires', xpath=provide.get_xpath())
