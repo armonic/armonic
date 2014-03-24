@@ -72,6 +72,10 @@ class XMLRegistery(object):
         return cls._instance
 
     def _xml_register(self, ressource, parent=None):
+        """ 
+        :type ressource: XMLRessource
+        :type parent: lxml.Element
+        """
         attributes = {RESSOURCE_ATTR: ressource._xml_ressource_name()}
         attributes.update(ressource._xml_attributes())
 
@@ -82,7 +86,7 @@ class XMLRegistery(object):
             xml_elt = SubElement(parent,
                                  ressource._xml_tag(),
                                  attrib=attributes)
-
+        
         ressource._xpath = self._xml_root_tree.getpath(xml_elt)
         try:
             ressource._xpath_relative = ressource._xpath.split("/", 2)[2]
