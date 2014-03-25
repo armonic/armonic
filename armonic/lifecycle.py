@@ -77,15 +77,16 @@ class StateFactory(type):
             # cls.provide_enter etc...
             setattr(state_class, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
 
+
         # register custom provides
         funcs = inspect.getmembers(state_class, predicate=inspect.ismethod)
         for (fname, f) in funcs:
             if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
-                state_class._provides.append(f._provide)
+                state_class._provides.append(copy.deepcopy(f._provide))
                 logger.debug("Registered %s in state %s" % (f._provide, state_class.__name__))
 
         return state_class
-
+        
 
 class State(XMLRessource):
     __metaclass__ = StateFactory
