@@ -65,6 +65,11 @@ class OsTypeDebian(OsType):
         OsType.__init__(self, "debian")
 
 
+class OsTypeArch(OsType):
+    def __init__(self):
+        OsType.__init__(self, "arch")
+
+
 class OsTypeDebianWheezy(OsTypeDebian):
     def __init__(self):
         self.name = 'debian'
@@ -72,8 +77,15 @@ class OsTypeDebianWheezy(OsTypeDebian):
 
 
 def find_distribution():
-    t = platform.linux_distribution()
-    return OsType(t[0], t[1])
+    distname, version, id = platform.linux_distribution()
+    # Try to find unkwown distribs
+    if not distname and not version:
+        distname, version, id = platform.linux_distribution(supported_dists=('arch',))
+    if not distname and not version:
+        raise Exception('OS info not found. Aborting.')
+    os = OsType(distname, version)
+    print "Running on %s" % os
+    return os
 
 OS_TYPE = find_distribution()
 
