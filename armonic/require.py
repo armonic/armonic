@@ -286,16 +286,16 @@ class Require(XMLRessource, ExtraInfoMixin):
             raise
 
     def get_values(self):
-        """ FIXME This jsut return the first element"""
-        return [reduce(lambda a, x:
-                       dict(a.items() + {x.name: x.value}.items()),
-                       vs, {}) for vs in self._variables]
-
-    def get_default_values(self):
-        """ FIXME This jsut return the first element"""
-        return [reduce(lambda a, x:
-                       dict(a.items() + {x.name: x.default}.items()),
-                       vs, {}) for vs in self._variables]
+        variables_values = []
+        for variable in self._variables_skel:
+            variable_values = [variable.get_xpath(), {}]
+            for index, variables_set in enumerate(self.variables(all=True)):
+                for variable_in_set in variables_set:
+                    if variable_in_set.name == variable.name:
+                        variable_values[1][index] = variable_in_set.value
+                        break
+            variables_values.append(variable_values)
+        return variables_values
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of

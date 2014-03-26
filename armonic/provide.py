@@ -1,4 +1,5 @@
 import logging
+import itertools
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from armonic.xml_register import XMLRegistery, XMLRessource
@@ -18,10 +19,10 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     :param flags: flags to be propagated
     """
     def __init__(self, name=None, requires=[], flags={}, **extra):
+        IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
-        IterContainer.__init__(self, *requires)
-        self.flags = flags  # Should not be in Requires ...
+        self.flags = flags
 
     def __call__(self, func):
         """Used as a method decorator mark state methods as provides.
@@ -34,18 +35,6 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
             if not require in func._provide:
                 func._provide.append(require)
         return func
-
-    def get_values(self):
-        acc = {}
-        for r in self:
-            acc.update({r.name: r.get_values()})
-        return acc
-
-    def get_default_values(self):
-        acc = {}
-        for r in self:
-            acc.update({r.name: r.get_default_values()})
-        return acc
 
     def _xml_tag(self):
         return self.name
@@ -87,8 +76,9 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
                         continue
                     yield (xpath_abs, values)
 
+        variables_values = list(_filter_values(variables_values))
         for require in self:
-            require.fill(_filter_values(variables_values))
+            require.fill(variables_values)
 
     def validate(self):
         """Validate the provide.
@@ -126,6 +116,9 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
                 "xpath": self.get_xpath_relative(),
                 "requires": [r.to_primitive() for r in self],
                 "flags": self.flags}
+
+    def get_values(self):
+        return list(itertools.chain(*[r.get_values() for r in self]))
 
     def _clear(self):
         """Reset variables to default values in all reauires.
