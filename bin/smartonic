@@ -67,16 +67,23 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     if args.host is None:
+        import armonic.common
+        armonic.common.load_lifecycles()
         lfm = Serialize(os_type=OsTypeMBS())
         class MyProvide(Provide):
-            @property
-            def lfm(self):
-                return lfm
+            # @lfm.setter
+            # def lfm(self, value):
+            #     return lfm
+            def do_lfm(self):
+                self.lfm = lfm
+                return False
+                
+
             @property
             def manage(self):
                 return True
-            @property
-            def call(self):
+
+            def do_call(self):
                 return False
 
 

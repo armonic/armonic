@@ -83,8 +83,8 @@ class Variable(object):
         for v in scope:
             if self.name == v.name:
                 logger.debug("Variable [%s] resolved by [%s] with value %s" %(
-                    self.xpath, v.xpath, v.value))
-                self._value = v.value
+                    self.xpath, v.xpath, v._value))
+                self._value = v._value
 
 
     def pprint(self):
@@ -240,11 +240,11 @@ class Provide(object):
         #
         # If this provide comes from a local require, the lfm is taken
         # from the requirer.
-        if ((require is not None and 
-             require.type == "local")):
-            self._lfm = requirer.lfm
+        if (require is not None and
+                require.type == "local"):
+            self.lfm = requirer.lfm
         else:
-            self._lfm = None
+            self.lfm = None
 
         self._manage = None
         self.call = None
@@ -327,22 +327,23 @@ class Provide(object):
                              require=require)
         return ret
 
-    @property
-    def lfm(self):
-        return self._lfm
-    @lfm.setter
-    def lfm(self, lfm):
-        self._lfm = lfm
+    # @property
+    # def lfm(self):
+    #     return self._lfm
+
+    # @lfm.setter
+    # def lfm(self, lfm):
+    #     self._lfm = lfm
         
     def do_lfm(self):
         """The step lfm is applied if it returns True."""
-        return self._lfm is None
+        return self.lfm is None
 
     def on_lfm(self, lfm):
-        self._lfm = lfm
+        self.lfm = lfm
 
     def _test_lfm(self):
-        if self._lfm is None:
+        if self.lfm is None:
             raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
 
 
@@ -394,6 +395,7 @@ def smart_call(root_provide):
 
     scope = root_provide
     while True:
+        logger.debug("Scope: %s", scope)
         # Stop and Pop conditions
         if scope.step == "done":
             yield (scope, scope.step, None)
@@ -418,7 +420,7 @@ def smart_call(root_provide):
                 if scope.do_lfm():
                     data = yield(scope, scope.step, None)
                     scope.on_lfm(data)
-                    scope._test_lfm()
+                scope._test_lfm()
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
@@ -440,6 +442,7 @@ def smart_call(root_provide):
 
             elif scope.step == "specialize":
                 m = scope.matches()
+                logger.debug("Specialize mathces: %s" % m)
                 if len(m) > 1:
                     specialized = yield(scope, scope.step, m)
                 else:
