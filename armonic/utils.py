@@ -4,6 +4,9 @@ import platform
 import netifaces
 from IPy import IP
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class OsType(object):
     """Represent an Linux distribution type. :py:meth:`__eq__` is
@@ -84,7 +87,7 @@ def find_distribution():
     if not distname and not version:
         raise Exception('OS info not found. Aborting.')
     os = OsType(distname, version)
-    print "Running on %s" % os
+    logger.debug("Running on %s" % os)
     return os
 
 OS_TYPE = find_distribution()
