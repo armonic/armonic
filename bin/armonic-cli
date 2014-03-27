@@ -45,17 +45,13 @@ def provide_to_table(provide):
     x = PrettyTable(["Provide Name","Require name", "Type", "ArgName", "ArgType", "ArgDefault", "Extra"])
     x.align["Require Name"] = "l"
     x.padding_width = 1 # One space between column edges and contents (default)
-    x.add_row([provide.name, "", "","","","",""])
-    for r in provide:
-        x.add_row(["", r.name , r.type,"","","",""])
-        for a in r.variables():
-            if r.type == 'user':
-                x.add_row(["", "","",a.name,a.type,a.default,r.provided_by])
-            else:
-                x.add_row(["", "","",a.name,a.type,a.default,""])
+    x.add_row([provide['name'], "", "","","","",""])
+    for r in provide['requires']:
+        x.add_row(["", r['name'] , r['type'],"","","",""])
+        for a in r['variables_skel']:
+            x.add_row(["", "","",a['name'],a['type'],a['default'],""])
         x.add_row(["", "" , "","","","",""])
     print x
-
 
 
 def require_to_table(requires):
@@ -78,6 +74,7 @@ def require_to_table(requires):
                 x.add_row(["","",a.name,a.type,a.default,""])
         x.add_row(["" , "","","","",""])
     print x
+
 
 def state_to_table(state):
     x = PrettyTable(["Property","Value"])
@@ -156,8 +153,9 @@ def cmd_provide(args):
         print provide['xpath']
         if args.long_description:
             provide_to_table(provide)
-            req=client.call('provide_call_requires', xpath=provide.get_xpath())
-            require_to_table(req)
+            req=client.call('provide_call_requires', provide_xpath_uri=provide['xpath'])
+            for p in req:
+                provide_to_table(p)
             print ""
 
 def cmd_provide_call(args):
