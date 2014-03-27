@@ -117,8 +117,8 @@ class Variable(XMLRessource, ExtraInfoMixin):
         return str(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__,
-                                                   self.name, self.value,
+        return "<%s(%s, xpath=%s, value=%s, default=%s)>" % (self.__class__.__name__,
+                                                   self.name, self._xpath, self.value,
                                                    self.default)
 
 
