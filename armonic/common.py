@@ -8,6 +8,8 @@ import copy
 
 from armonic.utils import get_first_ip
 
+VERSION = "0.1"
+
 
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
