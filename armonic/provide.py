@@ -130,7 +130,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         """Reset variables to default values in all reauires.
         """
         for r in self:
-            r._init_variables()
+            r._clear()
 
     def __repr__(self):
         return "<Provide:%s(%s,flags=%s)>" % (self.name,

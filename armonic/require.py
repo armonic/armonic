@@ -101,7 +101,9 @@ class Require(XMLRessource, ExtraInfoMixin):
             self.nargs_min = self.nargs_max = int(self.nargs)
 
         self._variables_skel = variables
-        self._init_variables()
+
+        # Variable will be initialized later (in self.variables())
+        self._variables = None
 
     def __call__(self, func):
         """
@@ -110,6 +112,10 @@ class Require(XMLRessource, ExtraInfoMixin):
         Permit to directly use Require constructor as a decorator.
         """
         return Provide(name=None, requires=[self], flags={})(func)
+
+    def _clear(self):
+        if self._variables is not None:
+            self._init_variables()
 
     def _init_variables(self):
         # This will contain Variables. fill method will append
@@ -124,7 +130,7 @@ class Require(XMLRessource, ExtraInfoMixin):
         return self.name
 
     def _xml_children(self):
-        return self._variables_skel
+        return self._variables_skel 
 
     def _xml_ressource_name(self):
         return "require"
@@ -243,6 +249,12 @@ class Require(XMLRessource, ExtraInfoMixin):
         :param all: if true returns all variables
         :rtype: iterContainer or ([iterContainer] if all == True)
         """
+        # If not yet build, variables are built from varaible_skel.
+        # This can not be done in __init__ because variable_skel
+        # xpaths have to be created.
+        if self._variables is None:
+            self._init_variables()
+
         if all:
             return self._variables
         else:
