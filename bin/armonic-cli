@@ -94,7 +94,7 @@ def dict_to_table(dct):
     print x
 
 def cmd_status(args):
-    pass
+    dict_to_table(client.call('info'))
 
 def cmd_lifecycle(args):
     for m in client.call('lifecycle', args.xpath):
