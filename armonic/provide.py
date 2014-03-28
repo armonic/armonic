@@ -23,6 +23,8 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         self.flags = flags
+        # Last caller
+        self.source = None
 
     def __call__(self, func):
         """Used as a method decorator mark state methods as provides.
@@ -54,7 +56,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         """
         return self.get(require_name)
 
-    def fill(self, variables_values):
+    def fill(self, requires=[]):
         """Fill the provide with variables values.
 
         :param variables_values: list of tuple (variable_xpath, variable_values)::
@@ -76,9 +78,16 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
                         continue
                     yield (xpath_abs, values)
 
-        variables_values = list(_filter_values(variables_values))
+        if not requires:
+            return
+
+        variables_values = list(_filter_values(requires[0]))
         for require in self:
             require.fill(variables_values)
+        try:
+            self.source = requires[1]
+        except IndexError:
+            self.source = None
 
     def validate(self):
         """Validate the provide.
@@ -118,7 +127,10 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
                 "flags": self.flags}
 
     def get_values(self):
-        return list(itertools.chain(*[r.get_values() for r in self]))
+        source = self.source
+        if self.source is None:
+            source = {}
+        return [list(itertools.chain(*[r.get_values() for r in self])), source]
 
     def _clear(self):
         """Reset variables to default values in all reauires.

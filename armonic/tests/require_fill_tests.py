@@ -54,40 +54,40 @@ class TestProvideValidation(unittest.TestCase):
 
     def test_fill_muliple_requires(self):
         provide = self.lfm.from_xpath('//RequireFillFL//provide2', ret='provide')
-        values = [
+        values = [[
             ('//RequireFillFL//require21/bar211', {0: 'test1'}),
             ('//RequireFillFL//require22/bar221', {0: 'test2'})
-        ]
+        ], {}]
         provide.fill(values)
-        ret = [
+        ret = [[
             ['/%s/RequireFillFL/StateA/provide2/require21/bar211' % self.hostname, {0: 'test1'}],
             ['/%s/RequireFillFL/StateA/provide2/require21/bar212' % self.hostname, {0: None}],
             ['/%s/RequireFillFL/StateA/provide2/require22/bar221' % self.hostname, {0: 'test2'}],
             ['/%s/RequireFillFL/StateA/provide2/require22/bar222' % self.hostname, {0: None}]
-        ]
+        ], {}]
         self.assertEqual(provide.get_values(), ret)
-        values = [
+        values = [[
             ('//RequireFillFL//require21/bar212', {0: 'test11'}),
             ('//RequireFillFL//require22/bar222', {0: 'test22'})
-        ]
+        ], {'xpath': 'test', 'id': 56}]
         provide.fill(values)
-        ret = [
+        ret = [[
             ['/%s/RequireFillFL/StateA/provide2/require21/bar211' % self.hostname, {0: 'test1'}],
             ['/%s/RequireFillFL/StateA/provide2/require21/bar212' % self.hostname, {0: 'test11'}],
             ['/%s/RequireFillFL/StateA/provide2/require22/bar221' % self.hostname, {0: 'test2'}],
             ['/%s/RequireFillFL/StateA/provide2/require22/bar222' % self.hostname, {0: 'test22'}]
-        ]
+        ], {'xpath': 'test', 'id': 56}]
         self.assertEqual(provide.get_values(), ret)
 
     def test_fill_nargs(self):
         provide = self.lfm.from_xpath('//RequireFillFL//provide3', ret='provide')
-        values = [
+        values = [[
             ('//RequireFillFL//require3/bar3', {0: 'test1', 1: 'test2', 2: 'test3'})
-        ]
+        ]]
         provide.fill(values)
-        ret = [
+        ret = [[
             ['/%s/RequireFillFL/StateA/provide3/require3/bar3' % self.hostname, {0: 'test1', 1: 'test2', 2: 'test3'}],
-        ]
+        ], {}]
         self.assertEqual(provide.get_values(), ret)
 
 

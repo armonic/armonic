@@ -86,7 +86,7 @@ class StateFactory(type):
                 logger.debug("Registered %s in state %s" % (f._provide, state_class.__name__))
 
         return state_class
-        
+
 
 class State(XMLRessource):
     __metaclass__ = StateFactory
@@ -146,10 +146,14 @@ class State(XMLRessource):
     def _enter(self, requires=[]):
         """Check all state requires are satisfated and enter into State
 
-        :param requires: A list of of tuples (variable_xpath, variable_values)
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
-        :type requires: list
+        :param requires: variable values to fill the requires::
+
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
+
+        :type requires: tuple of variable values and deployment info
         """
         self.provide_enter.fill(requires)
         self.provide_enter.validate()
@@ -488,12 +492,14 @@ class Lifecycle(XMLRessource):
 
         :param state: the target state
         :type state: state_name | :class:`State`
-        :param requires: variable values to fill the requires ::
+        :param requires: variable values to fill the requires::
 
-            ("//xpath/to/variable", {0: value}),
-            ("//xpath/to/variable", {0: value})
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
 
-        :type requires: list of tuples
+        :type requires: tuple of variable values and deployment info
         :param path_idx: the path to use when there is multiple paths
             to go to the target State
         :type path_idx: int
@@ -614,12 +620,14 @@ class Lifecycle(XMLRessource):
         :type state: state_name | :class:`State`
         :param provide_name: name of the provide
         :type provide_name: str
-        :param requires: variable values to fill the requires ::
+        :param requires: variable values to fill the requires::
 
-            ("//xpath/to/variable", {0: value}),
-            ("//xpath/to/variable", {0: value})
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
 
-        :type requires: list of tuples
+        :type requires: tuple of variable values and deployment info
 
         :rtype: provide result
         """
@@ -980,10 +988,14 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: unique xpath of a state
         :type xpath: str
-        :param requires: list of of tuples (variable_xpath, variable_values):
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
-        :type requires: list
+        :param requires: variable values to fill the requires::
+
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
+
+        :type requires: tuple of variable values and deployment info
 
         :rtype: None
         """
@@ -1067,12 +1079,14 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: unique xpath of the provide to call
         :type xpath: str
-        :param requires: list of of tuples (variable_xpath, variable_values)::
+        :param requires: variable values to fill the requires::
 
-            ("//xpath/to/variable", {0: value}),
-            ("//xpath/to/variable", {0: value})
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
 
-        :type requires: list
+        :type requires: tuple of variable values and deployment info
 
         :return: list of validated provides to call
                  in order to call provide_xpath_uri
@@ -1105,9 +1119,14 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: xpath of the provide to call
         :type xpath: str
-        :param requires: list of of tuples (variable_xpath, variable_values):
-            variable_xpath is a full xpath
-            variable_values is dict of index=value
+        :param requires: variable values to fill the requires::
+
+            ([
+                ("//xpath/to/variable", {0: value}),
+                ("//xpath/to/variable", {0: value})
+             ], {'source' : xpath, 'id': uuid})
+
+        :type requires: tuple of variable values and deployment info
 
         :return: provide_xpath_uri call result
         """

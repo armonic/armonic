@@ -3,7 +3,6 @@ import sys
 import logging
 import logging.handlers
 import traceback
-import itertools
 import copy
 
 from armonic.utils import get_first_ip
@@ -96,15 +95,20 @@ def is_exposed(f):
     return getattr(f, 'exposed', False)
 
 
-def format_input_variables(*variables_values):
+def format_input_variables(requires=[]):
     """Translate ("//xpath/to/variable_name", "value")
        to ("//xpath/to/variable_name", {0: "value"})
     """
-    variables_values = list(itertools.chain(*variables_values))
+    if not requires:
+        return requires
+    variables_values = requires[0]
     for index, (variable_xpath, variable_values) in enumerate(variables_values):
         if not type(variable_values) == dict:
             variables_values[index] = (variable_xpath, {0: variable_values})
-    return variables_values
+    if len(requires) == 2:
+        return [variables_values, requires[1]]
+    elif len(requires) == 1:
+        return [variables_values]
 
 
 def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
