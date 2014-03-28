@@ -36,7 +36,7 @@ class TestProvideValidation(unittest.TestCase):
 
     def setUp(self):
         self.hostname = uname()[1]
-        self.lfm = LifecycleManager(load_state=False)
+        self.lfm = LifecycleManager()
         self.maxDiff = None
 
     def test_fill_simple_require(self):

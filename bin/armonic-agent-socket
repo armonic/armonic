@@ -20,6 +20,7 @@ import struct
 import argparse
 
 from armonic.serialize import Serialize
+from armonic.persist import Persist
 import armonic.common
 
 PACKET_INFO_SIZE = 5
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-default-lifecycles', dest="no_default_lifecycles", action="store_true", default=False, help="Don't load provided lifecycles (default: %(default)s))")
     parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
     parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
-    parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic.state", help='Armonic agent state file path (default: %(default)s))')
+    parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
     args = parser.parse_args()
 
     logger = logging.getLogger()
@@ -146,12 +147,15 @@ if __name__ == "__main__":
     save_state = not args.no_save_state
     load_state = not args.no_load_state
 
-    with Serialize(load_state=load_state, save_state=save_state, state_file=args.state_path) as lfm:
-        print "Server listening on %s:%d" % (args.host, args.port)
-        server = MyTCPServer((args.host, args.port), MyTCPHandler)
-        # Activate the server; this will keep running until you
-        # interrupt the program with Ctrl-C
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            print "Exiting."
+    persist = Persist(load_state, save_state, args.state_path)
+    lfm = Serialize()
+
+    print "Server listening on %s:%d" % (args.host, args.port)
+    server = MyTCPServer((args.host, args.port), MyTCPHandler)
+    # Activate the server; this will keep running until you
+    # interrupt the program with Ctrl-C
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print "Exiting."
+        persist.save()

@@ -3,8 +3,6 @@ import logging
 import pprint
 import copy
 import sys
-import json
-import os
 from platform import uname
 
 from armonic.common import IterContainer, DoesNotExist, ProvideError, \
@@ -162,7 +160,7 @@ class State(XMLRessource):
                 ret = self.enter(self.provide_enter)
             else:
                 ret = self.enter()
-            self._clear_provide('enter')
+            self.provide_enter.finalize()
         except ValidationError:
             raise
         except Exception, e:
@@ -270,6 +268,7 @@ class Lifecycle(XMLRessource):
     """
     initial_state = None
     """The initial state for this Lifecycle"""
+    _persist = True
 
     def __new__(cls):
         instance = super(Lifecycle, cls).__new__(cls)
@@ -340,6 +339,24 @@ class Lifecycle(XMLRessource):
             dst.text = d.name
             transitions.append(t)
         return transitions
+
+    def _persist_primitive(self):
+        return [state.name for state in self._stack]
+
+    def _persist_load_primitive(self, stack):
+        logger.debug("Loading %s previous states" % self)
+        _stack = []
+        for state_name in stack:
+            try:
+                state = self.state_by_name(state_name)
+                _stack.append(state)
+            except DoesNotExist:
+                logger.error("State %s in unknown in Lifecycle %s" % (state_name, self))
+                return False
+        if _stack:
+            self._stack = _stack
+            return True
+        return False
 
     @property
     def name(self):
@@ -655,6 +672,7 @@ class Lifecycle(XMLRessource):
                 ret = provide_method(provide)
             else:
                 ret = provide_method()
+            provide.finalize()
         except ValidationError:
             raise
         except Exception, e:
@@ -664,8 +682,6 @@ class Lifecycle(XMLRessource):
             logger.debug("Propagate flags %s to upper states" % provide.flags)
             for s in self._stack[state_index:]:
                 s.cross(**(provide.flags))
-        # reset provide variables on success
-        self._clear_state_provide(state, provide_name)
         return ret
 
     def to_dot(self, cross=False,
@@ -787,11 +803,8 @@ class LifecycleManager(XMLRessource):
     :param os_type: to specify which kind of os has to be used.
         If it is not specified, the os type is automatically discovered.
     """
-    def __init__(self, os_type=None, autoload=True, load_state=True, save_state=True, state_file="/tmp/armonic.state"):
+    def __init__(self, os_type=None, autoload=True):
         self.os_type = os_type
-        self.load_state = load_state
-        self.save_state = save_state
-        self.state_file = state_file
         self.lf_loaded = {}
         self.lf = {}
         for lf in armonic.utils.get_subclasses(Lifecycle):
@@ -804,16 +817,9 @@ class LifecycleManager(XMLRessource):
                 logger.debug("Ignoring abstract Lifecycle %s" % lf)
         self.register()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
-
     def register(self):
         """Register the manager in the XMLRegistery.
         """
-        logger.debug("Register %s" % self)
         XMLRegistery._xml_register(self)
 
     @property
@@ -855,28 +861,6 @@ class LifecycleManager(XMLRessource):
             acc.append(lf)
         return acc
 
-    def _load_previous_states(self, lf):
-        """Restore Lifecycle stack from LifecycleManager state file.
-        """
-        try:
-            _stack = []
-            for name, stack in self._load_manager_state():
-                if lf.name == name:
-                    for state_name in stack:
-                        try:
-                            state = lf.state_by_name(state_name)
-                            _stack.append(state)
-                        except DoesNotExist:
-                            logger.error("State %s in unknown in Lifecycle %s" % (state_name, lf))
-                            return False
-                    break
-            if _stack:
-                lf._stack = _stack
-                return True
-        except IOError:
-            logger.error("Failed to load LifecycleManager state.")
-        return False
-
     def load(self, lf_name):
         """Load a :class:`Lifecycle` in the manager and register it in the
         XML register.
@@ -895,11 +879,6 @@ class LifecycleManager(XMLRessource):
             lf._clear_states_provides()
             if self.os_type is not None:
                 lf.os_type = self.os_type
-            # Load previous states
-            if self.load_state:
-                logger.debug("Loading %s previous states" % lf)
-                if self._load_previous_states(lf):
-                    logger.info("Active state %s restored on Lifecycle %s" % (lf.state_current(), lf))
         except KeyError:
             raise LifecycleNotExist("Lifecycle '%s' doesn't exist" % lf_name)
         self.lf_loaded.update({lf_name: lf})
@@ -1208,27 +1187,6 @@ class LifecycleManager(XMLRessource):
     def to_xml(self, xpath=None):
         """Return the xml representation of the :class:`LifecyleManager`."""
         return XMLRegistery.to_string(xpath)
-
-    def _load_manager_state(self):
-        with open(self.state_file) as f:
-            return json.load(f)
-
-    def _save_manager_state(self):
-        manager_state = []
-        for lf_name, lf_instance in self.lf_loaded.items():
-            stack = [state.name for state in lf_instance._stack]
-            manager_state.append((lf_name, stack))
-        with open(self.state_file, 'w') as f:
-            json.dump(manager_state, f)
-        return True
-
-    def close(self):
-        if self.save_state:
-            logger.info("Saving state in %s..." % self.state_file)
-            self._save_manager_state()
-        elif os.path.exists(self.state_file):
-            logger.info("Removing state file %s..." % self.state_file)
-            os.unlink(self.state_file)
 
     def __repr__(self):
         return "<LifecyleManager:%s>" % self.name

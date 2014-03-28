@@ -1,8 +1,10 @@
 from lxml.etree import Element, SubElement, tostring, ElementTree, XPathEvalError, _Element
-
 import logging
-logger = logging.getLogger(__name__)
 
+from armonic.persist import PersistRessource
+
+
+logger = logging.getLogger(__name__)
 RESSOURCE_ATTR = "ressource"
 
 
@@ -22,7 +24,7 @@ class XpathInvalidExpression(Exception):
     pass
 
 
-class XMLRessource(object):
+class XMLRessource(PersistRessource):
     _xpath = None
     _xpath_relative = None
 
@@ -50,6 +52,11 @@ class XMLRessource(object):
         :rtype: a list of tuple (property_name, value)"""
         return []
 
+    def _xml_on_registration(self):
+        """Method run when the ressource is registered in the XML;
+        """
+        PersistRessource._persist_register(self)
+
     def get_xpath(self):
         return self._xpath
 
@@ -72,7 +79,7 @@ class XMLRegistery(object):
         return cls._instance
 
     def _xml_register(self, ressource, parent=None):
-        """ 
+        """
         :type ressource: XMLRessource
         :type parent: lxml.Element
         """
@@ -86,7 +93,7 @@ class XMLRegistery(object):
             xml_elt = SubElement(parent,
                                  ressource._xml_tag(),
                                  attrib=attributes)
-        
+
         ressource._xpath = self._xml_root_tree.getpath(xml_elt)
         try:
             ressource._xpath_relative = ressource._xpath.split("/", 2)[2]
@@ -112,6 +119,8 @@ class XMLRegistery(object):
                 properties_node.append(elt)
 
         self._xml_register_children(xml_elt, ressource)
+        logger.debug("Registered %s in XML registery" % ressource.__repr__())
+        ressource._xml_on_registration()
 
     def _xml_register_children(self, xml_elt, ressource):
         """Be careful, this removes children before adding them."""

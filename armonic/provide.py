@@ -1,5 +1,6 @@
 import logging
 import itertools
+from time import time
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from armonic.xml_register import XMLRegistery, XMLRessource
@@ -18,6 +19,8 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     :param requires: list of requires
     :param flags: flags to be propagated
     """
+    _persist = True
+
     def __init__(self, name=None, requires=[], flags={}, **extra):
         IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
@@ -25,6 +28,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         self.flags = flags
         # Last caller
         self.source = None
+        self.history = ProvideHistory()
 
     def __call__(self, func):
         """Used as a method decorator mark state methods as provides.
@@ -46,6 +50,13 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
 
     def _xml_ressource_name(self):
         return "provide"
+
+    def _persist_primitive(self):
+        return self.history.to_primitive()
+
+    def _persist_load_primitive(self, history):
+        if history is not None:
+            self.history = ProvideHistory(initial_history=history)
 
     def require_by_name(self, require_name):
         """
@@ -138,6 +149,12 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         for r in self:
             r._clear()
 
+    def finalize(self):
+        # record call
+        self.history.add_entry(requires=self.get_values())
+        # clear provide
+        self._clear()
+
     def __repr__(self):
         return "<Provide:%s(%s,flags=%s)>" % (self.name,
                                               IterContainer.__repr__(self),
@@ -152,3 +169,24 @@ class Flags(object):
 
     def __call__(self, func):
         return Provide(name=None, requires=[], flags=self.flags)(func)
+
+
+class ProvideHistory(object):
+    """Record provide calls.
+    """
+
+    def __init__(self, initial_history=[]):
+        self._history = initial_history
+
+    def add_entry(self, requires=[]):
+        self._history.append({'timestamp': int(time()),
+                              'requires': requires})
+
+    def to_primitive(self):
+        return self._history
+
+    def last_entry(self):
+        try:
+            return self._history[-1]
+        except IndexError:
+            return None
