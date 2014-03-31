@@ -13,6 +13,7 @@ import argcomplete
 import json
 
 from armonic.client.sock import ClientSocket
+import armonic.client.utils
 
 import os
 
@@ -23,23 +24,63 @@ def read_string(string):
         return string
 
 def reqList(args):
-    """take a list of "args:value" strings and return a dict"""
+    """take a list of string "args:value" strings and return a dict"""
     acc={}
     for a in args:
         s=a.split(":")
         acc.update({s[0]:read_string(s[1])})
     return acc
 
+
+
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    acc={}
-    if not args: return acc
-    for r in args:
-        a=reqList(r[1:])
-        if r[0] in acc:
-            acc[r[0]].append(a)
-        else: acc.update({r[0]:[a]})
-    return acc
+    print args
+
+    acc = {}
+    # Take 
+    # [[req1, v1:x , v2:x], [req2, ...]]
+    # Transform to
+    # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
+    for a in args:
+        if a[0] in acc:
+            acc[a[0]].append(a[1:])
+        else: acc.update({a[0]:[a[1:]]})
+    ret = acc
+    print ret
+    
+    # Take
+    # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
+    # Transform to
+    # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
+    acc = {}
+    for req, variables in ret.items():
+        for i in range(0,len(variables)):
+            for k,v in reqList(variables[i]).items():
+                key = req+"/"+k
+                if key in ret:
+                    acc[key].update({i:v})
+                else:
+                    acc[key] = {i:v}
+    ret = acc
+    print ret
+    
+    # Take
+    # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
+    # Transform to
+    # [(req1/v1 : {0:x}), (req1/v2 : {1:x}), ...]
+    # Moreover, it adds // if needed
+    acc = []
+    for k, v in ret.items():
+        if k.startswith("/"):
+            xpath = k
+        else :
+            xpath = "//"+k
+        acc.append((xpath, v))
+    ret = acc
+    print ret
+    return ret
+
 
 def provide_to_table(provide):
     x = PrettyTable(["Provide Name","Require name", "Type", "ArgName", "ArgType", "ArgDefault", "Extra"])
@@ -163,7 +204,11 @@ def cmd_provide(args):
             print ""
 
 def cmd_provide_call(args):
-    pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require), parseArgs(args.args)))
+    if args.check:
+        ret = client.call('provide_call_validate', args.xpath, parseArgs(args.require))
+        pprint.pprint(armonic.client.utils.require_validation_error(ret))
+    else:
+        pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require)))
 
 def cmd_plot(args):
     if args.T == 'dot':
@@ -274,8 +319,8 @@ parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
+parser_provide_call.add_argument('--check','-c',action='store_true',help="Check if requires are valid")
 parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
-parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
