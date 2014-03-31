@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'netifaces',
-    'lxml<=2.3.2',
+    'lxml',
     'IPy',
     'MySQL-python',
     'argcomplete',
