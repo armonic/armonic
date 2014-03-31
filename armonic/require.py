@@ -338,8 +338,6 @@ class RequireLocal(Require):
         Require.__init__(self, name, _variables, nargs=nargs, **extra)
         self.type = "local"
         self.xpath = xpath
-        self.lf_name = None
-        self.provide_name = None
         self.provide_args = provide_args
         self.provide_ret = provide_ret
 
@@ -351,15 +349,14 @@ class RequireLocal(Require):
         primitive = Require.to_primitive(self)
         primitive.update({
             "type": self.type,
-            "lf_name": self.lf_name,
             "provide_xpath": self.xpath,
             "provide_args": [v.to_primitive() for v in self.provide_args],
             "provide_ret": [v.to_primitive() for v in self.provide_ret]})
         return primitive
 
     def __repr__(self):
-        return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
-            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireLocal(name=%s, xpath=%s, provide_args=%s)>" \
+            % (self.name, self.xpath, self.provide_args)
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -414,5 +411,5 @@ class RequireExternal(RequireLocal):
         return ret
 
     def __repr__(self):
-        return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
-            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireExternal(name=%s, xpath=%s, provide_args=%s)>" \
+            % (self.name, self.xpath, self.provide_args)

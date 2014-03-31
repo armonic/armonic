@@ -1054,7 +1054,10 @@ class LifecycleManager(XMLRessource):
                     acc.append((provide, lf.provide_call_path(state_name)))
         return acc
 
-    def provide_call_validate(self, provide_xpath_uri, requires=[], path_idx=0):
+    def provide_call_validate(self,
+                              provide_xpath_uri,
+                              requires=[],
+                              path_idx=0):
         """Validate requires to call the provide
 
         :param xpath: unique xpath of the provide to call
@@ -1066,8 +1069,10 @@ class LifecycleManager(XMLRessource):
 
         :type requires: list
 
-        :return: list of validated provides to call in order to call provide_xpath_uri
-        :rtype: {'errors': bool, 'xpath': xpath, 'requires': [:class:`Provide`]}
+        :return: list of validated provides to call
+                 in order to call provide_xpath_uri
+        :rtype: {'errors': bool, 'xpath': xpath,
+                 'requires': [:class:`Provide`]}
         """
         variables_values = format_input_variables(requires)
         logger.debug("Validating variables %s" % variables_values)
@@ -1075,7 +1080,8 @@ class LifecycleManager(XMLRessource):
         # copy requires we don't want to fill variables yet
         requires = copy.deepcopy(self.provide_call_requires(provide_xpath_uri))
         try:
-            requires.append(copy.deepcopy(self.from_xpath(provide_xpath_uri, "provide")))
+            requires.append(copy.deepcopy(
+                self.from_xpath(provide_xpath_uri, "provide")))
         except DoesNotExist:
             pass
         errors = False
@@ -1085,7 +1091,9 @@ class LifecycleManager(XMLRessource):
                 provide.validate()
             except ValidationError:
                 errors = True
-        return {'xpath': provide_xpath_uri, 'errors': errors, 'requires': requires}
+        return {'xpath': provide_xpath_uri,
+                'errors': errors,
+                'requires': requires}
 
     def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
         """Call a provide of a lifecycle and go to provider state if needed
@@ -1101,10 +1109,14 @@ class LifecycleManager(XMLRessource):
         requires = format_input_variables(requires)
         logger.debug("Provide call %s" % provide_xpath_uri)
         # be sure that the provide can be validated
-        # we don't want to change states if we can't call the provide in the end
-        if self.provide_call_validate(provide_xpath_uri, requires)['errors']:
-            logger.error("Provided values doesn't met provide requires")
-            raise ValidationError("Provided values doesn't met provide requires")
+        # we don't want to change states
+        # if we can't call the provide in the end
+        errors = self.provide_call_validate(provide_xpath_uri, requires)['errors']
+        if errors:
+            msg = ("Provided values doesn't met provide requires." +
+                   " Call provide_call_validate() to know errors.")
+            logger.error(msg)
+            raise ValidationError(msg=msg)
         requires = format_input_variables(requires)
         lf_name = XMLRegistery.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XMLRegistery.get_ressource(provide_xpath_uri, "state")
