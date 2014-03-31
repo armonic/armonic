@@ -30,9 +30,15 @@ class Serialize(object):
         return self.lf_manager.info()
 
     @expose
-    def lifecycle(self, xpath, doc=False):
+    def lifecycle(self, xpath, long_description=False):
+        """If long_description is True, return a dict.
+        Otherwise, return lifecycles xpath."""
         lfs = self.lf_manager.lifecycle(xpath)
-        return [l.name for l in lfs]
+        if long_description:
+            return [{"name": l.name,
+                     "xpath": l.get_xpath(),
+                     "doc": l.doc()} for l in lfs]
+        return [l.get_xpath() for l in lfs]
 
     @expose
     def state(self, xpath, doc=False):

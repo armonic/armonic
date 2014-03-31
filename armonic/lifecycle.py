@@ -345,6 +345,10 @@ class Lifecycle(XMLRessource):
     def _state_list(cls):
         return list(set([s for (s, d) in cls.transitions] + [d for (s, d) in cls.transitions]))
 
+    def doc(self):
+        """Return docstring of this lifecycle."""
+        return self.__class__.__doc__
+        
     def state_list(self, reachable=False):
         """To get all available states.
 

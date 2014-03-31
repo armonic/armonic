@@ -97,8 +97,12 @@ def cmd_status(args):
     dict_to_table(client.call('info'))
 
 def cmd_lifecycle(args):
-    for m in client.call('lifecycle', args.xpath):
-        print m
+    if args.long_description:
+        for m in client.call('lifecycle', args.xpath, long_description=True):
+            dict_to_table(m)
+    else:
+        for m in client.call('lifecycle', args.xpath):
+            print m
 
 def cmd_xpath(args):
     if args.uri:
