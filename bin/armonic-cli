@@ -175,25 +175,31 @@ def cmd_provide(args):
     if args.path:
         ret = client.call('provide_call_path', args.xpath)
         for r in ret:
+            print
             print r['xpath']
+            if r['paths'] == []:
+                print "  can not be reached."
             for i, p in enumerate(r['paths']):
                 print "path %i" % i
                 for a in p:
                     print "  ", "%5s " % a[1], a[0]
         return
-    elif args.args:
-        ret=client.call('provide_call_args', args.xpath)
-        require_to_table(ret)
-        return
-    ret=client.call('provide', args.xpath)
-    for provide in ret:
-        print provide['xpath']
-        if args.long_description:
-            provide_to_table(provide)
-            req=client.call('provide_call_requires', provide_xpath_uri=provide['xpath'])
-            for p in req:
-                provide_to_table(p)
-            print ""
+    else:
+        ret=client.call('provide', args.xpath)
+        for provide in ret:
+            if args.all:
+                print
+                print provide['xpath']
+                req=client.call('provide_call_requires', provide_xpath_uri=provide['xpath'])
+                for p in req:
+                    print "Need: ", p['xpath']
+                    if args.long_description:
+                        provide_to_table(p)
+            else:
+                print provide['xpath']
+                if args.long_description:
+                    provide_to_table(provide)
+
 
 def cmd_provide_call(args):
     if args.check:
@@ -305,7 +311,7 @@ parser_provide = subparsers.add_parser('provide', help='List provides.')
 parser_provide.add_argument('xpath' , type=str, help='a xpath')
 parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
-parser_provide.add_argument('--args','-a',action='store_true',help="Show args of provides")
+parser_provide.add_argument('--all','-a',action='store_true',help="Show all provides required to call the provide")
 
 parser_provide.set_defaults(func=cmd_provide)
 
