@@ -995,13 +995,15 @@ class LifecycleManager(XMLRessource):
         return self.lifecycle_by_name(lf_name).state_goto(state_name, requires)
 
     def provide(self, provide_xpath):
-        """Provides that match provide_xpath.
+        """Return provides that match provide_xpath and that can be reached
+        (OS_TYPE).
 
         :param provide_xpath: xpath to provide
         :type provide_xpath: str
 
         :return: list of provides that match provide_xpath
         :rtype: [:py:class:`Provide`]
+
         """
         matches = XMLRegistery.find_all_elts(provide_xpath)
         acc = IterContainer()
@@ -1009,10 +1011,13 @@ class LifecycleManager(XMLRessource):
             if XMLRegistery.is_ressource(m, "provide"):
                 provide_name = XMLRegistery.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
-                    lf_name = XMLRegistery.get_ressource(m, "lifecycle")
-                    state_name = XMLRegistery.get_ressource(m, "state")
-                    state = self.lifecycle_by_name(lf_name).state_by_name(state_name)
-                    acc.append(state.provide_by_name(provide_name))
+                    path = self.provide_call_path(m)[0]
+                    if path[1] != []:
+                        lf_name = XMLRegistery.get_ressource(m, "lifecycle")
+                        lf = self.lifecycle_by_name(lf_name)
+                        state_name = XMLRegistery.get_ressource(m, "state")
+                        state = lf.state_by_name(state_name)
+                        acc.append(state.provide_by_name(provide_name))
         return acc
 
     def provide_call_requires(self, provide_xpath_uri, path_idx=0):
