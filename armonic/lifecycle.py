@@ -447,7 +447,10 @@ class Lifecycle(XMLRessource):
         else:
             _find_next_state(from_state, paths)
 
-        logger.debug("Found paths:\n%s" % pprint.pformat(paths))
+        logger.debug("Found paths:")  # % pprint.pformat(paths))
+        for p in paths:
+            logger.debug("\t%s" % p)
+
         return paths
 
     def _get_state_class(self, state):
