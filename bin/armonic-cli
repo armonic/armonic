@@ -75,17 +75,10 @@ def parseArgs(args):
 
 
 def provide_to_table(provide):
-    x = PrettyTable(["Provide Name","Require name", "Type", "ArgName", "ArgType", "ArgDefault", "Extra"])
-    x.align["Require Name"] = "l"
-    x.padding_width = 1 # One space between column edges and contents (default)
-    x.add_row([provide['name'], "", "","","","",""])
     for r in provide['requires']:
-        x.add_row(["", r['name'] , r['type'],"","","",""])
+        print "  Require:    ", "%s type:%s" % (r['name'].ljust(15), r['type'].ljust(15))
         for a in r['variables_skel']:
-            x.add_row(["", "","",a['name'],a['type'],a['default'],""])
-        x.add_row(["", "" , "","","","",""])
-    print x
-
+            print "    Variable: ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
 
 def require_to_table(requires):
     x = PrettyTable(["Require Name","Type","ArgName", "ArgType","ArgDefault","Extra"])
