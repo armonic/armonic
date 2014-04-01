@@ -1,0 +1,5 @@
+- Fill methods (Provide, Require) are not really strong. We have to
+  think more about them, especially how a variable xpath is expanded
+  to an absolute xpath. We also have to detect if a variable matches
+  several expanded xpath. Currently, I think it can be a problem if it
+  happens.

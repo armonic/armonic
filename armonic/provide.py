@@ -76,15 +76,16 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         def _filter_values(variables_values):
             # Return only variables for this Provide
             for xpath, values in variables_values:
-                provide_name = XMLRegistery.get_ressource(xpath, "provide")
-                if not provide_name == self.name:
-                    continue
-                require_name = XMLRegistery.get_ressource(xpath, "require")
-                try:
-                    self.require_by_name(require_name)
-                except DoesNotExist:
-                    continue
-                yield (xpath, values)
+                for xpath_abs in XMLRegistery.find_all_elts(xpath):
+                    provide_name = XMLRegistery.get_ressource(xpath_abs, "provide")
+                    if not provide_name == self.name:
+                        continue
+                    require_name = XMLRegistery.get_ressource(xpath_abs, "require")
+                    try:
+                        self.require_by_name(require_name)
+                    except DoesNotExist:
+                        continue
+                    yield (xpath_abs, values)
 
         for require in self:
             require.fill(_filter_values(variables_values))
