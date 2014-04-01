@@ -51,7 +51,7 @@ class XpathFilter(logging.Filter):
 
 logger = logging.getLogger(__name__)
 
-EVENT_LEVELV_NUM = 25
+EVENT_LEVELV_NUM = 15
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 
 
@@ -61,7 +61,7 @@ def event(self, kws):
 logging.Logger.event = event
 
 
-PROCESS_LEVELV_NUM = 24
+PROCESS_LEVELV_NUM = 16
 logging.addLevelName(PROCESS_LEVELV_NUM, "PROCESS")
 
 
