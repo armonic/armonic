@@ -23,20 +23,12 @@ def read_string(string):
     except ValueError:
         return string
 
-def reqList(args):
-    """take a list of string "args:value" strings and return a dict"""
-    acc={}
-    for a in args:
-        s=a.split(":")
-        acc.update({s[0]:read_string(s[1])})
-    return acc
-
-
-
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    print args
-
+    if args is None:
+        return []
+        
+    # print args
     acc = {}
     # Take 
     # [[req1, v1:x , v2:x], [req2, ...]]
@@ -47,7 +39,7 @@ def parseArgs(args):
             acc[a[0]].append(a[1:])
         else: acc.update({a[0]:[a[1:]]})
     ret = acc
-    print ret
+    # print ret
     
     # Take
     # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
@@ -63,7 +55,7 @@ def parseArgs(args):
                 else:
                     acc[key] = {i:v}
     ret = acc
-    print ret
+    # print ret
     
     # Take
     # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
@@ -78,7 +70,7 @@ def parseArgs(args):
             xpath = "//"+k
         acc.append((xpath, v))
     ret = acc
-    print ret
+    # print ret
     return ret
 
 
