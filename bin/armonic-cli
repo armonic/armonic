@@ -23,6 +23,15 @@ def read_string(string):
     except ValueError:
         return string
 
+def reqList(args):
+    """take a list of "args:value" strings and return a dict"""
+    acc={}
+    for a in args:
+        s=a.split(":")
+        acc.update({s[0]:read_string(s[1])})
+    return acc
+
+
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
     if args is None:
@@ -144,9 +153,9 @@ def cmd_state(args):
 
     elif args.requires_list:
         ret=client.call('state_goto_requires', args.xpath)
-        for r in ret:
+        for r in ret['requires']:
             print r['xpath']
-            require_to_table(r['requires'])
+            provide_to_table(r)
     elif args.path:
         pprint.pprint(client.call('state_goto_path', args.xpath))
 
