@@ -1014,12 +1014,12 @@ class LifecycleManager(XMLRessource):
             if XMLRegistery.is_ressource(m, "provide"):
                 provide_name = XMLRegistery.get_ressource(m, "provide")
                 if provide_name not in STATE_RESERVED_METHODS:
-                    path = self.provide_call_path(m)[0]
-                    if path[1] != []:
-                        lf_name = XMLRegistery.get_ressource(m, "lifecycle")
-                        lf = self.lifecycle_by_name(lf_name)
-                        state_name = XMLRegistery.get_ressource(m, "state")
-                        state = lf.state_by_name(state_name)
+                    lf_name = XMLRegistery.get_ressource(m, "lifecycle")
+                    lf = self.lifecycle_by_name(lf_name)
+                    state_name = XMLRegistery.get_ressource(m, "state")
+                    state = lf.state_by_name(state_name)
+                    if (lf._is_state_in_stack(state) or
+                            lf.provide_call_path(state) != []):
                         acc.append(state.provide_by_name(provide_name))
         return acc
 
