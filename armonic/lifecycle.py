@@ -512,12 +512,13 @@ class Lifecycle(XMLRessource):
 
         :param state: the target state
         :type state: state_name | :class:`State`
-        :param requires: variable values to fill the requires::
+        :param requires: variable values to fill the requires
+            ::
 
-            ([
-                ("//xpath/to/variable", {0: value}),
-                ("//xpath/to/variable", {0: value})
-             ], {'source' : xpath, 'id': uuid})
+                  ([
+                      ("//xpath/to/variable", {0: value}),
+                      ("//xpath/to/variable", {0: value})
+                   ], {'source' : xpath, 'id': uuid})
 
         :type requires: tuple of variable values and deployment info
         :param path_idx: the path to use when there is multiple paths
@@ -633,6 +634,8 @@ class Lifecycle(XMLRessource):
         else:
             return []
 
+
+
     def provide_call(self, state, provide_name, requires=[], path_idx=0):
         """Go to provide state and call provide.
 
@@ -640,18 +643,21 @@ class Lifecycle(XMLRessource):
         :type state: state_name | :class:`State`
         :param provide_name: name of the provide
         :type provide_name: str
-        :param requires: variable values to fill the requires::
+        :param requires: variable values to fill the requires
+            ::
 
-            ([
-                ("//xpath/to/variable", {0: value}),
-                ("//xpath/to/variable", {0: value})
-             ], {'source' : xpath, 'id': uuid})
+                  ([
+                      ("//xpath/to/variable", {0: value}),
+                      ("//xpath/to/variable", {0: value})
+                   ], {'source' : xpath, 'id': uuid})
 
         :type requires: tuple of variable values and deployment info
 
         :rtype: provide result
         """
+        # FIXME This is useless and should be removed ???
         requires = format_input_variables(requires)
+
         state = self._get_state_class(state)
         # To be sure that the provide exists
         state.provide_by_name(provide_name)
@@ -970,12 +976,13 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: unique xpath of a state
         :type xpath: str
-        :param requires: variable values to fill the requires::
+        :param requires: variable values to fill the requires
+            ::
 
-            ([
-                ("//xpath/to/variable", {0: value}),
-                ("//xpath/to/variable", {0: value})
-             ], {'source' : xpath, 'id': uuid})
+                  ([
+                      ("//xpath/to/variable", {0: value}),
+                      ("//xpath/to/variable", {0: value})
+                   ], {'source' : xpath, 'id': uuid})
 
         :type requires: tuple of variable values and deployment info
 
@@ -1061,12 +1068,13 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: unique xpath of the provide to call
         :type xpath: str
-        :param requires: variable values to fill the requires::
+        :param requires: variable values to fill the requires
+            ::
 
-            ([
-                ("//xpath/to/variable", {0: value}),
-                ("//xpath/to/variable", {0: value})
-             ], {'source' : xpath, 'id': uuid})
+                  ([
+                      ("//xpath/to/variable", {0: value}),
+                      ("//xpath/to/variable", {0: value})
+                   ], {'source' : xpath, 'id': uuid})
 
         :type requires: tuple of variable values and deployment info
 
@@ -1101,12 +1109,13 @@ class LifecycleManager(XMLRessource):
 
         :param xpath: xpath of the provide to call
         :type xpath: str
-        :param requires: variable values to fill the requires::
+        :param requires: variable values to fill the requires
+            ::
 
-            ([
-                ("//xpath/to/variable", {0: value}),
-                ("//xpath/to/variable", {0: value})
-             ], {'source' : xpath, 'id': uuid})
+                  ([
+                      ("//xpath/to/variable", {0: value}),
+                      ("//xpath/to/variable", {0: value})
+                   ], {'source' : xpath, 'id': uuid})
 
         :type requires: tuple of variable values and deployment info
 

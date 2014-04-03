@@ -96,8 +96,8 @@ def is_exposed(f):
 
 
 def format_input_variables(requires=[]):
-    """Translate ("//xpath/to/variable_name", "value")
-       to ("//xpath/to/variable_name", {0: "value"})
+    """If the requires format is ([("//xpath/to/variable_name", "value")], X),
+    translate to ([("//xpath/to/variable_name", {0:value})], X)
     """
     if not requires:
         return requires
