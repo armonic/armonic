@@ -273,8 +273,8 @@ class Provide(object):
         acc = []
         for r in self.remotes + self.requires:
             acc += r.variables_serialized()
-        return acc
-        
+        return (acc, {'source': None, 'uuid': None})
+
     def variables(self):
         """:rtype: [:class:`Variable`]"""
         acc = []

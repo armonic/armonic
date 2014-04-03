@@ -80,6 +80,8 @@ def parseArgs(args):
         acc.append((xpath, v))
     ret = acc
     # print ret
+
+    ret = (ret, {'source': None, 'uuid': None})
     return ret
 
 
@@ -206,7 +208,10 @@ def cmd_provide(args):
 def cmd_provide_call(args):
     if args.check:
         ret = client.call('provide_call_validate', args.xpath, parseArgs(args.require))
-        pprint.pprint(armonic.client.utils.require_validation_error(ret))
+        if ret['errors'] is False:
+            print "Requires are valid."
+        else:
+            pprint.pprint(armonic.client.utils.require_validation_error(ret))
     else:
         pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require)))
 
