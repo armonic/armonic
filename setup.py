@@ -8,7 +8,8 @@ install_requires = [
     'MySQL-python',
     'argcomplete',
     'prettytable',
-    'nose'
+    'nose',
+    'termcolor'
 ]
 
 setup(
