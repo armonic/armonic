@@ -18,6 +18,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Variable(object):
     """
     :param from_require: The require that holds this variable.
@@ -32,11 +33,13 @@ class Variable(object):
         self.from_require.from_provide.Variables.append(self)
 
         self._value = None
+        self._resolved = False
         
     @property
     def value(self):
-        if self._value is None:
+        if self._resolved is False:
             self._resolve(self.from_require._scope_variables)
+            self._resolved = True
         return self._value
 
     @value.setter
@@ -60,6 +63,8 @@ class Variable(object):
         variable. Otherwise, it tries to find a value in the scope.
 
         """
+        print "NAME" , self.from_require.from_provide.name
+
         # If the variable has a from_xpath attribute,
         # try to find back its value
         if self.from_xpath is not None:
@@ -117,6 +122,7 @@ class Require(object):
         this = cls(**kwargs)
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
+        this.name = dct_json['name']
         
         this._variables = []
         for v in dct_json['variables_skel']:
@@ -152,6 +158,8 @@ class Remote(Require):
         this = cls(**kwargs)
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
+        this.name = dct_json['name']
+        
         this.nargs = dct_json['nargs']
         this.provide_xpath = dct_json['provide_xpath']
         this.provide_args = []
@@ -194,15 +202,16 @@ class Provide(object):
     :param child_number: if this Provide is a dependancies, this is
     the number of this child.
     :param requirer: the provide that need this require
-    :param require: the remote require of the requirer that leads to this provide.
+    :param require: the remote require of the requirer that leads
+                    to this provide.
 
     """
-    STEPS = ["manage", 
+    STEPS = ["manage",
              "lfm",
              "specialize",
              "set_dependancies",
              # This is a private step
-             "multiplicity", 
+             "multiplicity",
              "validation",
              "call",
              "done"]
@@ -210,7 +219,8 @@ class Provide(object):
     # Contains all variables. This is used to find back from_xpath value.
     Variables = []
 
-    def __init__(self, generic_xpath, requirer=None, child_num=None, require=None):
+    def __init__(self, generic_xpath, requirer=None,
+                 child_num=None, require=None):
         self.generic_xpath = generic_xpath
         self.requirer = requirer
         self.require = require
@@ -225,7 +235,6 @@ class Provide(object):
                 self.tree_id.append(i)
             self.tree_id.append(child_num)
 
-            
         else:
             self.depth = 0
             self.tree_id = [0]
@@ -252,6 +261,8 @@ class Provide(object):
         # Attribute host is required for external Provide
         self.host = None
 
+    def __repr__(self):
+        return "<Provide(%s)>" % self.generic_xpath
 
     def variables_serialized(self):
         """Get variables in the format for provide_call"""
@@ -368,8 +379,6 @@ class Provide(object):
         # Used to stop the genreator
         self.ignore = not manage
 
-
-
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
         return self.lfm.uri(xpath=self.generic_xpath)
@@ -395,7 +404,7 @@ def smart_call(root_provide):
 
     scope = root_provide
     while True:
-        logger.debug("Scope: %s", scope)
+        logger.debug("Step: %s - %s" % (scope.step, scope))
         # Stop and Pop conditions
         if scope.step == "done":
             yield (scope, scope.step, None)
