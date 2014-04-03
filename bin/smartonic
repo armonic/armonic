@@ -113,7 +113,7 @@ if __name__ == "__main__":
         class MyProvide(Provide):
             def on_lfm(self, host):
                 self.host = host
-                self.lfm = ClientSocket(host=host, handlers=[handler])                
+                self.lfm = ClientSocket(host=host, handlers=[handler])
                 
         root_provide = MyProvide(generic_xpath=args.xpath)
         root_provide.lfm = lfm

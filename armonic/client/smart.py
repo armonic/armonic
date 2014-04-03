@@ -63,7 +63,8 @@ class Variable(object):
         variable. Otherwise, it tries to find a value in the scope.
 
         """
-        print "NAME" , self.from_require.from_provide.name
+        if self.from_require.special:
+            return
 
         # If the variable has a from_xpath attribute,
         # try to find back its value
@@ -105,10 +106,13 @@ class Require(object):
 
     """
 
-    def __init__(self, from_provide, child_num):
+    def __init__(self, from_provide, special, child_num):
         self.child_num = child_num
         self.from_provide = from_provide
-
+        # If this require comes from a special provide, ie. entry,
+        # leave or cross. This is used to avoir variable value
+        # propagation to require that comes from states.
+        self.special = special
         self._scope_variables = []
         # We copy variables dict from parent the scope.
         # They will be upgraded when requires are built.
@@ -148,8 +152,8 @@ class Require(object):
 
 
 class Remote(Require):
-    def __init__(self, from_provide, child_num):
-        Require.__init__(self, from_provide, child_num)
+    def __init__(self, from_provide, special, child_num):
+        Require.__init__(self, from_provide, special, child_num)
         self.provides = []
 
 
@@ -301,18 +305,20 @@ class Provide(object):
             raise IndexError
         self._step_current += 1
 
-
     def _build_require_from_call_require(self, dct_json):
         """From a json dict, build Require and Remote require."""
         self.remotes = []
         self.requires = []
         idx = 0
         for p in dct_json:
+            special = p['name'] in ['enter', 'leave', 'cross']
             for require in p['requires']:
                 if require['type'] in ['external', 'local']:
-                    self.remotes.append(Remote.from_json(require, child_num=idx, from_provide=self))
+                    self.remotes.append(Remote.from_json(
+                        require, special=special, child_num=idx, from_provide=self))
                 elif require['type'] in ['simple']:
-                    self.requires.append(Require.from_json(require, child_num=idx, from_provide=self))
+                    self.requires.append(Require.from_json(
+                        require, special=special, child_num=idx, from_provide=self))
                 idx += 1
                 
     def _build_requires(self):
