@@ -3,3 +3,17 @@
   to an absolute xpath. We also have to detect if a variable matches
   several expanded xpath. Currently, I think it can be a problem if it
   happens.
+
+
+- Require API with source and uuid for deployment tracking:
+
+  LifecycleManager should have methods signature such as
+    provide_call(xpath, requires, path_idx=0, source=None, uuid=None)
+    state_goto(xpath, requires, path_idx=0, source=None, uuid=None)
+  
+  Then, we could introduce a new objet Submit (a better name is
+  needed) which contains requires, sources and uuid. This object would
+  be built by LFM methods and passed to Lifecycle methods.
+
+  The method format_input_variable could be a member of this object.
+  
