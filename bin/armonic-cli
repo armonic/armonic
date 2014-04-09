@@ -214,7 +214,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
 parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
-parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
+parser.add_argument('--protocol', type=str,choices=['socket'], default="socket",help='Protocol (default: %(default)s))')
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
@@ -278,16 +278,7 @@ parser_plot.set_defaults(func=cmd_plot)
 argcomplete.autocomplete(parser)
 args = parser.parse_args()
 
-if args.protocol == "xmlrpc":
-    from armonic.client_xmlrpc import ClientXMLRPC, XMLRPCError
-    client = ClientXMLRPC(args.host, args.port)
-    try:
-        args.func(args)
-    except XMLRPCError as err:
-        print "%s: %s" % (err.errno, err.error)
-        exit(1)
-
-elif args.protocol == "socket":
+if args.protocol == "socket":
     from armonic.client.sock import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
