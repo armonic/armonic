@@ -91,28 +91,6 @@ def provide_to_table(provide):
         for a in r['variables_skel']:
             print "    Variable: ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
 
-def require_to_table(requires):
-    x = PrettyTable(["Require Name","Type","ArgName", "ArgType","ArgDefault","Extra"])
-    x.align["Require Name"] = "l"
-    x.padding_width = 1 # One space between column edges and contents (default)
-    for r in requires:
-        if r.type in ['external', 'local']:
-            x.add_row([r.name, r.type, "", "", "", r.xpath])
-        else:
-            x.add_row([r.name, r.type, "", "", "", ""])
-        if r.type in ['simple', 'user']:
-            variables=r.variables()
-        else:
-            variables=r.provide_args + r.provide_ret
-        for a in variables:
-            if r.type == 'user':
-                x.add_row(["","",a.name,a.type,a.default,r.provided_by])
-            else:
-                x.add_row(["","",a.name,a.type,a.default,""])
-        x.add_row(["" , "","","","",""])
-    print x
-
-
 def state_to_table(state):
     x = PrettyTable(["Property","Value"])
     x.align = "l"
@@ -228,52 +206,14 @@ def cmd_plot(args):
         print(client.call('to_xml', args.module))
 
 
-def ModuleCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    ret = client.call('lf_list')
-    return (m for m in ret if m.startswith(prefix))
-
-def StateCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    ret = client.call('state_list',parsed_args.module)
-    return (m for m in ret if m.startswith(prefix))
-
-
-def ProvideCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    try :
-        state = parsed_args.state
-    except AttributeError:
-        state = None
-
-    if state:
-        ret=client.call('provide_list', parsed_args.module,state_name=state)
-    else:
-        ret=client.call('provide_list', parsed_args.module)
-    tmp=[]
-    for k in ret.iterkeys():
-        for i in ret[k]:
-          tmp += [i.name]
-    return (m for m in tmp if m.startswith(prefix))
-
-
 parser = argparse.ArgumentParser(
     prog='armonic-client',
-    description=("A simple client to contact a MSS3 agent. "
+    description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
-parser.add_argument('--host','-H', type=str, default=os.environ.get('MSS_AGENT_HOST', "localhost")
-                    ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
+parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
+                    ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
 parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
@@ -329,7 +269,7 @@ parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", act
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
-parser_plot.add_argument('module' , type=str, nargs='?', help='a module').completer = ModuleCompleter
+parser_plot.add_argument('module' , type=str, nargs='?', help='a module')
 parser_plot.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe armonic stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
 parser_plot.set_defaults(func=cmd_plot)
