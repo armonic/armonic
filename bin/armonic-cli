@@ -109,14 +109,14 @@ def dict_to_table(dct):
     print x
 
 def cmd_status(args):
-    dict_to_table(client.call('info'))
+    dict_to_table(client.info())
 
 def cmd_lifecycle(args):
     if args.long_description:
-        for m in client.call('lifecycle', args.xpath, long_description=True):
+        for m in client.lifecycle(args.xpath, long_description=True):
             dict_to_table(m)
     else:
-        for m in client.call('lifecycle', args.xpath):
+        for m in client.lifecycle(args.xpath):
             print m
 
 def cmd_xpath(args):
@@ -214,7 +214,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
 parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
-parser.add_argument('--protocol', type=str,choices=['socket'], default="socket",help='Protocol (default: %(default)s))')
+parser.add_argument('--no-remote', action='store_true', default=False,  help="Directly use Armonic module.")
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
@@ -278,7 +278,7 @@ parser_plot.set_defaults(func=cmd_plot)
 argcomplete.autocomplete(parser)
 args = parser.parse_args()
 
-if args.protocol == "socket":
+if args.no_remote is False:
     from armonic.client.sock import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
@@ -288,4 +288,10 @@ if args.protocol == "socket":
     sh.setFormatter(logging.Formatter(format))
     client = ClientSocket(args.host, args.port)
     client.add_logging_handler(sh)
-    args.func(args)
+else:
+    import armonic.serialize
+    import armonic.common
+    armonic.common.load_lifecycles()
+    client = armonic.serialize.Serialize()
+
+args.func(args)

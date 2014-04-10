@@ -53,16 +53,22 @@ class ClientSocket(object):
         request = {'method': method, 'args': args, 'kwargs': kwargs}
         return self._send_and_receive(request)
 
+    def info(self):
+        return self.call("info")
+        
+    def lifecycle(self, xpath, long_description=False):
+        return self.call("lifecycle", xpath, long_description)
+
     def provide_call_requires(self, xpath):
         return self.call("provide_call_requires", provide_xpath_uri=xpath)
 
     def provide_call(self, provide_xpath_uri, requires):
-        return self.call("provide_call", 
+        return self.call("provide_call",
                          provide_xpath_uri=provide_xpath_uri, 
                          requires=requires)
         
     def uri(self, xpath):
-        return self.call("uri", 
+        return self.call("uri",
                          xpath=xpath)
 
     def _receive_string(self):
