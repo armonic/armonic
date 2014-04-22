@@ -150,9 +150,6 @@ def cmd_state_current(args):
 def cmd_state_goto(args):
     pprint.pprint(client.call('state_goto', args.xpath, parseArgs(args.require)))
 
-def cmd_dot(args):
-    print client.call('to_dot', args.module)
-
 def cmd_provide(args):
     if args.path:
         ret = client.call('provide_call_path', args.xpath)
