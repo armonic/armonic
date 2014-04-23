@@ -10,7 +10,7 @@
 """
 
 # Limitiations
-# 
+#
 # It's not able to manage several require (nargs) variable.
 # It's not able to manage path
 
@@ -243,7 +243,7 @@ class Provide(object):
             self.depth = 0
             self.tree_id = [0]
 
-        self.ignore = False
+        #self.ignore = False
         self._step_current = 0
 
         self._current_require = None
@@ -259,7 +259,7 @@ class Provide(object):
         else:
             self.lfm = None
 
-        self._manage = None
+        self.manage = True
         self.call = None
 
         # Attribute host is required for external Provide
@@ -363,7 +363,6 @@ class Provide(object):
         if self.lfm is None:
             raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
 
-
     def do_call(self):
         return self.call is None
 
@@ -373,17 +372,15 @@ class Provide(object):
         """
         self.call = call
 
-    @property
-    def manage(self):
-        """If it returns None, walk function yields."""
-        return self._manage
-        
-    @manage.setter
-    def manage(self, manage):
-        """Set true if this provide has to be managed"""
-        self._manage = manage
-        # Used to stop the genreator
-        self.ignore = not manage
+    def do_manage(self):
+        return True
+
+    def on_manage(self, data):
+        self.manage = data
+
+    def _test_manage(self):
+        if self.manage is None:
+            raise AttributeError("'manage' attribute must not be None. Must be set at 'manage' step")
 
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
@@ -414,7 +411,7 @@ def smart_call(root_provide):
         # Stop and Pop conditions
         if scope.step == "done":
             yield (scope, scope.step, None)
-        if scope.step == "done" or scope.ignore:
+        if scope.step == "done" or not scope.manage:
             # If all dependencies of root node have been threated we
             # break the loop
             if scope.requirer == None:
@@ -425,10 +422,12 @@ def smart_call(root_provide):
                 scope = scope.requirer
                 continue
 
-        if not scope.ignore:
+        if scope.manage:
             if scope.step == "manage":
-                if scope.manage is None: 
-                    scope.manage = yield (scope, scope.step, None)
+                if scope.do_manage():
+                    data = yield (scope, scope.step, None)
+                    scope.on_manage(data)
+                scope._test_manage()
                 scope._next_step()
 
             elif scope.step == "lfm":
@@ -496,7 +495,7 @@ def smart_call(root_provide):
                 else:
                     done = True
                     for p in scope._current_require.provides:
-                        if p.ignore == False and not p.step == "done":
+                        if p.manage == True and not p.step == "done":
                             done = False
                             scope = p
                             break
