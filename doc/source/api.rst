@@ -34,7 +34,7 @@ Clients
 Smart
 -----
 
-.. automodule:: armonic.client.iter_smart
+.. automodule:: armonic.client.smart
    :members:
 
 Socket
