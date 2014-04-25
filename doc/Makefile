@@ -41,8 +41,12 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
-html:
+allhtml: module html
+
+module:
 	sh generate_lifecycle_doc.sh
+
+html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
