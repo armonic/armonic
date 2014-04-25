@@ -63,6 +63,14 @@ class Variable(object):
         variable. Otherwise, it tries to find a value in the scope.
 
         """
+        # If the variable is host, try to find it from called provide
+        if self.name == 'host' and self._value is None:
+            if self.from_require.type == 'external':
+                try:
+                    self._value = self.from_require.provides[0].host
+                except IndexError:
+                    pass
+
         if self.from_require.special:
             return
 
@@ -78,14 +86,6 @@ class Variable(object):
             logger.info("Variable [%s] from_xpath [%s] not found" %(
                 self.xpath, self.from_xpath))
             
-        # If the variable is host, try to find it from called provide
-        if self.name == 'host' and self._value is None:
-            if self.from_require.type == 'external':
-                try:
-                    self._value = self.from_require.provides[0].host
-                except IndexError:
-                    pass
-
         for v in scope:
             if self.name == v.name:
                 logger.debug("Variable [%s] resolved by [%s] with value %s" %(
@@ -223,6 +223,13 @@ class Provide(object):
     # Contains all variables. This is used to find back from_xpath value.
     Variables = []
 
+    require = None
+    """Contains the :class:`Require` that requires this provide."""
+
+    requirer = None
+    """Contains the :class:`Provide` that requires this current
+    provide."""
+
     def __init__(self, generic_xpath, requirer=None,
                  child_num=None, require=None):
         self.generic_xpath = generic_xpath
@@ -261,6 +268,7 @@ class Provide(object):
 
         self.manage = True
         self.call = None
+        self.specialized_xpath = None
 
         # Attribute host is required for external Provide
         self.host = None
@@ -372,6 +380,13 @@ class Provide(object):
         """
         self.call = call
 
+    def _test_call(self):
+        """
+        :type call: boolean
+        """
+        if self.call is None:
+            raise AttributeError("'call' attribute must not be None. Must be set at 'call' step")
+
     def do_manage(self):
         return True
 
@@ -384,12 +399,12 @@ class Provide(object):
 
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
-        return self.lfm.uri(xpath=self.generic_xpath)
+        return self.lfm.uri(xpath=self.generic_xpath, relative=True)
 
     def specialize(self, xpath):
         """Used to specialize the generic_xpath"""
         self.specialized_xpath = xpath
-    
+        
     def lfm_call(self):
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.specialized_xpath,
