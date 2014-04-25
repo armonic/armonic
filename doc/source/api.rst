@@ -35,7 +35,11 @@ Smart
 -----
 
 .. automodule:: armonic.client.smart
-   :members:
+
+.. autoclass:: armonic.client.smart.Provide
+   :members: 
+
+
 
 Socket
 ------
