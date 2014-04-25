@@ -124,8 +124,8 @@ class Serialize(object):
         return self.lf_manager.to_dot(lf_name, reachable)
 
     @expose
-    def uri(self, xpath="//"):
-        return self.lf_manager.uri(xpath)
+    def uri(self, xpath="//", relative=False):
+        return self.lf_manager.uri(xpath, relative=relative)
 
     @expose
     def xpath(self, xpath):

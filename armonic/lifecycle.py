@@ -1161,7 +1161,7 @@ class LifecycleManager(XMLRessource):
         :rtype: dict"""
         return self.lifecycle_by_name(lf_name).to_primitive(reachable=reachable)
 
-    def uri(self, xpath="//"):
+    def uri(self, xpath="//", relative=False):
         """Return the list of xpath_uris that match this xpath.
 
         :param xpath: an xpath string
@@ -1169,7 +1169,11 @@ class LifecycleManager(XMLRessource):
 
         :return: list of xpaths
         :rtype: [xpath_uri]"""
-        return XMLRegistery.find_all_elts(xpath)
+        ret = XMLRegistery.find_all_elts(xpath)
+        if relative:
+            return [x.split("/",2)[2] for x in ret]
+        else:
+            return ret
 
     def from_xpath(self, xpath, ret="lifecycle"):
         """From a xpath try to get the object of type ``ret``
