@@ -16,4 +16,8 @@
   be built by LFM methods and passed to Lifecycle methods.
 
   The method format_input_variable could be a member of this object.
-  
+
+
+- Deserialize sent objects on client side and have clean shared class
+  between agents and clients.
+
