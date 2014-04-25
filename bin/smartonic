@@ -83,9 +83,7 @@ if __name__ == "__main__":
                 self.lfm = lfm
                 return False
                 
-
-            @property
-            def manage(self):
+            def on_manage(self, data):
                 return True
 
             def do_call(self):
