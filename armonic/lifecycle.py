@@ -684,10 +684,9 @@ class Lifecycle(XMLRessource):
         except Exception, e:
             raise ProvideError(provide, e.message, sys.exc_info())
         logger.debug("Provide %s returns values %s" % (provide_name, ret))
-        if not state == self.state_current():
-            logger.debug("Propagate flags %s to upper states" % provide.flags)
-            for s in self._stack[state_index:]:
-                s.cross(**(provide.flags))
+        logger.debug("Propagate flags %s to upper states" % provide.flags)
+        for s in self._stack[state_index:]:
+            s.cross(**(provide.flags))
         return ret
 
     def to_dot(self, cross=False,
