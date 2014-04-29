@@ -64,9 +64,14 @@ class ClientSocket(object):
 
     def provide_call(self, provide_xpath_uri, requires):
         return self.call("provide_call",
-                         provide_xpath_uri=provide_xpath_uri, 
+                         provide_xpath_uri=provide_xpath_uri,
                          requires=requires)
-        
+
+    def provide_call_validate(self, provide_xpath_uri, requires):
+        return self.call("provide_call_validate",
+                         provide_xpath_uri=provide_xpath_uri,
+                         requires=requires)
+
     def uri(self, xpath, relative=False):
         return self.call("uri",
                          xpath=xpath, relative=relative)
