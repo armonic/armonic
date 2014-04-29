@@ -86,13 +86,13 @@ def parseArgs(args):
 
 
 def provide_to_table(provide):
-    pprint.pprint(provide)
     for r in provide['requires']:
         print "  Require:    ", "%s type:%s" % (r['name'].ljust(15), r['type'].ljust(15))
         if r['type'] == 'simple':
             for a in r['variables_skel']:
-                print "    Variable: ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
+                print "    Variable (args)  : ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
         else:
+            print "    Provide xpath    :  %s" % r['provide_xpath']
             for a in r['provide_args']:
                 print "    Variable (args)  : ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
             for a in r['provide_ret']:
