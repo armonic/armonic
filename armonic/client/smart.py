@@ -33,18 +33,20 @@ class Variable(object):
         self.from_require.from_provide.Variables.append(self)
 
         self._value = None
-        self._resolved = False
-        
+
+        # Capture the variable used to resolve self
+        self._resolved_by = None
+
     @property
     def value(self):
-        if self._resolved is False:
-            self._resolve(self.from_require._scope_variables)
-            self._resolved = True
-        return self._value
+        self._resolve(self.from_require._scope_variables)
 
-    @value.setter
-    def value(self, value):
-        self._value = value
+        # Be careful, infinite loop is possible. Since this should never
+        # happen, we don't avoid it in order to detect it!
+        if self._resolved_by is not None:
+            return self._resolved_by.value
+        else:
+            return self._value
 
     @classmethod
     def from_json(cls, dct_json, **kwargs):
@@ -53,7 +55,7 @@ class Variable(object):
         this.xpath = dct_json['xpath']
         this.from_xpath = dct_json['from_xpath']
         this.default = dct_json['default']
-        this.value = this.default
+        this._value = this.default
 
         return this
 
@@ -63,15 +65,18 @@ class Variable(object):
         variable. Otherwise, it tries to find a value in the scope.
 
         """
+        if self._value is not None:
+            return
+
         # If the variable is host, try to find it from called provide
         if self.name == 'host' and self._value is None:
             if self.from_require.type == 'external':
                 try:
                     self._value = self.from_require.provides[0].host
+                    # FIXME: We have a problem because host doesn't come from a variable!
+                    self._resolved_by = None
                 except IndexError:
                     pass
-
-        if self.from_require.special:
             return
 
         # If the variable has a from_xpath attribute,
@@ -79,25 +84,39 @@ class Variable(object):
         if self.from_xpath is not None:
             for v in self.from_require.from_provide.Variables:
                 if v.xpath == self.from_xpath:
-                    self._value = v.value
+                    self._resolved_by = v
                     logger.debug("Variable [%s] value comes from [%s] with value %s" %(
-                        self.xpath, v.xpath, v.value))
+                        self.xpath, v.xpath, v._value))
                     return
-            logger.info("Variable [%s] from_xpath [%s] not found" %(
+            logger.info("Variable [%s] from_xpath [%s] not found" % (
                 self.xpath, self.from_xpath))
-            
-        for v in scope:
-            if self.name == v.name:
-                logger.debug("Variable [%s] resolved by [%s] with value %s" %(
-                    self.xpath, v.xpath, v._value))
-                self._value = v._value
 
+        if self.from_require.special:
+            return
+
+        if self.from_xpath is None:
+            for v in scope:
+                if self.name == v.name:
+                    logger.debug("Variable [%s] resolved by [%s] with value %s" %(
+                        self.xpath, v.xpath, v._value))
+                    self._resolved_by = v
 
     def pprint(self):
         return {"name": self.name,
                 "xpath": self.xpath,
                 "default": self.default,
                 "value": self.value}
+
+    def __repr__(self):
+        if self._resolved_by is not None:
+            resolved_by = self._resolved_by.xpath
+        else:
+            resolved_by = None
+        return "Variable(name=%s, value=%s, xpath=%s, resolved_by=%s)" % (
+            self.name,
+            self._value,
+            self.xpath,
+            resolved_by)
 
 
 class Require(object):
@@ -114,6 +133,7 @@ class Require(object):
         # propagation to require that comes from states.
         self.special = special
         self._scope_variables = []
+
         # We copy variables dict from parent the scope.
         # They will be upgraded when requires are built.
         if from_provide.require is not None:
@@ -167,9 +187,19 @@ class Remote(Require):
         this.nargs = dct_json['nargs']
         this.provide_xpath = dct_json['provide_xpath']
         this.provide_args = []
+
         for v in dct_json['provide_args']:
             var = Variable.from_json(v, from_require=this)
             this.provide_args.append(var)
+            
+            # This variable is added to the scope.
+            this._scope_variables.append(var)
+
+        # Here, we add provide ret variable.
+        this.provide_ret = []
+        for v in dct_json['provide_ret']:
+            var = Variable.from_json(v, from_require=this)
+            this.provide_ret.append(var)
             
             # This variable is added to the scope.
             this._scope_variables.append(var)
@@ -184,13 +214,22 @@ class Remote(Require):
     def variables_serialized(self):
         """Get variables in the format for provide_call"""
         acc = []
-        for v in self.provide_args:
+        for v in (self.provide_args + self.provide_ret):
             acc.append((v.xpath, {0: v.value}))
         return acc
 
     def variables(self):
         """:rtype: [:class:`Variable`]"""
         return self.provide_args
+
+    def update_provide_ret(self, provide_ret):
+        for (name, value) in provide_ret.items():
+            for v in self.provide_ret:
+                if v.name == name:
+                    v._value = value
+                    logger.debug("Variable %s has been updated with value "
+                                 "'%s' from provide_ret" % (v.xpath, value))
+                    break
 
 
 class Provide(object):
@@ -214,7 +253,6 @@ class Provide(object):
              "lfm",
              "specialize",
              "set_dependancies",
-             # This is a private step
              "multiplicity",
              "validation",
              "call",
@@ -346,20 +384,12 @@ class Provide(object):
         return self._children_generator
 
     def build_child(self, generic_xpath, child_num, require):
-        ret = self.__class__(generic_xpath=generic_xpath, 
+        ret = self.__class__(generic_xpath=generic_xpath,
                              requirer=self,
                              child_num=child_num,
                              require=require)
         return ret
 
-    # @property
-    # def lfm(self):
-    #     return self._lfm
-
-    # @lfm.setter
-    # def lfm(self, lfm):
-    #     self._lfm = lfm
-        
     def do_lfm(self):
         """The step lfm is applied if it returns True."""
         return self.lfm is None
@@ -387,6 +417,13 @@ class Provide(object):
         if self.call is None:
             raise AttributeError("'call' attribute must not be None. Must be set at 'call' step")
 
+    def do_set_dependancies(self):
+        """Return False by default."""
+        return False
+
+    def on_set_dependancies(self, call):
+        pass
+
     def do_manage(self):
         return True
 
@@ -404,11 +441,33 @@ class Provide(object):
     def specialize(self, xpath):
         """Used to specialize the generic_xpath"""
         self.specialized_xpath = xpath
-        
+
+    def update_scope_provide_ret(self, provide_ret):
+        """When the provide call returns value, we habve to update the scope
+        of the require in order to be able to use these value to fill
+        depending provides.
+
+        """
+        # A provide should ALWAYS return a dict.
+        if type(self.provide_ret) is dict:  # FIXME
+            self.require.update_provide_ret(self.provide_ret)
+
     def lfm_call(self):
+        # FIXME. This is a temporary hack!
+        if ret['errors']:
+            import pprint
+            print "Variables used are"
+            pprint.pprint(self.Variables) 
+            print "Variable not validated"
+            pprint.pprint(ret)
+            print "Error: Variables are not been validated!"
+            exit(1)
+
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.specialized_xpath,
             requires=self.variables_serialized())
+
+        self.update_scope_provide_ret(self.provide_ret)
         # self.provide_ret = self.lfm.call("provide_call_validate",
         #                                  provide_xpath_uri=self.specialized_xpath,
         #                                  requires=self.variables_serialized())
@@ -453,8 +512,10 @@ def smart_call(root_provide):
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
+                if scope.do_set_dependancies():
+                    data = yield(scope, scope.step, None)
+                    scope.on_set_dependancies(data)
                 scope._build_requires()
-                #yield(scope, scope.step, None)
                 scope._next_step()
 
             elif scope.step == "validation":
