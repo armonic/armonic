@@ -9,7 +9,8 @@ install_requires = [
     'argcomplete',
     'prettytable',
     'nose',
-    'termcolor'
+    'termcolor',
+    'sleekxmpp'
 ]
 
 setup(
