@@ -133,6 +133,7 @@ class Variable(object):
 
 
 class Requires(list):
+    """This class is used to represent the require multiplicity."""
     def __init__(self, skel):
         self.skel = skel
 
@@ -153,6 +154,12 @@ class Requires(list):
         acc = []
         for (k, v) in dct.items():
             acc.append((k, v))
+        return acc
+
+    def variables(self):
+        acc = []
+        for r in self:
+            acc += r.variables()
         return acc
 
 
@@ -623,11 +630,14 @@ def smart_call(root_provide):
 
             elif scope.step == "specialize":
                 m = scope.matches()
-                logger.debug("Specialize mathces: %s" % m)
+                logger.debug("Specialize matches: %s" % m)
                 if len(m) > 1:
                     specialized = yield(scope, scope.step, m)
-                else:
+                elif len(m) == 1:
                     specialized = m[0]
+                else:
+                    raise Exception(
+                        "Xpath '%s' matches nothing!" % scope.generic_xpath)
                 scope.specialize(specialized)
                 scope._next_step()
 
