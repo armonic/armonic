@@ -6,21 +6,21 @@ from sleekxmpp import ClientXMPP
 
 from sleekxmpp.thirdparty import OrderedDict
 
-import armonic.serialize
-from armonic.client.iter_smart import Provide, walk
+import armonic.common
+from armonic.serialize import Serialize
+from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
+armonic.common.load_lifecycles()
+lfm = Serialize(os_type=OsTypeMBS())
 
-lfm = armonic.serialize.Serialize(
-    modules_dir="armonic/modules/",
-    os_type=OsTypeMBS())
 
 class MyProvide(Provide):
-    @property
-    def lfm(self):
-        return lfm
-    @property
-    def call(self):
+    def do_lfm(self):
+        self.lfm = lfm
+        return False
+
+    def do_call(self):
         return False
 
         
@@ -89,7 +89,7 @@ class Master(ClientXMPP):
             print "Step: Create root_provide"
             xpath = payload['values']['xpath']
             self.root_provide = MyProvide(generic_xpath=xpath)
-            self.smart = walk(self.root_provide)
+            self.smart = smart_call(self.root_provide)
 
         if self.current_step == "manage":
             provide, step, args = self.smart.send(True)
