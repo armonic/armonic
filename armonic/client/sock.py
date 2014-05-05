@@ -76,6 +76,9 @@ class ClientSocket(object):
         return self.call("uri",
                          xpath=xpath, relative=relative)
 
+    def state(self, xpath, doc=False):
+        return self.call("state", xpath=xpath, doc=doc)
+
     def _receive_string(self):
         packer = struct.Struct("!I?")
         recv_size = 0

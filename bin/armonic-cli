@@ -136,7 +136,7 @@ def cmd_xpath(args):
 
 def cmd_state(args):
     if args.long_description:
-        for r in client.call('state', xpath=args.xpath, doc=True):
+        for r in client.state(xpath=args.xpath, doc=True):
             state_to_table(r)
 
     elif args.requires_list:
@@ -148,7 +148,7 @@ def cmd_state(args):
         pprint.pprint(client.call('state_goto_path', args.xpath))
 
     else:
-        for s in client.call('state', xpath=args.xpath, doc=False):
+        for s in client.state(xpath=args.xpath, doc=False):
             print s
 
 def cmd_state_current(args):
