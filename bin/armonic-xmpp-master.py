@@ -1,6 +1,5 @@
 import logging
 import argparse
-import time
 
 from sleekxmpp import ClientXMPP
 
@@ -23,7 +22,7 @@ class MyProvide(Provide):
     def do_call(self):
         return False
 
-        
+
 class Master(ClientXMPP):
 
     def __init__(self, jid, password, lfm):
@@ -42,7 +41,6 @@ class Master(ClientXMPP):
         self['xep_0050'].add_command(node='build',
                                      name='Build a provide',
                                      handler=self._handle_command_build)
-        
 
     def _handle_command_provides(self, iq, session):
         print "_handle_command_provides"
@@ -55,18 +53,17 @@ class Master(ClientXMPP):
 
         for p in self.lfm.provide("//*"):
             form.add_item(OrderedDict({
-                "xpath":p['xpath'],
-                "tag":"TODO",
-                "label": "Un nom de provide humain",
-                "help": "Un tres long message d'aide qui decrit precismeent ce que fait le provide"}))
-        
+                "xpath": p['xpath'],
+                "tag": ":tag1:tag2:",
+                "label": "My Provide",
+                "help": "To install Wordpress"}))
+
         session['payload'] = form
-        session['next'] = None # self._handle_command_init_walk
+        session['next'] = None  # self._handle_command_init_walk
         session['has_next'] = False
         session['id'] = "session_id_pour_test"
-            
-        return session
 
+        return session
 
     def _handle_command_build(self, iq, session):
         form = self['xep_0004'].makeForm('form', 'Specify a provide')
@@ -80,9 +77,8 @@ class Master(ClientXMPP):
         self.smart = None
         self.root_provide = None
         self.current_step = None
-        
-        return session
 
+        return session
 
     def _handle_command_init_build_next(self, payload, session):
         if self.smart is None:
@@ -94,28 +90,31 @@ class Master(ClientXMPP):
         if self.current_step == "manage":
             provide, step, args = self.smart.send(True)
         elif self.current_step == "specialize":
-            provide, step, args = self.smart.send(payload['values']["specialize"])
+            provide, step, args = self.smart.send(
+                payload['values']["specialize"])
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(1)
         else:
             provide, step, args = self.smart.next()
-        
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step
         print "Current step is now %s" % step
 
         form['instructions'] = step
-        form.add_field(var="provide", ftype="fixed", value=provide.generic_xpath)
-        form.add_field(var="tree_id", ftype="fixed", value=str(provide.tree_id))
-        
+        form.add_field(var="provide",
+                       ftype="fixed",
+                       value=provide.generic_xpath)
+        form.add_field(var="tree_id",
+                       ftype="fixed",
+                       value=str(provide.tree_id))
 
         if step == 'specialize':
-            form.add_field(var="specialize", 
-                           ftype="list-single", 
+            form.add_field(var="specialize",
+                           ftype="list-single",
                            desc="specialize the provide",
                            options=provide.matches())
-            
+
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
@@ -124,22 +123,21 @@ class Master(ClientXMPP):
         return session
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='scheduler')
-    parser.add_argument('--host', 
+    parser.add_argument('--host',
                         required=True, type=str,
                         help="XMPP server host")
-    parser.add_argument('--port', 
+    parser.add_argument('--port',
                         default=5222, type=int,
                         help="XMPP server port (default '%(default)s')")
-    parser.add_argument('--jid','-j', 
+    parser.add_argument('--jid', '-j',
                         default='test1@im.aeolus.org', type=str,
                         help="Jid (default '%(default)s')")
-    parser.add_argument('--password','-p', 
+    parser.add_argument('--password', '-p',
                         default='test1', type=str,
                         help="Password (default '%(default)s')")
-    parser.add_argument('--input-event-file','-i', 
+    parser.add_argument('--input-event-file', '-i',
                         default='-', type=argparse.FileType('r', 0),
                         help="Input file where events are read")
     args = parser.parse_args()
@@ -147,19 +145,15 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)-8s %(message)s')
 
-
     xmpp = Master('%s/master' % args.jid, args.password, lfm=lfm)
 
-    xmpp.register_plugin('xep_0030') # Service Discovery
-    xmpp.register_plugin('xep_0004') # Data Forms
-    xmpp.register_plugin('xep_0050') # Adhoc Commands
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+    xmpp.register_plugin('xep_0030')  # Service Discovery
+    xmpp.register_plugin('xep_0004')  # Data Forms
+    xmpp.register_plugin('xep_0050')  # Adhoc Commands
+    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
 
     xmpp.connect(address=(args.host, args.port))
     try:
         xmpp.process(block=True)
     except KeyboardInterrupt:
         pass
-
-
-
