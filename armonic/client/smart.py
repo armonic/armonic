@@ -15,6 +15,7 @@
 # It's not able to manage path
 
 import logging
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +26,41 @@ class Variable(object):
 
     """
 
-    def __init__(self, name, from_require):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value):
         self.from_require = from_require
         self.name = name
-        
-        # All variable are added to a global list
-        self.from_require.from_provide.Variables.append(self)
-
-        self._value = None
+        self.xpath = xpath
+        self.from_xpath = from_xpath
+        self.default = default
+        self._value = value
 
         # Capture the variable used to resolve self
         self._resolved_by = None
+
+    def copy(self, from_require):
+        var = Variable(
+            name=self.name,
+            from_require=from_require,
+            xpath=self.xpath,
+            from_xpath=self.from_xpath,
+            default=self.default,
+            value=self._value)
+        
+        # All variable are added to a global list
+        self.from_require.from_provide.Variables.append(var)
+
+        return var
+
+    @classmethod
+    def from_json(cls, dct_json, **kwargs):
+        logger.debug("Creating variable %s" % dct_json['xpath'])
+        this = cls(dct_json['name'],
+                   xpath=dct_json['xpath'],
+                   from_xpath=dct_json['from_xpath'],
+                   default=dct_json['default'],
+                   value=dct_json['default'],
+                   **kwargs)
+        return this
 
     @property
     def value(self):
@@ -47,17 +72,6 @@ class Variable(object):
             return self._resolved_by.value
         else:
             return self._value
-
-    @classmethod
-    def from_json(cls, dct_json, **kwargs):
-        logger.debug("Creating variable %s" % dct_json['xpath'])
-        this = cls(dct_json['name'], **kwargs)
-        this.xpath = dct_json['xpath']
-        this.from_xpath = dct_json['from_xpath']
-        this.default = dct_json['default']
-        this._value = this.default
-
-        return this
 
     def _resolve(self, scope):
         """Try to assign a value to this variable. If from_xpath is not None,
@@ -71,12 +85,10 @@ class Variable(object):
         # If the variable is host, try to find it from called provide
         if self.name == 'host' and self._value is None:
             if self.from_require.type == 'external':
-                try:
-                    self._value = self.from_require.provides[0].host
+                if self.from_require.provide is not None:
+                    self._value = self.from_require.provide.host
                     # FIXME: We have a problem because host doesn't come from a variable!
                     self._resolved_by = None
-                except IndexError:
-                    pass
             return
 
         # If the variable has a from_xpath attribute,
@@ -112,11 +124,36 @@ class Variable(object):
             resolved_by = self._resolved_by.xpath
         else:
             resolved_by = None
-        return "Variable(name=%s, value=%s, xpath=%s, resolved_by=%s)" % (
+        return "Variable(%s, name=%s, value=%s, xpath=%s, resolved_by=%s)" % (
+            id(self),
             self.name,
             self._value,
             self.xpath,
             resolved_by)
+
+
+class Requires(list):
+    def __init__(self, skel):
+        self.skel = skel
+
+    def append(self):
+        new = self.skel.copy()
+        list.append(self, new)
+        return new
+
+    def variables_serialized(self):
+        dct = {}
+        for (i, r) in enumerate(self):
+            for v in r.variables():
+                if v.xpath not in dct:
+                    dct[v.xpath] = {i: v.value}
+                else:
+                    dct[v.xpath].update({i: v.value})
+
+        acc = []
+        for (k, v) in dct.items():
+            acc.append((k, v))
+        return acc
 
 
 class Require(object):
@@ -126,6 +163,8 @@ class Require(object):
     """
 
     def __init__(self, from_provide, special, child_num):
+        self._is_skel = True
+
         self.child_num = child_num
         self.from_provide = from_provide
         # If this require comes from a special provide, ie. entry,
@@ -139,7 +178,6 @@ class Require(object):
         if from_provide.require is not None:
             for v in from_provide.require._scope_variables:
                 self._scope_variables.append(v)
-    
 
     @classmethod
     def from_json(cls, dct_json, **kwargs):
@@ -147,13 +185,31 @@ class Require(object):
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
         this.name = dct_json['name']
-        
+
         this._variables = []
         for v in dct_json['variables_skel']:
             this._variables.append(Variable.from_json(v, from_require=this))
-            
+
         this.json = dct_json
         return this
+
+    def copy(self):
+        new = Require(from_provide=self.from_provide,
+                      special=self.special,
+                      child_num=self.child_num)
+        # To know if this instance is a skeleton or not.
+        new._is_skel = False
+
+        new.xpath = self.xpath
+        new.type = self.type
+        new.name = self.name
+
+        new._variables = []
+        for v in self._variables:
+            new._variables.append(v.copy(new))
+
+        new.json = self.json
+        return new
 
     def pprint(self):
         return {"xpath": self.xpath,
@@ -174,8 +230,33 @@ class Require(object):
 class Remote(Require):
     def __init__(self, from_provide, special, child_num):
         Require.__init__(self, from_provide, special, child_num)
-        self.provides = []
+        self.provide = None
 
+    def copy(self):
+        new = Remote(from_provide=self.from_provide,
+                     special=self.special,
+                     child_num=self.child_num)
+        # To know if this instance is a skeleton or not.
+        new._is_skel = False
+
+        new.xpath = self.xpath
+        new.type = self.type
+        new.name = self.name
+        new.nargs = self.nargs
+        new.provide_xpath = self.provide_xpath
+
+        new.provide_args = []
+        for v in self.provide_args:
+            new.provide_args.append(v.copy(new))
+            new._scope_variables.append(v)
+
+        new.provide_ret = []
+        for v in self.provide_ret:
+            new.provide_ret.append(v.copy(new))
+            new._scope_variables.append(v)
+
+        new.json = self.json
+        return new
 
     @classmethod
     def from_json(cls, dct_json, **kwargs):
@@ -183,7 +264,7 @@ class Remote(Require):
         this.xpath = dct_json['xpath']
         this.type = dct_json['type']
         this.name = dct_json['name']
-        
+
         this.nargs = dct_json['nargs']
         this.provide_xpath = dct_json['provide_xpath']
         this.provide_args = []
@@ -191,8 +272,9 @@ class Remote(Require):
         for v in dct_json['provide_args']:
             var = Variable.from_json(v, from_require=this)
             this.provide_args.append(var)
-            
+
             # This variable is added to the scope.
+            # This should useless since it is the skeleton
             this._scope_variables.append(var)
 
         # Here, we add provide ret variable.
@@ -200,10 +282,10 @@ class Remote(Require):
         for v in dct_json['provide_ret']:
             var = Variable.from_json(v, from_require=this)
             this.provide_ret.append(var)
-            
+
             # This variable is added to the scope.
             this._scope_variables.append(var)
-            
+
         this.json = dct_json
         return this
 
@@ -220,7 +302,7 @@ class Remote(Require):
 
     def variables(self):
         """:rtype: [:class:`Variable`]"""
-        return self.provide_args
+        return self.provide_args + self.provide_ret
 
     def update_provide_ret(self, provide_ret):
         for (name, value) in provide_ret.items():
@@ -229,6 +311,7 @@ class Remote(Require):
                     v._value = value
                     logger.debug("Variable %s has been updated with value "
                                  "'%s' from provide_ret" % (v.xpath, value))
+                    logger.debug("%s", id(v))
                     break
 
 
@@ -293,6 +376,10 @@ class Provide(object):
 
         self._current_require = None
         self._children_generator = None
+
+        # Contain all requires. A require can be several time in this
+        # list due to multiplicity.
+        self._requires = None
 
         # Provide configuration variables.
         #
@@ -360,11 +447,13 @@ class Provide(object):
             special = p['name'] in ['enter', 'leave', 'cross']
             for require in p['requires']:
                 if require['type'] in ['external', 'local']:
-                    self.remotes.append(Remote.from_json(
-                        require, special=special, child_num=idx, from_provide=self))
+                    self.remotes.append(Requires(Remote.from_json(
+                        require, special=special, child_num=idx, from_provide=self)))
                 elif require['type'] in ['simple']:
-                    self.requires.append(Require.from_json(
+                    requires = Requires(Require.from_json(
                         require, special=special, child_num=idx, from_provide=self))
+                    requires.append()
+                    self.requires.append(requires)
                 idx += 1
                 
     def _build_requires(self):
@@ -446,7 +535,6 @@ class Provide(object):
         """When the provide call returns value, we habve to update the scope
         of the require in order to be able to use these value to fill
         depending provides.
-
         """
         # A provide should ALWAYS return a dict.
         if type(self.provide_ret) is dict:  # FIXME
@@ -454,6 +542,9 @@ class Provide(object):
 
     def lfm_call(self):
         # FIXME. This is a temporary hack!
+        ret = self.lfm.provide_call_validate(
+            provide_xpath_uri=self.specialized_xpath,
+            requires=self.variables_serialized())
         if ret['errors']:
             import pprint
             print "Variables used are"
@@ -546,20 +637,24 @@ def smart_call(root_provide):
                     try:
                         # Get the next require to manage
                         req = scope._requirator().next()
-                        req.provides = []
-                        if req.nargs == "*":
+                        if req.skel.nargs == "*":
                             number = yield (scope, scope.step, req)
                             for i in range(0,number):
-                                req.provides.append(scope.build_child(
-                                    generic_xpath=req.provide_xpath, 
-                                    child_num=req.child_num,
-                                    require=req))
+                                new = req.append()
+                                p = scope.build_child(
+                                    generic_xpath=new.provide_xpath,
+                                    child_num=new.child_num,
+                                    require=new)
+                                new.provide = p
                         else:
-                            req.provides.append(scope.build_child(
-                                generic_xpath=req.provide_xpath, 
-                                child_num=req.child_num,
-                                require=req))
+                            new = req.append()
+                            p = scope.build_child(
+                                generic_xpath=new.provide_xpath,
+                                child_num=new.child_num,
+                                require=new)
+                            new.provide = p
                         scope._current_require = req
+
                     except StopIteration:
                         pass
 
@@ -570,14 +665,14 @@ def smart_call(root_provide):
                        
                 else:
                     done = True
-                    for p in scope._current_require.provides:
-                        if p.manage == True and not p.step == "done":
+                    for r in scope._current_require:
+                        if r.provide.manage == True and not r.provide.step == "done":
                             done = False
-                            scope = p
+                            scope = r.provide
                             break
                     if done:
                         scope._current_require = None
-            else: 
+            else:
                 yield (scope, scope.step, None)
                 scope._next_step()
 
