@@ -18,16 +18,16 @@ be used. Note that this method is automatically called when a state is
 reached. :meth:`Require.fill` take a dict (or a list) of primitive
 types to fill values of a require.
 """
-
 import logging
+import copy
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
 from armonic.variable import Host
 from armonic.provide import Provide
-import copy
+from armonic.xml_register import XMLRegistery, XMLRessource
 
-from armonic.xml_register import XmlRegister
 
+XMLRegistery = XMLRegistery()
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +63,7 @@ class RequireDefinitionError(Exception):
     pass
 
 
-class Require(XmlRegister, ExtraInfoMixin):
+class Require(XMLRessource, ExtraInfoMixin):
     """Basically, a require is a set of
     :class:`armonic.variable.Variable`. They are defined in a state and
     are used to specify, verify and store values needed to enter in
@@ -101,7 +101,9 @@ class Require(XmlRegister, ExtraInfoMixin):
             self.nargs_min = self.nargs_max = int(self.nargs)
 
         self._variables_skel = variables
-        self._init_variables()
+
+        # Variable will be initialized later (in self.variables())
+        self._variables = None
 
     def __call__(self, func):
         """
@@ -110,6 +112,10 @@ class Require(XmlRegister, ExtraInfoMixin):
         Permit to directly use Require constructor as a decorator.
         """
         return Provide(name=None, requires=[self], flags={})(func)
+
+    def _clear(self):
+        if self._variables is not None:
+            self._init_variables()
 
     def _init_variables(self):
         # This will contain Variables. fill method will append
@@ -124,7 +130,7 @@ class Require(XmlRegister, ExtraInfoMixin):
         return self.name
 
     def _xml_children(self):
-        return self._variables_skel
+        return self._variables_skel 
 
     def _xml_ressource_name(self):
         return "require"
@@ -153,9 +159,13 @@ class Require(XmlRegister, ExtraInfoMixin):
         def _filter_values(variables_values):
             # Return only variables for this Require
             for xpath, values in variables_values:
-                require_name = XmlRegister.get_ressource(xpath, "require")
-                variable_name = XmlRegister.get_ressource(xpath, "variable")
-                if not (require_name == self.name and self.variable_by_name(variable_name)):
+                require_name = XMLRegistery.get_ressource(xpath, "require")
+                if not require_name == self.name:
+                    continue
+                variable_name = XMLRegistery.get_ressource(xpath, "variable")
+                try:
+                    self.variable_by_name(variable_name)
+                except DoesNotExist:
                     continue
                 yield (xpath, variable_name, values)
 
@@ -239,6 +249,12 @@ class Require(XmlRegister, ExtraInfoMixin):
         :param all: if true returns all variables
         :rtype: iterContainer or ([iterContainer] if all == True)
         """
+        # If not yet build, variables are built from varaible_skel.
+        # This can not be done in __init__ because variable_skel
+        # xpaths have to be created.
+        if self._variables is None:
+            self._init_variables()
+
         if all:
             return self._variables
         else:
@@ -270,16 +286,16 @@ class Require(XmlRegister, ExtraInfoMixin):
             raise
 
     def get_values(self):
-        """ FIXME This jsut return the first element"""
-        return [reduce(lambda a, x:
-                       dict(a.items() + {x.name: x.value}.items()),
-                       vs, {}) for vs in self._variables]
-
-    def get_default_values(self):
-        """ FIXME This jsut return the first element"""
-        return [reduce(lambda a, x:
-                       dict(a.items() + {x.name: x.default}.items()),
-                       vs, {}) for vs in self._variables]
+        variables_values = []
+        for variable in self._variables_skel:
+            variable_values = [variable.get_xpath(), {}]
+            for index, variables_set in enumerate(self.variables(all=True)):
+                for variable_in_set in variables_set:
+                    if variable_in_set.name == variable.name:
+                        variable_values[1][index] = variable_in_set.value
+                        break
+            variables_values.append(variable_values)
+        return variables_values
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -303,31 +319,6 @@ class Require(XmlRegister, ExtraInfoMixin):
                                                      self._variables)
 
 
-class RequireUser(Require):
-    """To specify a require which has to be known by user. For
-    instance, mysql password is just know by user who must remember
-    it."""
-    def __init__(self, name, provided_by, variables, **extra):
-        Require.__init__(self, name, variables, **extra)
-        self.type = "user"
-        self.provided_by = provided_by
-
-    def __repr__(self):
-        return "<RequireUser(name=%s, variables=%s)>" % (self.name,
-                                                         self._variables)
-
-    def to_primitive(self):
-        primitive = Require.to_primitive(self)
-        primitive.update({
-            "name": self.name,
-            "xpath": self.get_xpath_relative(),
-            "variables": [a.to_primitive() for a in self._variables[0]],
-            "type": "user",
-            "provided_by_xpath": self.provided_by}
-        )
-        return primitive
-
-
 class RequireLocal(Require):
     """To specify a configuration variable which can be provided
     by a *provide_name* of a local Lifecycle object.
@@ -347,8 +338,6 @@ class RequireLocal(Require):
         Require.__init__(self, name, _variables, nargs=nargs, **extra)
         self.type = "local"
         self.xpath = xpath
-        self.lf_name = None
-        self.provide_name = None
         self.provide_args = provide_args
         self.provide_ret = provide_ret
 
@@ -360,15 +349,14 @@ class RequireLocal(Require):
         primitive = Require.to_primitive(self)
         primitive.update({
             "type": self.type,
-            "lf_name": self.lf_name,
             "provide_xpath": self.xpath,
             "provide_args": [v.to_primitive() for v in self.provide_args],
             "provide_ret": [v.to_primitive() for v in self.provide_ret]})
         return primitive
 
     def __repr__(self):
-        return "<RequireLocal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
-            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireLocal(name=%s, xpath=%s, provide_args=%s)>" \
+            % (self.name, self.xpath, self.provide_args)
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -423,5 +411,5 @@ class RequireExternal(RequireLocal):
         return ret
 
     def __repr__(self):
-        return "<RequireExternal(name=%s, variables=%s, lf_name=%s, provide_name=%s, provide_args=%s)>" \
-            % (self.name, self._variables, self.lf_name, self.provide_name, self.provide_args)
+        return "<RequireExternal(name=%s, xpath=%s, provide_args=%s)>" \
+            % (self.name, self.xpath, self.provide_args)

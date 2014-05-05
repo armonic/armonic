@@ -48,9 +48,9 @@ class h(MetaState):
 class TestPathGeneration(unittest.TestCase):
 
     def test_simple_path(self):
-        """
-        a -> b -> c -> d
-        """
+        #
+        # a -> b -> c -> d
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -74,11 +74,11 @@ class TestPathGeneration(unittest.TestCase):
                          [])
 
     def test_multiple_paths(self):
-        """
-             b ------>
-        a ->           e -> f
-             c -> d ->
-        """
+        #
+        #      b ------>
+        # a ->           e -> f
+        #      c -> d ->
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -105,11 +105,11 @@ class TestPathGeneration(unittest.TestCase):
                          [[(f(), 'leave'), (e(), 'leave'), (b(), 'leave')]])
 
     def test_multiple_ends(self):
-        """
-        a -> b ->        -> f
-                  d -> e
-             c ->        -> g
-        """
+        #
+        # a -> b ->        -> f
+        #           d -> e
+        #      c ->        -> g
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [
@@ -133,11 +133,11 @@ class TestPathGeneration(unittest.TestCase):
                          [])
 
     def test_metastates(self):
-        """
-             i (debian) ->
-        a ->               h (meta) -> g
-             j (mbs)    ->
-        """
+        #
+        #      i (debian) ->
+        # a ->               h (meta) -> g
+        #      j (mbs)    ->
+        #
         class TestLifecycle(Lifecycle):
             initial_state = a()
             transitions = [

@@ -105,7 +105,7 @@ class Configured(State):
             os.makedirs(dir)
         conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
-        remotetarget = "%s:%s" % (armonic.utils.get_ip(), dir)
+        remotetarget = "%s:%s" % (armonic.utils.get_first_ip(), dir)
         return {'remotetarget': remotetarget}
 
 
@@ -128,7 +128,7 @@ class Active(ActiveWithSystemd):
             os.makedirs(dir)
         conf.add_dir(dir, client, ["rw", "sync", "no_root_squash"])
         conf.save()
-        remotetarget = "%s:%s" % (armonic.utils.get_ip(), dir)
+        remotetarget = "%s:%s" % (armonic.utils.get_first_ip(), dir)
         return {'remotetarget': remotetarget}
 
 

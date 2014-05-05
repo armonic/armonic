@@ -43,6 +43,8 @@ example we create the Lifecycle of the sshd service on a Debian like system::
             Transition(Configured(), Active())
         ]
 
+.. note:: To try this example, see section :ref:`load-lifecycle`.
+
 In this example we define 4 States for the service. The service Lifecycle
 defines the possible transitions between the States. In this case the Lifecycle
 transitions are very simple. From the :class:`NotInstalled` state can go to
@@ -129,3 +131,13 @@ Armonic provides the following base Variable classes: :class:`armonic.variable.V
 :class:`armonic.variable.VBool`, :class:`armonic.variable.VList`.
 
 Check the complete documentation about :ref:`variable`.
+
+
+.. _load-lifecycle:
+
+Load a new lifecycle
+--------------------
+
+Armonic loads lifecycles at start time. To load a lifecycle, you have
+to put your lifecycle source code file in a folder in
+``armonic/modules`` directory and restart the agent.

@@ -26,3 +26,24 @@ Variables
 
 .. automodule:: armonic.variable
    :members:
+
+
+Clients
+=======
+
+Smart
+-----
+
+.. automodule:: armonic.client.smart
+
+.. autoclass:: armonic.client.smart.Provide
+   :members: 
+
+
+
+Socket
+------
+
+.. automodule:: armonic.client.sock
+   :members:
+

@@ -4,10 +4,10 @@ import tempfile
 import urllib2
 
 from armonic.common import ValidationError, ExtraInfoMixin
-from armonic.xml_register import XmlRegister
+from armonic.xml_register import XMLRessource
 
 
-class Variable(XmlRegister, ExtraInfoMixin):
+class Variable(XMLRessource, ExtraInfoMixin):
     """Describes a value used in a state provide.
 
     Only name is required.
@@ -117,8 +117,8 @@ class Variable(XmlRegister, ExtraInfoMixin):
         return str(self.value)
 
     def __repr__(self):
-        return "<%s(%s, value=%s, default=%s)>" % (self.__class__.__name__,
-                                                   self.name, self.value,
+        return "<%s(%s, xpath=%s, value=%s, default=%s)>" % (self.__class__.__name__,
+                                                   self.name, self._xpath, self.value,
                                                    self.default)
 
 

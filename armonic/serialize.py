@@ -9,6 +9,12 @@ class Serialize(object):
     def __init__(self, *args, **kwargs):
         self.lf_manager = LifecycleManager(*args, **kwargs)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.lf_manager.close()
+
     def _dispatch(self, method, *args, **kwargs):
         """Method used by the agent to query :py:class:`LifecycleManager`
         methods.
@@ -24,9 +30,15 @@ class Serialize(object):
         return self.lf_manager.info()
 
     @expose
-    def lifecycle(self, xpath, doc=False):
+    def lifecycle(self, xpath, long_description=False):
+        """If long_description is True, return a dict.
+        Otherwise, return lifecycles xpath."""
         lfs = self.lf_manager.lifecycle(xpath)
-        return [l.name for l in lfs]
+        if long_description:
+            return [{"name": l.name,
+                     "xpath": l.get_xpath(),
+                     "doc": l.doc()} for l in lfs]
+        return [l.get_xpath() for l in lfs]
 
     @expose
     def state(self, xpath, doc=False):
@@ -104,16 +116,16 @@ class Serialize(object):
         return result
 
     @expose
-    def provide_call(self, xpath, requires=[], path_idx=0):
-        return self.lf_manager.provide_call(xpath, requires, path_idx)
+    def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
+        return self.lf_manager.provide_call(provide_xpath_uri, requires, path_idx)
 
     @expose
     def to_dot(self, lf_name, reachable=False):
         return self.lf_manager.to_dot(lf_name, reachable)
 
     @expose
-    def uri(self, xpath="//"):
-        return self.lf_manager.uri(xpath)
+    def uri(self, xpath="//", relative=False):
+        return self.lf_manager.uri(xpath, relative=relative)
 
     @expose
     def xpath(self, xpath):

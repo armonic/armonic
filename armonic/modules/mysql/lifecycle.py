@@ -3,7 +3,7 @@ import time
 import MySQLdb
 
 from armonic.lifecycle import State, Transition, Lifecycle, MetaState
-from armonic.require import Require, RequireExternal, RequireUser, RequireLocal
+from armonic.require import Require, RequireExternal, RequireLocal
 from armonic.variable import VString, Port, Password, VInt, VUrl
 from armonic.configuration_augeas import XpathNotInFile
 from armonic.process import ProcessThread
@@ -62,7 +62,7 @@ class SetRootPassword(State):
 
     @Require('auth', [VString("password", default="root")])
     def enter(self, requires):
-        pwd = self.requires.auth.variables().password.value  # password.value
+        pwd = requires.auth.variables().password.value  # password.value
         thread_mysqld = ProcessThread("mysql",
                                       None,
                                       "test",
@@ -203,9 +203,10 @@ class Active(MetaState):
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @Require('data', [VString('user'),
                       VString('password'),
                       VString('database')])
@@ -227,9 +228,10 @@ class Active(MetaState):
         # return [d[0] for d in rows]
         return {}
 
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('user'), Password('password')])
+    @Require('auth',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @Require('data', [VString('database')])
     def rmDatabase(self, user, password, database):
         con = MySQLdb.connect('localhost', user,
@@ -238,9 +240,9 @@ class Active(MetaState):
         cur.execute("DROP DATABASE %s;" % database)
         return True
 
-    @Require('auth', [VString('user'), VString('password')])
-    @Require('user', [VString('username'), VString('userpassword')])
-    def addUser(self, requires):
+    #@Require('auth', [VString('user'), VString('password')])
+    #@Require('user', [VString('username'), VString('userpassword')])
+    def addUser(self, user, password, newUser, userPassword):
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;" % (newUser, userPassword)
@@ -280,9 +282,10 @@ class ActiveAsSlave(MetaState):
     # would have a get_file_in_local method to proceed to downloading.
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
-    @RequireUser('auth_root',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth_root',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @RequireExternal('dump', xpath='//Mysql//get_dump',
                      provide_ret=[VUrl('fileUrl'),
                                   VString('logFile'),
@@ -322,9 +325,10 @@ class ActiveAsSlave(MetaState):
                 logPosition))
         cur.execute("slave start;")
 
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth_root',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     def slave_status(self, requires):
         root_user = "root"
         root_password = requires.get('auth').variables().get('root_password').value
@@ -366,9 +370,10 @@ class ActiveAsMaster(MetaState):
 
     @Require('slave_id', [VString('user', default='replication'),
                           VString('password', default='password')])
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     def add_slave_auth(self, requires):
         root_user = "root"
         root_password = requires.get('auth').variables().get('root_password').value
@@ -380,9 +385,10 @@ class ActiveAsMaster(MetaState):
         cur.execute("GRANT REPLICATION SLAVE ON *.* TO '%s'@'%%' IDENTIFIED BY '%s';" % (slave_user, slave_password))
         cur.execute("FLUSH PRIVILEGES;")
 
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @RequireLocal('share', "//Sharing//get_file_access",
                   provide_ret=[VString("filePath"), VString("fileUrl")])
     def get_dump(self, requires):
@@ -424,9 +430,10 @@ class ActiveAsMaster(MetaState):
 #                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPostion')])
 #        return "/tmp/dump_db.sql"
 
-    @RequireUser('auth',
-                 provided_by="Mysql/SetRootPassword/enter/auth/password",
-                 variables=[Password('root_password')])
+    @Require('auth',
+             variables=[Password(
+                 'root_password',
+                 from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @Require('data', [VString('user'),
                       VString('password'),
                       VString('database')])

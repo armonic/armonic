@@ -8,7 +8,7 @@ from armonic.lifecycle import State, Transition, Lifecycle
 from armonic.require import Require, RequireExternal
 from armonic.variable import VString, Host
 from armonic.states import InstallPackagesUrpm
-from armonic.utils import ethernet_ifs
+from armonic.utils import get_first_ip
 from armonic.process import ProcessThread
 
 
@@ -29,7 +29,7 @@ class Active(State):
     @RequireExternal(
         'nfs',
         "//Nfs_server/Active/get_dir",
-        provide_args=[Host("client", default=ethernet_ifs()[0][1])],
+        provide_args=[Host("client", default=get_first_ip())],
         provide_ret=[VString("remotetarget")])
     @Require('mountpoint', [VString("path")])
 #    @RequireExternal('nfs-start',

@@ -53,18 +53,28 @@ class ClientSocket(object):
         request = {'method': method, 'args': args, 'kwargs': kwargs}
         return self._send_and_receive(request)
 
+    def info(self):
+        return self.call("info")
+        
+    def lifecycle(self, xpath, long_description=False):
+        return self.call("lifecycle", xpath, long_description)
+
     def provide_call_requires(self, xpath):
         return self.call("provide_call_requires", provide_xpath_uri=xpath)
 
-    def provide_call(self, xpath, requires, provide_args):
-        return self.call("provide_call", 
-                         xpath=xpath, 
-                         requires=requires, 
-                         provide_args=provide_args)
-        
-    def uri(self, xpath):
-        return self.call("uri", 
-                         xpath=xpath)
+    def provide_call(self, provide_xpath_uri, requires):
+        return self.call("provide_call",
+                         provide_xpath_uri=provide_xpath_uri,
+                         requires=requires)
+
+    def provide_call_validate(self, provide_xpath_uri, requires):
+        return self.call("provide_call_validate",
+                         provide_xpath_uri=provide_xpath_uri,
+                         requires=requires)
+
+    def uri(self, xpath, relative=False):
+        return self.call("uri",
+                         xpath=xpath, relative=relative)
 
     def _receive_string(self):
         packer = struct.Struct("!I?")

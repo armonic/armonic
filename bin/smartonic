@@ -3,11 +3,15 @@ import logging
 import argparse
 
 import readline
+from itertools import repeat
 
 from armonic.serialize import Serialize
-from armonic.client.iter_smart import Provide, walk
+from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
+from pprint import pprint
+
+logger = logging.getLogger()
 
 def user_input_confirm(msg, prefix=''):
     """Ask the user if he confirm the msg question.
@@ -26,7 +30,7 @@ def user_input_choose_amongst(choices, prefix=''):
     while True:
         print "%sYou must choose a provide amongst:" % prefix
         for i, c in enumerate(choices) :
-            print "  %s%d) %s" % (prefix, i, c)
+            print "- %s%d) %s" % (prefix, i, c)
         answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices)-1))
         try:
             return choices[int(answer)]
@@ -60,39 +64,68 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        verbosity = logging.DEBUG
     else:
-        logging.basicConfig(level=logging.INFO)
+        verbosity = logging.INFO
+
+    logging.basicConfig(level=verbosity, 
+                        format = '%(levelname)5s - %(message)s')
 
     if args.host is None:
+        import armonic.common
+        armonic.common.load_lifecycles()
         lfm = Serialize(os_type=OsTypeMBS())
         class MyProvide(Provide):
-            @property
-            def lfm(self):
-                return lfm
-            @property
-            def manage(self):
+            # @lfm.setter
+            # def lfm(self, value):
+            #     return lfm
+            def do_lfm(self):
+                self.lfm = lfm
+                return False
+                
+            def on_manage(self, data):
                 return True
-            @property
-            def call(self):
+
+            def do_call(self):
                 return False
 
 
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
         from armonic.client.sock import ClientSocket
-        lfm = ClientSocket(host=args.host)
+
+        # To have colorized agent log
+        import sys
+        import termcolor
+        class ColorFormatter(logging.Formatter):
+            def format(self,record):
+                ret = logging.Formatter.format(self, record)
+                return termcolor.colored(ret, 'blue')
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(verbosity)
+        format = '%(levelname)5s %(ip)15s - %(message)s'
+        handler.setFormatter(ColorFormatter(format))
+
+
+        lfm = ClientSocket(host=args.host, handlers=[handler])
         class MyProvide(Provide):
-            pass
+            def on_lfm(self, host):
+                self.host = host
+                self.lfm = ClientSocket(host=host, handlers=[handler])
+                
         root_provide = MyProvide(generic_xpath=args.xpath)
         root_provide.lfm = lfm
             
         
 
-    generator = walk(root_provide)
+    generator = smart_call(root_provide)
     
     # Data sent to the generator
     data = None
+
+    def indent(depth, msg=""):
+        prefix = "".join(repeat("  ", depth))
+        return prefix+msg
 
     while True:
         try:
@@ -104,40 +137,65 @@ if __name__ == "__main__":
         except StopIteration:
             break
         if provide.tree_id == None:
-            print provide.generic_xpath
-        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
-                               provide.step.ljust(16), provide.tree_id)
+            pass
+#        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
+#                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
-            data = user_input_confirm("Manage %s [Y/n]? " % provide.generic_xpath)
+            data = user_input_confirm(indent(provide.depth,
+                                             "Do you want to configure and call '%s' [Y/n]? " % provide.generic_xpath))
 
         elif provide.step == "lfm":
-            msg = "Choose a location"
+            msg = "You have to set a location:"
             if provide.has_requirer():
                 prefill = provide.requirer.lfm._host
             else:
                 prefill = ""
-            host = user_input_variable(variable_name = "location", message = msg, prefill=prefill)
-            data = ClientSocket(host=host['location'])
+            host = user_input_variable(variable_name = "location", message = msg, prefix = indent(provide.depth), prefill=prefill)
+            data = host['location']
             
         elif provide.step == "specialize":
-            data = user_input_choose_amongst(args, "")
+            data = user_input_choose_amongst(args, prefix=indent(provide.depth))
 
         elif provide.step == "set_dependancies":
             pass
 
+                
+        elif provide.step == "validation":
+            if provide.variables() != []:
+                print indent(provide.depth, "Variables are:")
+                for v in provide.variables():
+                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath))
+
+                print indent(provide.depth, "Variables scope is:")
+                for v in provide.variables_scope():
+                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath))
+
+                for v in provide.variables():
+                    if v.value is None:
+                        if v.from_xpath is not None:
+                            print v.from_xpath
+                        ret = user_input_variable(variable_name=v.name, message=indent(provide.depth, "Fill it:"))
+                        v.value = ret[v.name]
+
+                logger.debug("Serialized variables:")
+                for v in provide.variables_serialized():
+                    logger.debug("\t%s" % str(v))
+            
+                    
+
         elif provide.step == "multiplicity":
             require = args
             while True:
-                answer = raw_input("How many time to call %s? " % require.provide_xpath)
+                answer = raw_input(indent(provide.depth, "How many time to call %s? " % require.provide_xpath))
                 try:
                     answer = int(answer)
                     break
                 except Exception as e:
                     print e
-                    print "Invalid choice. Do it again!"
+                    print indent(provide.depth, "Invalid choice. Do it again!")
             data = answer
 
         elif provide.step == "call":
-            data = user_input_confirm("Call %s [Y/n]?" % provide.generic_xpath)
+            data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
 

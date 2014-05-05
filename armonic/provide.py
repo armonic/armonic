@@ -1,13 +1,16 @@
 import logging
+import itertools
+from time import time
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
-from armonic.xml_register import XmlRegister
+from armonic.xml_register import XMLRegistery, XMLRessource
 
 
+XMLRegistery = XMLRegistery()
 logger = logging.getLogger(__name__)
 
 
-class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
+class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     """Basically, this describes the method of a :class:`armonic.lifecycle.State`.
 
     It contains the list of :class:`armonic.require.Require` needed to call the method.
@@ -16,11 +19,16 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
     :param requires: list of requires
     :param flags: flags to be propagated
     """
+    _persist = True
+
     def __init__(self, name=None, requires=[], flags={}, **extra):
+        IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
-        IterContainer.__init__(self, *requires)
-        self.flags = flags  # Should not be in Requires ...
+        self.flags = flags
+        # Last caller
+        self.source = None
+        self.history = ProvideHistory()
 
     def __call__(self, func):
         """Used as a method decorator mark state methods as provides.
@@ -34,18 +42,6 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
                 func._provide.append(require)
         return func
 
-    def get_values(self):
-        acc = {}
-        for r in self:
-            acc.update({r.name: r.get_values()})
-        return acc
-
-    def get_default_values(self):
-        acc = {}
-        for r in self:
-            acc.update({r.name: r.get_default_values()})
-        return acc
-
     def _xml_tag(self):
         return self.name
 
@@ -54,6 +50,13 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
 
     def _xml_ressource_name(self):
         return "provide"
+
+    def _persist_primitive(self):
+        return self.history.to_primitive()
+
+    def _persist_load_primitive(self, history):
+        if history is not None:
+            self.history = ProvideHistory(initial_history=history)
 
     def require_by_name(self, require_name):
         """
@@ -64,7 +67,7 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         """
         return self.get(require_name)
 
-    def fill(self, variables_values):
+    def fill(self, requires=[]):
         """Fill the provide with variables values.
 
         :param variables_values: list of tuple (variable_xpath, variable_values)::
@@ -75,14 +78,27 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
         def _filter_values(variables_values):
             # Return only variables for this Provide
             for xpath, values in variables_values:
-                provide_name = XmlRegister.get_ressource(xpath, "provide")
-                require_name = XmlRegister.get_ressource(xpath, "require")
-                if not (provide_name == self.name and self.require_by_name(require_name)):
-                    continue
-                yield (xpath, values)
+                for xpath_abs in XMLRegistery.find_all_elts(xpath):
+                    provide_name = XMLRegistery.get_ressource(xpath_abs, "provide")
+                    if not provide_name == self.name:
+                        continue
+                    require_name = XMLRegistery.get_ressource(xpath_abs, "require")
+                    try:
+                        self.require_by_name(require_name)
+                    except DoesNotExist:
+                        continue
+                    yield (xpath_abs, values)
 
+        if not requires:
+            return
+
+        variables_values = list(_filter_values(requires[0]))
         for require in self:
-            require.fill(_filter_values(variables_values))
+            require.fill(variables_values)
+        try:
+            self.source = requires[1]
+        except IndexError:
+            self.source = None
 
     def validate(self):
         """Validate the provide.
@@ -121,6 +137,24 @@ class Provide(IterContainer, XmlRegister, ExtraInfoMixin):
                 "requires": [r.to_primitive() for r in self],
                 "flags": self.flags}
 
+    def get_values(self):
+        source = self.source
+        if self.source is None:
+            source = {}
+        return [list(itertools.chain(*[r.get_values() for r in self])), source]
+
+    def _clear(self):
+        """Reset variables to default values in all reauires.
+        """
+        for r in self:
+            r._clear()
+
+    def finalize(self):
+        # record call
+        self.history.add_entry(requires=self.get_values())
+        # clear provide
+        self._clear()
+
     def __repr__(self):
         return "<Provide:%s(%s,flags=%s)>" % (self.name,
                                               IterContainer.__repr__(self),
@@ -135,3 +169,24 @@ class Flags(object):
 
     def __call__(self, func):
         return Provide(name=None, requires=[], flags=self.flags)(func)
+
+
+class ProvideHistory(object):
+    """Record provide calls.
+    """
+
+    def __init__(self, initial_history=[]):
+        self._history = initial_history
+
+    def add_entry(self, requires=[]):
+        self._history.append({'timestamp': int(time()),
+                              'requires': requires})
+
+    def to_primitive(self):
+        return self._history
+
+    def last_entry(self):
+        try:
+            return self._history[-1]
+        except IndexError:
+            return None

@@ -13,6 +13,7 @@ import argcomplete
 import json
 
 from armonic.client.sock import ClientSocket
+import armonic.client.utils
 
 import os
 
@@ -30,54 +31,73 @@ def reqList(args):
         acc.update({s[0]:read_string(s[1])})
     return acc
 
+
 def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
-    acc={}
-    if not args: return acc
-    for r in args:
-        a=reqList(r[1:])
-        if r[0] in acc:
-            acc[r[0]].append(a)
-        else: acc.update({r[0]:[a]})
-    return acc
+    if args is None:
+        return []
+        
+    # print args
+    acc = {}
+    # Take 
+    # [[req1, v1:x , v2:x], [req2, ...]]
+    # Transform to
+    # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
+    for a in args:
+        if a[0] in acc:
+            acc[a[0]].append(a[1:])
+        else: acc.update({a[0]:[a[1:]]})
+    ret = acc
+    # print ret
+    
+    # Take
+    # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
+    # Transform to
+    # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
+    acc = {}
+    for req, variables in ret.items():
+        for i in range(0,len(variables)):
+            for k,v in reqList(variables[i]).items():
+                key = req+"/"+k
+                if key in ret:
+                    acc[key].update({i:v})
+                else:
+                    acc[key] = {i:v}
+    ret = acc
+    # print ret
+    
+    # Take
+    # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
+    # Transform to
+    # [(req1/v1 : {0:x}), (req1/v2 : {1:x}), ...]
+    # Moreover, it adds // if needed
+    acc = []
+    for k, v in ret.items():
+        if k.startswith("/"):
+            xpath = k
+        else :
+            xpath = "//"+k
+        acc.append((xpath, v))
+    ret = acc
+    # print ret
+
+    ret = (ret, {'source': None, 'uuid': None})
+    return ret
+
 
 def provide_to_table(provide):
-    x = PrettyTable(["Provide Name","Require name", "Type", "ArgName", "ArgType", "ArgDefault", "Extra"])
-    x.align["Require Name"] = "l"
-    x.padding_width = 1 # One space between column edges and contents (default)
-    x.add_row([provide.name, "", "","","","",""])
-    for r in provide:
-        x.add_row(["", r.name , r.type,"","","",""])
-        for a in r.variables():
-            if r.type == 'user':
-                x.add_row(["", "","",a.name,a.type,a.default,r.provided_by])
-            else:
-                x.add_row(["", "","",a.name,a.type,a.default,""])
-        x.add_row(["", "" , "","","","",""])
-    print x
-
-
-
-def require_to_table(requires):
-    x = PrettyTable(["Require Name","Type","ArgName", "ArgType","ArgDefault","Extra"])
-    x.align["Require Name"] = "l"
-    x.padding_width = 1 # One space between column edges and contents (default)
-    for r in requires:
-        if r.type in ['external', 'local']:
-            x.add_row([r.name, r.type, "", "", "", r.xpath])
+    for r in provide['requires']:
+        print "  Require:    ", "%s type:%s" % (r['name'].ljust(15), r['type'].ljust(15))
+        if r['type'] == 'simple':
+            for a in r['variables_skel']:
+                print "    Variable (args)  : ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
         else:
-            x.add_row([r.name, r.type, "", "", "", ""])
-        if r.type in ['simple', 'user']:
-            variables=r.variables()
-        else:
-            variables=r.provide_args + r.provide_ret
-        for a in variables:
-            if r.type == 'user':
-                x.add_row(["","",a.name,a.type,a.default,r.provided_by])
-            else:
-                x.add_row(["","",a.name,a.type,a.default,""])
-        x.add_row(["" , "","","","",""])
-    print x
+            print "    Provide xpath    :  %s" % r['provide_xpath']
+            for a in r['provide_args']:
+                print "    Variable (args)  : ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
+            for a in r['provide_ret']:
+                print "    Variable (return): ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
+
 
 def state_to_table(state):
     x = PrettyTable(["Property","Value"])
@@ -97,11 +117,15 @@ def dict_to_table(dct):
     print x
 
 def cmd_status(args):
-    pass
+    dict_to_table(client.info())
 
 def cmd_lifecycle(args):
-    for m in client.call('lifecycle', args.xpath):
-        print m
+    if args.long_description:
+        for m in client.lifecycle(args.xpath, long_description=True):
+            dict_to_table(m)
+    else:
+        for m in client.lifecycle(args.xpath):
+            print m
 
 def cmd_xpath(args):
     if args.uri:
@@ -117,9 +141,9 @@ def cmd_state(args):
 
     elif args.requires_list:
         ret=client.call('state_goto_requires', args.xpath)
-        for r in ret:
+        for r in ret['requires']:
             print r['xpath']
-            require_to_table(r['requires'])
+            provide_to_table(r)
     elif args.path:
         pprint.pprint(client.call('state_goto_path', args.xpath))
 
@@ -134,34 +158,45 @@ def cmd_state_current(args):
 def cmd_state_goto(args):
     pprint.pprint(client.call('state_goto', args.xpath, parseArgs(args.require)))
 
-def cmd_dot(args):
-    print client.call('to_dot', args.module)
-
 def cmd_provide(args):
     if args.path:
         ret = client.call('provide_call_path', args.xpath)
         for r in ret:
+            print
             print r['xpath']
+            if r['paths'] == []:
+                print "  can not be reached."
             for i, p in enumerate(r['paths']):
                 print "path %i" % i
                 for a in p:
                     print "  ", "%5s " % a[1], a[0]
         return
-    elif args.args:
-        ret=client.call('provide_call_args', args.xpath)
-        require_to_table(ret)
-        return
-    ret=client.call('provide', args.xpath)
-    for provide in ret:
-        print provide.get_xpath()
-        if args.long_description:
-            provide_to_table(provide)
-            req=client.call('provide_call_requires', xpath=provide.get_xpath())
-            require_to_table(req)
-            print ""
+    else:
+        ret=client.call('provide', args.xpath)
+        for provide in ret:
+            if args.all:
+                print
+                print provide['xpath']
+                req=client.call('provide_call_requires', provide_xpath_uri=provide['xpath'])
+                for p in req:
+                    print "Need: ", p['xpath']
+                    if args.long_description:
+                        provide_to_table(p)
+            else:
+                print provide['xpath']
+                if args.long_description:
+                    provide_to_table(provide)
+
 
 def cmd_provide_call(args):
-    pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require), parseArgs(args.args)))
+    if args.check:
+        ret = client.call('provide_call_validate', args.xpath, parseArgs(args.require))
+        if ret['errors'] is False:
+            print "Requires are valid."
+        else:
+            pprint.pprint(armonic.client.utils.require_validation_error(ret))
+    else:
+        pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require)))
 
 def cmd_plot(args):
     if args.T == 'dot':
@@ -176,53 +211,15 @@ def cmd_plot(args):
         print(client.call('to_xml', args.module))
 
 
-def ModuleCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    ret = client.call('lf_list')
-    return (m for m in ret if m.startswith(prefix))
-
-def StateCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    ret = client.call('state_list',parsed_args.module)
-    return (m for m in ret if m.startswith(prefix))
-
-
-def ProvideCompleter(prefix, parsed_args, **kwargs):
-    try:
-        client = ClientSocket(parsed_args.host, parsed_args.port)
-    except Exception as e:
-        argcomplete.warn("Connection error to armonic agent %e" % e)
-    try :
-        state = parsed_args.state
-    except AttributeError:
-        state = None
-
-    if state:
-        ret=client.call('provide_list', parsed_args.module,state_name=state)
-    else:
-        ret=client.call('provide_list', parsed_args.module)
-    tmp=[]
-    for k in ret.iterkeys():
-        for i in ret[k]:
-          tmp += [i.name]
-    return (m for m in tmp if m.startswith(prefix))
-
-
 parser = argparse.ArgumentParser(
     prog='armonic-client',
-    description=("A simple client to contact a MSS3 agent. "
+    description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
 parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
-parser.add_argument('--host','-H', type=str, default=os.environ.get('MSS_AGENT_HOST', "localhost")
-                    ,help="Mss agent host (default: '%(default)s'). Agent host can also be specified with env variable 'MSS_AGENT_HOST'")
-parser.add_argument('--protocol', type=str,choices=['socket','xmlrpc'], default="socket",help='Protocol (default: %(default)s))')
+parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
+                    ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
+parser.add_argument('--no-remote', action='store_true', default=False,  help="Directly use Armonic module.")
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
@@ -266,18 +263,18 @@ parser_provide = subparsers.add_parser('provide', help='List provides.')
 parser_provide.add_argument('xpath' , type=str, help='a xpath')
 parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
-parser_provide.add_argument('--args','-a',action='store_true',help="Show args of provides")
+parser_provide.add_argument('--all','-a',action='store_true',help="Show all provides required to call the provide")
 
 parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
+parser_provide_call.add_argument('--check','-c',action='store_true',help="Check if requires are valid")
 parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
-parser_provide_call.add_argument('-A',dest="args" , type=str, nargs="*", action='append', help="Specify provide argument. Format is 'arg1:value1 arg2:value2 ...'")
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
-parser_plot.add_argument('module' , type=str, nargs='?', help='a module').completer = ModuleCompleter
+parser_plot.add_argument('module' , type=str, nargs='?', help='a module')
 parser_plot.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
 parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe armonic stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")
 parser_plot.set_defaults(func=cmd_plot)
@@ -286,16 +283,7 @@ parser_plot.set_defaults(func=cmd_plot)
 argcomplete.autocomplete(parser)
 args = parser.parse_args()
 
-if args.protocol == "xmlrpc":
-    from armonic.client_xmlrpc import ClientXMLRPC, XMLRPCError
-    client = ClientXMLRPC(args.host, args.port)
-    try:
-        args.func(args)
-    except XMLRPCError as err:
-        print "%s: %s" % (err.errno, err.error)
-        exit(1)
-
-elif args.protocol == "socket":
+if args.no_remote is False:
     from armonic.client.sock import ClientSocket
     import logging
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
@@ -305,4 +293,10 @@ elif args.protocol == "socket":
     sh.setFormatter(logging.Formatter(format))
     client = ClientSocket(args.host, args.port)
     client.add_logging_handler(sh)
-    args.func(args)
+else:
+    import armonic.serialize
+    import armonic.common
+    armonic.common.load_lifecycles()
+    client = armonic.serialize.Serialize()
+
+args.func(args)

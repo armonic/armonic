@@ -1,6 +1,17 @@
 import os.path
 from setuptools import setup, find_packages
 
+install_requires = [
+    'netifaces',
+    'lxml',
+    'IPy',
+    'MySQL-python',
+    'argcomplete',
+    'prettytable',
+    'nose',
+    'termcolor'
+]
+
 setup(
     name='armonic',
     version='0.1a',
@@ -12,18 +23,10 @@ setup(
     url="http://www.github.com/armonic",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=[
-        'netifaces',
-        'lxml<=2.3',
-        'IPy',
-        'MySQL-python',
-        'argcomplete',
-        'prettytable'
-    ],
+    install_requires=install_requires,
     scripts=[
         os.path.join('bin', 'armonic-agent-socket'),
         os.path.join('bin', 'armonic-cli'),
-        os.path.join('bin', 'armonic-smart'),
         os.path.join('bin', 'smartonic'),
     ],
     license="GPLv2",
@@ -37,5 +40,6 @@ setup(
         'Topic :: System :: Clustering',
         'Topic :: System :: Installation/Setup',
         'Topic :: System :: Software Distribution'
-    ]
+    ],
+    test_suite = 'nose.collector'
 )

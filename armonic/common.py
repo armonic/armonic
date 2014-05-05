@@ -3,10 +3,11 @@ import sys
 import logging
 import logging.handlers
 import traceback
-import itertools
 import copy
 
-from armonic.utils import ethernet_ifs
+from armonic.utils import get_first_ip
+
+VERSION = "0.1"
 
 
 class NetworkFilter(logging.Filter):
@@ -17,10 +18,7 @@ class NetworkFilter(logging.Filter):
 
     Add this filter to a handler via addFilter method."""
     def filter(self, record):
-        try:
-            record.ip = ethernet_ifs()[0][1]
-        except IndexError:
-            record.ip = ""
+        record.ip = get_first_ip()
         return True
 
 
@@ -52,7 +50,7 @@ class XpathFilter(logging.Filter):
 
 logger = logging.getLogger(__name__)
 
-EVENT_LEVELV_NUM = 25
+EVENT_LEVELV_NUM = 15
 logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
 
 
@@ -62,7 +60,7 @@ def event(self, kws):
 logging.Logger.event = event
 
 
-PROCESS_LEVELV_NUM = 24
+PROCESS_LEVELV_NUM = 16
 logging.addLevelName(PROCESS_LEVELV_NUM, "PROCESS")
 
 
@@ -97,32 +95,38 @@ def is_exposed(f):
     return getattr(f, 'exposed', False)
 
 
-def format_input_variables(*variables_values):
-    """Translate ("//xpath/to/variable_name", "value")
-       to ("//xpath/to/variable_name", {0: "value"})
+def format_input_variables(requires=[]):
+    """If the requires format is ([("//xpath/to/variable_name", "value")], X),
+    translate to ([("//xpath/to/variable_name", {0:value})], X)
     """
-    variables_values = list(itertools.chain(*variables_values))
+    if not requires:
+        return requires
+    variables_values = requires[0]
     for index, (variable_xpath, variable_values) in enumerate(variables_values):
         if not type(variable_values) == dict:
             variables_values[index] = (variable_xpath, {0: variable_values})
-    return variables_values
+    if len(requires) == 2:
+        return [variables_values, requires[1]]
+    elif len(requires) == 1:
+        return [variables_values]
 
 
-def load_lifecycles(dir, include_modules=None):
-    """Import Lifecycle modules from dir"""
-    if os.path.exists(os.path.join(dir, '__init__.py')):
-        sys.path.insert(0, dir)
-        for module in os.listdir(dir):
-            if (include_modules is not None
-                    and module not in include_modules):
+def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
+    """Import Lifecycle modules from lifecycle_dir"""
+    if lifecycle_dir is None:
+        lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
+    if os.path.exists(os.path.join(lifecycle_dir, '__init__.py')):
+        sys.path.insert(0, lifecycle_dir)
+        for lifecycle in os.listdir(lifecycle_dir):
+            if lifecycle_includes and lifecycle not in lifecycle_includes:
                 continue
-            if os.path.exists(os.path.join(dir, module, '__init__.py')):
-                logger.debug("Importing lifecycle %s..." % module)
+            if os.path.exists(os.path.join(lifecycle_dir, lifecycle, '__init__.py')):
+                logger.debug("Importing lifecycle %s..." % lifecycle)
                 try:
-                    __import__(module)
-                    logger.info("Imported lifecycle %s" % module)
+                    __import__(lifecycle)
+                    logger.info("Imported lifecycle %s" % lifecycle)
                 except ImportError:
-                    logger.exception("Exception on import lifecycle %s:" % module)
+                    logger.exception("Exception on import lifecycle %s:" % lifecycle)
 
 
 class DoesNotExist(Exception):

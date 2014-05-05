@@ -4,6 +4,9 @@ import platform
 import netifaces
 from IPy import IP
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class OsType(object):
     """Represent an Linux distribution type. :py:meth:`__eq__` is
@@ -65,6 +68,11 @@ class OsTypeDebian(OsType):
         OsType.__init__(self, "debian")
 
 
+class OsTypeArch(OsType):
+    def __init__(self):
+        OsType.__init__(self, "arch")
+
+
 class OsTypeDebianWheezy(OsTypeDebian):
     def __init__(self):
         self.name = 'debian'
@@ -72,8 +80,15 @@ class OsTypeDebianWheezy(OsTypeDebian):
 
 
 def find_distribution():
-    t = platform.linux_distribution()
-    return OsType(t[0], t[1])
+    distname, version, id = platform.linux_distribution()
+    # Try to find unkwown distribs
+    if not distname and not version:
+        distname, version, id = platform.linux_distribution(supported_dists=('arch',))
+    if not distname and not version:
+        raise Exception('OS info not found. Aborting.')
+    os = OsType(distname, version)
+    logger.debug("Running on %s" % os)
+    return os
 
 OS_TYPE = find_distribution()
 
@@ -95,8 +110,11 @@ def ethernet_ifs():
     return ifs
 
 
-def get_ip():
-    return ethernet_ifs()[0][1]
+def get_first_ip():
+    try:
+        return ethernet_ifs()[0][1]
+    except IndexError:
+        return '127.0.0.1'
 
 
 def get_subclasses(c):
@@ -104,3 +122,15 @@ def get_subclasses(c):
     for d in list(subclasses):
         subclasses.extend(get_subclasses(d))
     return subclasses
+
+
+class Singleton(type):
+
+    def __init__(cls, name, bases, dict):
+        super(Singleton, cls).__init__(name, bases, dict)
+        cls.instance = None
+
+    def __call__(cls, *args, **kw):
+        if cls.instance is None:
+            cls.instance = super(Singleton, cls).__call__(*args, **kw)
+        return cls.instance
