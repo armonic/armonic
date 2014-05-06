@@ -120,18 +120,17 @@ def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
         lifecycle_dir = os.path.abspath(lifecycle_dir)
         logger.info("Loading lifecycles in '%s'...", lifecycle_dir)
 
-    if os.path.exists(os.path.join(lifecycle_dir, '__init__.py')):
-        sys.path.insert(0, lifecycle_dir)
-        for lifecycle in os.listdir(lifecycle_dir):
-            if lifecycle_includes and lifecycle not in lifecycle_includes:
-                continue
-            if os.path.exists(os.path.join(lifecycle_dir, lifecycle, '__init__.py')):
-                logger.debug("Importing lifecycle %s..." % lifecycle)
-                try:
-                    __import__(lifecycle)
-                    logger.info("Imported lifecycle %s" % lifecycle)
-                except ImportError:
-                    logger.exception("Exception on import lifecycle %s:" % lifecycle)
+    sys.path.insert(0, lifecycle_dir)
+    for lifecycle in os.listdir(lifecycle_dir):
+        if lifecycle_includes and lifecycle not in lifecycle_includes:
+            continue
+        if os.path.exists(os.path.join(lifecycle_dir, lifecycle, '__init__.py')):
+            logger.debug("Importing lifecycle %s..." % lifecycle)
+            try:
+                __import__(lifecycle)
+                logger.info("Imported lifecycle %s" % lifecycle)
+            except ImportError:
+                logger.exception("Exception on import lifecycle %s:" % lifecycle)
 
 
 class DoesNotExist(Exception):
