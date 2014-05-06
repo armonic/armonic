@@ -138,10 +138,8 @@ if __name__ == "__main__":
         ch.setLevel(logging.DEBUG)
 
     if not args.no_default_lifecycles:
-        logger.info("Loading default lifecycles...")
         armonic.common.load_lifecycles(lifecycle_includes=args.lifecycles_includes)
     for dir in args.lifecycles_dirs:
-        logger.info("Loading lifecycles in '%s'...", dir)
         armonic.common.load_lifecycles(dir, lifecycle_includes=args.lifecycles_includes)
 
     save_state = not args.no_save_state

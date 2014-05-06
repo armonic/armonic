@@ -115,6 +115,11 @@ def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
     """Import Lifecycle modules from lifecycle_dir"""
     if lifecycle_dir is None:
         lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
+        logger.info("Loading default lifecycles...")
+    else:
+        lifecycle_dir = os.path.abspath(lifecycle_dir)
+        logger.info("Loading lifecycles in '%s'...", lifecycle_dir)
+
     if os.path.exists(os.path.join(lifecycle_dir, '__init__.py')):
         sys.path.insert(0, lifecycle_dir)
         for lifecycle in os.listdir(lifecycle_dir):
