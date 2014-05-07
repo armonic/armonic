@@ -3,7 +3,7 @@ import logging
 from armonic.lifecycle import State, MetaState
 from armonic import process
 import armonic.utils
-
+from armonic.process import run
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,7 @@ class InstallPackagesUrpm(State):
                                             "-q",
                                             "%s" % p],
                                            None, None, None, None)
-            thread.start()
-            thread.join()
-            if thread.code == 0:
+            if thread.launch():
                 logger.info("Package '%s' is already installed" % p)
             else:
                 logger.info("Package '%s' is installing..." % p)
@@ -52,9 +50,7 @@ class InstallPackagesUrpm(State):
                                                 "--no-suggests",
                                                 "%s" % p],
                                                None, None, None, None)
-                thread.start()
-                thread.join()
-                if thread.code == 0:
+                if thread.launch():
                     logger.info("Installing of package '%s': done." % p)
                 else:
                     logger.info("Installing of package '%s': failed!" % p)
@@ -70,7 +66,11 @@ class InstallPackagesApt(State):
     """Install packages on the system using ``apt``."""
     packages = []
     """List of packages to install"""
-    supported_os_type = [armonic.utils.OsTypeDebian(), armonic.utils.OsTypeUbuntu()]
+    supported_os_type = [armonic.utils.OsTypeDebian(),
+                         armonic.utils.OsTypeUbuntu()]
+
+    def _is_installed(self, package):
+        return run("/usr/bin/dpkg", ["--status", "%s" % package])
 
     def enter(self):
         pkgs = " ".join(self.packages)
@@ -79,29 +79,15 @@ class InstallPackagesApt(State):
                     self.name,
                     pkgs)
         for p in self.packages:
-            thread = process.ProcessThread("/usr/bin/dpkg", None, "test",
-                                           ["/usr/bin/dpkg",
-                                            "--status",
-                                            "%s" % p],
-                                           None, None, None, None)
-            thread.start()
-            thread.join()
-            if thread.code == 0:
+            if self._is_installed(p):
                 logger.info("package %s is already installed" % p)
             else:
                 logger.info("package %s is installing..." % p)
-                thread = process.ProcessThread("/usr/bin/apt-get",
-                                               None,
-                                               "test",
-                                               ["/usr/bin/apt-get",
-                                                "install",
-                                                "--assume-yes",
-                                                "%s" % p],
-                                               None, None, None,
-                                               {"DEBIAN_FRONTEND": "noninteractive"})
-                thread.start()
-                thread.join()
-                if thread.code == 0:
+
+                if run("/usr/bin/apt-get", ["install",
+                                            "--assume-yes",
+                                            "%s" % p],
+                       env={"DEBIAN_FRONTEND": "noninteractive"}):
                     logger.info("%s.%s apt-get install %s done." %
                                 (self.lf_name, self.name, p))
                 else:
@@ -110,8 +96,25 @@ class InstallPackagesApt(State):
                     raise AptGetInstallError()
 
     def leave(self):
-        logger.info("%s.%-10s: urpme %s" %
-                    (self.lf_name, self.name, " ".join(self.packages)))
+        """Remove specified packages. Be careful, 'purge' option is applied."""
+        if self.packages != []:
+            logger.info("Uninstalling packages (via `apt-get remove`):")
+            for p in self.packages:
+                logger.info("\t%s" % p)
+
+        for p in self.packages:
+            if self._is_installed(p):
+                logger.debug("Uninstalling package %s..." % p)
+                if not run("/usr/bin/apt-get", ["remove",
+                                                "--assume-yes",
+                                                "--purge",
+                                                "%s" % p],
+                           env={"DEBIAN_FRONTEND": "noninteractive"}):
+                    logger.debug("Some errors during "
+                                 "uninstallation of package %s!" % p)
+                    raise AptGetInstallError()
+            else:
+                logger.debug("Package %s is not installed!" % p)
 
 
 class InstallPackages(MetaState):
