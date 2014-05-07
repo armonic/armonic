@@ -116,6 +116,8 @@ if __name__ == "__main__":
     parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
     parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
     parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
+    parser.add_argument('--halt-on-error', default=False, action="store_true", help='Halt agent if a module import occurs (default: %(default)s))')
+
     args = parser.parse_args()
 
     logger = logging.getLogger()
@@ -138,10 +140,15 @@ if __name__ == "__main__":
         ch.setLevel(logging.DEBUG)
 
     if not args.no_default_lifecycles:
-        armonic.common.load_lifecycles(lifecycle_includes=args.lifecycles_includes)
+        armonic.common.load_lifecycles(
+            lifecycle_includes=args.lifecycles_includes,
+            raise_import_error=args.halt_on_error)
     for dir in args.lifecycles_dirs:
-        armonic.common.load_lifecycles(dir, lifecycle_includes=args.lifecycles_includes)
-
+        armonic.common.load_lifecycles(
+            dir,
+            lifecycle_includes=args.lifecycles_includes,
+            raise_import_error=args.halt_on_error)
+        
     save_state = not args.no_save_state
     load_state = not args.no_load_state
 

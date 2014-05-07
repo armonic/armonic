@@ -111,8 +111,13 @@ def format_input_variables(requires=[]):
         return [variables_values]
 
 
-def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
-    """Import Lifecycle modules from lifecycle_dir"""
+def load_lifecycles(lifecycle_dir=None,
+                    lifecycle_includes=[],
+                    raise_import_error=False):
+    """Import Lifecycle modules from lifecycle_dir
+
+    :param raise_import_error: Raise import error if True
+    """
     if lifecycle_dir is None:
         lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
         logger.info("Loading default lifecycles...")
@@ -124,13 +129,18 @@ def load_lifecycles(lifecycle_dir=None, lifecycle_includes=[]):
     for lifecycle in os.listdir(lifecycle_dir):
         if lifecycle_includes and lifecycle not in lifecycle_includes:
             continue
-        if os.path.exists(os.path.join(lifecycle_dir, lifecycle, '__init__.py')):
+        if os.path.exists(os.path.join(lifecycle_dir,
+                                       lifecycle,
+                                       '__init__.py')):
             logger.debug("Importing lifecycle %s..." % lifecycle)
             try:
                 __import__(lifecycle)
                 logger.info("Imported lifecycle %s" % lifecycle)
             except ImportError:
-                logger.exception("Exception on import lifecycle %s:" % lifecycle)
+                logger.exception(
+                    "Exception on import lifecycle %s:" % lifecycle)
+                if raise_import_error:
+                    raise
 
 
 class DoesNotExist(Exception):
