@@ -1,7 +1,7 @@
 import armonic.utils
 from armonic.lifecycle import State
 
-from packages import InstallPackages, InstallPackagesUrpm, InstallPackagesApt
+from packages import InstallPackages, InstallPackagesUrpm, InstallPackagesApt, RepositoriesApt
 from run import RunScript
 from active import ActiveWithSystemV, ActiveWithSystemd
 from templates import CopyTemplates
