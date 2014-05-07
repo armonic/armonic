@@ -30,8 +30,16 @@ Variables
 Utils
 =====
 
+Process
+-------
 .. automodule:: armonic.process
    :members:
+
+Augeas
+------
+.. automodule:: armonic.configuration_augeas
+   :members:
+
 
 
 Clients
