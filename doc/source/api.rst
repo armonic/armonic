@@ -27,6 +27,12 @@ Variables
 .. automodule:: armonic.variable
    :members:
 
+Utils
+=====
+
+.. automodule:: armonic.process
+   :members:
+
 
 Clients
 =======
