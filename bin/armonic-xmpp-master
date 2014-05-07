@@ -128,16 +128,17 @@ class Master(ClientXMPP):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='scheduler')
     parser.add_argument('--host',
-                        required=True, type=str,
+                        type=str,
+                        default="im.aeolus.org",
                         help="XMPP server host")
     parser.add_argument('--port',
                         default=5222, type=int,
                         help="XMPP server port (default '%(default)s')")
     parser.add_argument('--jid', '-j',
-                        default='test1@im.aeolus.org', type=str,
+                        default='mss-master@im.aeolus.org', type=str,
                         help="Jid (default '%(default)s')")
     parser.add_argument('--password', '-p',
-                        default='test1', type=str,
+                        default='mss-master', type=str,
                         help="Password (default '%(default)s')")
     parser.add_argument('--input-event-file', '-i',
                         default='-', type=argparse.FileType('r', 0),
