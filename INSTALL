@@ -9,6 +9,7 @@ apt-get install -y python-netifaces
 apt-get install -y python-prettytable
 apt-get install -y python-nose
 apt-get install -y python-augeas
+apt-get install -y python-dev
 
 python setup.py install
 
