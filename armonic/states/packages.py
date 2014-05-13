@@ -197,3 +197,5 @@ class RepositoriesApt(State):
             else:
                 logger.warning("Key %s could not be added!" % key)
                 raise Exception("Key %s has not been added" % key)
+
+        run("/usr/bin/apt-get", ["update"])
