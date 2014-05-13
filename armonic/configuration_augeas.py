@@ -233,8 +233,8 @@ class Node(BaseNode):
         return self.xpath_access()
 
     def children(self):
-        """ Redefine it to control children order.
-        This must be an array of Node class.
+        """To control children order.
+        Must return an array of :class:`Node` classes.
         """
         return None
 
@@ -368,7 +368,7 @@ class Nodes(BaseNode, list):
 
     def append(self, elt):
         """To append a elt of type Node to this :py:class:`Nodes`.
-            :py:class:`Node` elt must be """
+        Be careful, outer node must have been append before inner node."""
         elt.setAugeasParameters(augeas=self.augeas,
                                 baseXpath=self.baseXpath,
                                 index=len(self) + 1,
@@ -396,6 +396,15 @@ def BuildNode(cls, label):
 
 
 def Child(cls, **kwargs):
+    """A helper to build Node. kwargs are attribute of :class:Node
+    class. For instance, to build a node corresponding to the port
+    element of mysql configuration file::
+
+       Child("Port", baseXpath='//target[. = "mysqld"]', label="port")
+
+    :param cls: a str or a class which will be used as base class.
+
+    """
     if type(cls) == str:
         return type(cls, (Node,), kwargs)
     else:
@@ -405,15 +414,26 @@ def Child(cls, **kwargs):
 class Configuration(object):
     """This class manages configuration elements (nodes) via augeas.
 
-    To create a new :class:`Configuration`, lenses attributes must
-    be specified. lenses attribute is a dict composed by a lensName
-    and configuration files which has to be parsed by this lens.
-    [{lensName : [lensFile,...]},
-    {lensName : [lensFiles,...]}, ...  ]
+    To create a new :class:`Configuration`, you have to
+
+    * specify :attr:`lenses` attributes
+    * add attributes which inherits from :class:`BaseNode`
+
+    To build Node attribute, you can use :func:`Child`
 
     """
     _nodes = []
     _augeasInstance = None
+
+    lenses = {}
+    """Lenses attribute is a dict where keys are lensName
+    and values are configuration files associated to this keys::
+
+        {lensName : [file1, file2],
+         lensName : [lensFiles,...]
+        }
+
+    """
 
     def __init__(self, augeas_root="/", autoload=False):
         """augeas_root parameter permits to specify the root of configuration
@@ -482,9 +502,12 @@ class Configuration(object):
         except IOError:
             errors = self._augeasInstance.match("/augeas//error/*")
             acc = []
+            logger.warning("Error augeas save")
             for e in errors:
-                acc.append(self._augeasInstance.get(e))
-            logger.warning("Error augeas save :" + str(acc))
+                tmp = self._augeasInstance.get(e)
+                acc.append(tmp)
+                for line in tmp.split("\n"):
+                    logger.warning(line)
             raise AugeasSaveError(acc)
 
     def listNodes(self):

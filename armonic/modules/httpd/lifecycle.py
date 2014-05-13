@@ -38,7 +38,7 @@ class Configured(State):
 
     @Require('http_document',
              [VString("httpdDocumentRoot",
-                      default='/var/www/wordpress')])
+                      default='/var/www/')])
     def get_documentRoot(self, requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value

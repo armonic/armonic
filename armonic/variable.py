@@ -71,7 +71,7 @@ class Variable(XMLRessource, ExtraInfoMixin):
 
     def _validate_type(self, value):
         self.error = None
-        if value is None:
+        if value is None and self.required:
             self.error = "%s is required" % self.name
             raise ValidationError(variable_name=self.name,
                                   msg="%s value can't be None" % self.name)
