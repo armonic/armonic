@@ -187,7 +187,7 @@ if __name__ == "__main__":
         elif provide.step == "multiplicity":
             require = args
             while True:
-                answer = raw_input(indent(provide.depth, "How many time to call %s? " % require.provide_xpath))
+                answer = raw_input(indent(provide.depth, "How many time to call %s? " % require.skel.provide_xpath))
                 try:
                     answer = int(answer)
                     break
