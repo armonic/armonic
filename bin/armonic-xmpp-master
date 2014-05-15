@@ -60,7 +60,7 @@ class Master(ClientXMPP):
                     tags += p['tags'][0]
                 except IndexError:
                     pass
-                tags = ",".join(p['tags'][1:])
+                tags += ",".join(p['tags'][1:])
                 
             form.add_item(OrderedDict({
                 "xpath": p['xpath'],
