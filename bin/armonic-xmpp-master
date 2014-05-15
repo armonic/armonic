@@ -56,7 +56,7 @@ class Master(ClientXMPP):
         for p in self.lfm.provide("//*"):
             form.add_item(OrderedDict({
                 "xpath": p['xpath'],
-                "tag": ":tag1,tag2",
+                "tag": "tag1,tag2",
                 "label": "My Provide",
                 "help": "To install Wordpress"}))
 
