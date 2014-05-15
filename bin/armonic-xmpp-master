@@ -58,10 +58,9 @@ class Master(ClientXMPP):
             if p['tags'] is not None:
                 try:
                     tags += p['tags'][0]
-                except KeyError:
+                except IndexError:
                     pass
-                for t in p['tags'][1:]:
-                    tags += "," + t
+                tags = ",".join(p['tags'][1:])
                 
             form.add_item(OrderedDict({
                 "xpath": p['xpath'],
