@@ -54,11 +54,20 @@ class Master(ClientXMPP):
         form.add_reported("help")
 
         for p in self.lfm.provide("//*"):
+            tags = ""
+            if p['tags'] is not None:
+                try:
+                    tags += p['tags'][0]
+                except KeyError:
+                    pass
+                for t in p['tags'][1:]:
+                    tags += "," + t
+                
             form.add_item(OrderedDict({
                 "xpath": p['xpath'],
-                "tag": "tag1,tag2",
-                "label": "My Provide",
-                "help": "To install Wordpress"}))
+                "tag": tags,
+                "label": p['label'],
+                "help": p['help']}))
 
         session['payload'] = form
         session['next'] = None  # self._handle_command_init_walk
