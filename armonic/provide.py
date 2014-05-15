@@ -11,32 +11,49 @@ logger = logging.getLogger(__name__)
 
 
 class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
-    """Basically, this describes the method of a :class:`armonic.lifecycle.State`.
+    """Basically, this describes the method of a
+    :class:`armonic.lifecycle.State`.
 
-    It contains the list of :class:`armonic.require.Require` needed to call the method.
+    It contains the list of :class:`armonic.require.Require` needed to
+    call the method.
 
     :param name: name of the method
     :param requires: list of requires
     :param flags: flags to be propagated
+    :param tags: a list of tags where tags are strings
+    :type tags: list
+    :param label: a human readable short description
+    :param help: a long help message
     """
     _persist = True
 
-    def __init__(self, name=None, requires=[], flags={}, **extra):
+    def __init__(self, name=None, requires=[], flags={},
+                 tags=None, help=None, label=None, **extra):
         IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         self.flags = flags
+        self.tags = tags
+        self.help = help
+        self.label = label
+
         # Last caller
         self.source = None
         self.history = ProvideHistory()
 
     def __call__(self, func):
         """Used as a method decorator mark state methods as provides.
+
+        TODO: Check if provide properties (name, label, help, ...) are
+        defined several times.
         """
         if not hasattr(func, '_provide'):
             func._provide = self
         func._provide.name = func.__name__
         func._provide.flags.update(self.flags)
+        func._provide.tags = self.tags
+        func._provide.help = self.help
+        func._provide.label = self.label
         for require in self:
             if not require in func._provide:
                 func._provide.append(require)
@@ -134,6 +151,9 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         """
         return {"name": self.name,
                 "xpath": self.get_xpath_relative(),
+                "help": self.help,
+                "tags": self.tags,
+                "label": self.label,
                 "requires": [r.to_primitive() for r in self],
                 "flags": self.flags}
 
