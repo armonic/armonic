@@ -534,11 +534,22 @@ class Provide(object):
         """Return the list of xpaths that matched the generic_xpath"""
         return self.lfm.uri(xpath=self.generic_xpath, relative=True)
 
-    def specialize(self, xpath):
-        """Used to specialize the generic_xpath"""
+    def on_specialize(self, xpath):
+        """Used to specialize the generic_xpath. You must define
+        self.specialized_xpath."""
         self.specialized_xpath = xpath
 
+    def do_specialize(self):
+        """Specialization can not be avoided. If the provide matches only 1
+        xpath, yield doesn't occurs if this method returns False.
+
+        Thus, by returning True, specialization always yields.
+
+        """
+        return False
+
     def update_scope_provide_ret(self, provide_ret):
+
         """When the provide call returns value, we habve to update the scope
         of the require in order to be able to use these value to fill
         depending provides.
@@ -631,14 +642,14 @@ def smart_call(root_provide):
             elif scope.step == "specialize":
                 m = scope.matches()
                 logger.debug("Specialize matches: %s" % m)
-                if len(m) > 1:
+                if len(m) > 1 or scope.do_specialize():
                     specialized = yield(scope, scope.step, m)
                 elif len(m) == 1:
                     specialized = m[0]
                 else:
                     raise Exception(
                         "Xpath '%s' matches nothing!" % scope.generic_xpath)
-                scope.specialize(specialized)
+                scope.on_specialize(specialized)
                 scope._next_step()
 
             elif scope.step == "multiplicity":
