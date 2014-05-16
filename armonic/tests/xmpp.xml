@@ -30,16 +30,16 @@
 </iq>
 
 
-<!-- BUILD -->
+
+<!-- ------------------------- -->
+<!-- To try a build of Varnish -->
+<!-- ------------------------- -->
+
 <iq type='set' to='mss-master@im.aeolus.org/master' id='exec1'>
   <command xmlns='http://jabber.org/protocol/commands'
            node='build'
            action='execute'/>
 </iq>
-
-
-
-
 
 <iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
   <command xmlns='http://jabber.org/protocol/commands'
@@ -55,8 +55,36 @@
 </iq>
 
 
+<!-- To continue with Varnish -->
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="next">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field type='list-single' var='xpath'>
+        <value>Varnish/Active/start</value>
+      </field>
+    </x>
+  </command>
+</iq>
+
+<!-- Or to dont manage it -->
+<iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
+  <command xmlns='http://jabber.org/protocol/commands'
+	   sessionid='session_id_pour_test'
+           node='build'
+	   action="next">
+    <x xmlns='jabber:x:data' type='submit'>
+      <field type='list-single' var='xpath'>
+        <value>None</value>
+      </field>
+    </x>
+  </command>
+</iq>
 
 
+<!-- If we continue, set its multiplicity -->
 <iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
   <command xmlns='http://jabber.org/protocol/commands'
 	   sessionid='session_id_pour_test'
@@ -70,7 +98,7 @@
   </command>
 </iq>
 
-
+<!-- Continue ... -->
 <iq type='set' to='mss-master@im.aeolus.org/master' id='exec2'>
   <command xmlns='http://jabber.org/protocol/commands'
 	   sessionid='session_id_pour_test'

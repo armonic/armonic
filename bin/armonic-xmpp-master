@@ -15,6 +15,8 @@ from armonic.utils import OsTypeMBS
 armonic.common.load_lifecycles()
 lfm = Serialize(os_type=OsTypeMBS())
 
+DONT_MANAGE = "None"
+"""Describe the value passed to not manage a provide"""
 
 class MyProvide(Provide):
     def do_lfm(self):
@@ -24,6 +26,20 @@ class MyProvide(Provide):
     def do_call(self):
         return False
 
+    def do_manage(self):
+        self.manage = True
+        return False
+
+    def do_specialize(self):
+        return True
+
+    def on_specialize(self, data):
+        """At specialization step, we also want to stop the managmenet of this
+        provide."""
+        if data == DONT_MANAGE:
+            self.manage = False
+        else:
+            self.specialized_xpath = data
 
 class Master(ClientXMPP):
 
@@ -93,11 +109,11 @@ class Master(ClientXMPP):
             self.root_provide = MyProvide(generic_xpath=xpath)
             self.smart = smart_call(self.root_provide)
 
-        if self.current_step == "manage":
-            provide, step, args = self.smart.send(True)
-        elif self.current_step == "specialize":
+        #if self.current_step == "manage":
+        #    provide, step, args = self.smart.send(True)
+        if self.current_step == "specialize":
             provide, step, args = self.smart.send(
-                payload['values']["specialize"])
+                payload['values']["xpath"])
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(1)
         else:
@@ -118,8 +134,8 @@ class Master(ClientXMPP):
         if step == 'specialize':
             form.add_field(var="specialize",
                            ftype="list-single",
-                           desc="specialize the provide",
-                           options=provide.matches())
+                           desc="specialize the provide or disable it",
+                           options=[DONT_MANAGE] + provide.matches())
 
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
