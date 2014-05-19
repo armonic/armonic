@@ -563,7 +563,9 @@ class Provide(object):
 
     def matches(self):
         """Return the list of xpaths that matched the generic_xpath"""
-        return self.lfm.uri(xpath=self.generic_xpath, relative=True)
+        return self.lfm.uri(xpath=self.generic_xpath,
+                            relative=True,
+                            resource="provide")
 
     def on_specialize(self, xpath):
         """Used to specialize the generic_xpath. You must define

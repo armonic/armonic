@@ -69,6 +69,8 @@ class XMLRessource(PersistRessource):
 
 class XMLRegistery(object):
     """Represent a LifecycleManager in XML.
+
+    This is a singleton.
     """
     _instance = None
     _xml_root_tree = None

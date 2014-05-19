@@ -72,9 +72,11 @@ class ClientSocket(object):
                          provide_xpath_uri=provide_xpath_uri,
                          requires=requires)
 
-    def uri(self, xpath, relative=False):
+    def uri(self, xpath, relative=False, resource=None):
         return self.call("uri",
-                         xpath=xpath, relative=relative)
+                         xpath=xpath,
+                         relative=relative,
+                         resource=resource)
 
     def state(self, xpath, doc=False):
         return self.call("state", xpath=xpath, doc=doc)

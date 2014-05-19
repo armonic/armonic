@@ -1160,12 +1160,14 @@ class LifecycleManager(XMLRessource):
         :rtype: dict"""
         return self.lifecycle_by_name(lf_name).to_primitive(reachable=reachable)
 
-    def uri(self, xpath="//", relative=False):
+    def uri(self, xpath="//", relative=False, resource=None):
         """Return the list of xpath_uris that match this xpath.
 
         :param xpath: an xpath string
         :type xpath: str
-
+        :param relative: If true, returns relative xpath
+        :param resource: Returns only xpath that describe this resource type
+        :type resource
         :return: list of xpaths
         :rtype: [xpath_uri]"""
         ret = XMLRegistery.find_all_elts(xpath)
@@ -1173,7 +1175,9 @@ class LifecycleManager(XMLRessource):
             acc = []
             for x in ret:
                 try:
-                    acc.append(x.split("/",2)[2])
+                    if (resource is None or
+                            XMLRegistery.is_ressource(x, resource)):
+                        acc.append(x.split("/", 2)[2])
                 except IndexError:
                     pass
             return acc
