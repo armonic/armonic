@@ -1170,7 +1170,13 @@ class LifecycleManager(XMLRessource):
         :rtype: [xpath_uri]"""
         ret = XMLRegistery.find_all_elts(xpath)
         if relative:
-            return [x.split("/",2)[2] for x in ret]
+            acc = []
+            for x in ret:
+                try:
+                    acc.append(x.split("/",2)[2])
+                except IndexError:
+                    pass
+            return acc
         else:
             return ret
 
