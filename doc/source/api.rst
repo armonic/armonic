@@ -49,9 +49,7 @@ Smart
 -----
 
 .. automodule:: armonic.client.smart
-
-.. autoclass:: armonic.client.smart.Provide
-   :members: 
+   :members: Provide, smart_call
 
 
 
