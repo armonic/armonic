@@ -6,6 +6,37 @@
 * specify variable value,
 * ...
 
+To use this module, you have to create a
+:py:class:`armonic.client.smart.Provide`, and call
+:py:func:`armonic.client.smart.smart_call`. In the following, the
+classical code to use this library.
+
+First, we define by inheritance global behavior of provides. In this
+example, we want to 'manage' all provides::
+
+    from armonic.client.smart import Provide, smart_call
+
+    class MyProvide(Provide):
+        def on_manage(self, data):
+            return True
+
+
+Then, we can build a provide from this classe and call smart_call on
+it which returns a generator. We use this generator to walk on provides::
+
+    my_provide = MyProvide("//a/xpath)
+    generator = smart_call(my_provide)
+    data = None
+    while True:
+        provide, step, args = generator.send(data)
+        data = None
+
+        if step == "manage":
+            print "Provide %s is managed!" % provide.generic_xpath
+        elif step == "specialize":
+            # Do others stuffs on specialize step
+            # ...
+        elif step == ....
 
 """
 
@@ -45,7 +76,7 @@ class Variable(object):
             from_xpath=self.from_xpath,
             default=self.default,
             value=self._value)
-        
+
         # All variable are added to a global list
         self.from_require.from_provide.Variables.append(var)
 
@@ -435,11 +466,11 @@ class Provide(object):
     def has_requirer(self):
         """To know if it is the root provide."""
         return self.requirer is not None
- 
+
     @property
     def step(self):
         return Provide.STEPS[self._step_current]
-        
+
     def _next_step(self):
         if self._step_current+1 > len(Provide.STEPS)-1:
             raise IndexError
@@ -462,21 +493,21 @@ class Provide(object):
                     requires.append()
                     self.requires.append(requires)
                 idx += 1
-                
+
     def _build_requires(self):
         """Get all requires"""
         provides = self.lfm.provide_call_requires(self.specialized_xpath)
         self._build_require_from_call_require(provides)
-                    
+
     def _requirator(self):
         """Be careful, this function always returns the same generator."""
         def c():
             for r in self.remotes:
                 yield r
-        
+
         if self._children_generator is None:
             self._children_generator = c()
-           
+
         return self._children_generator
 
     def build_child(self, generic_xpath, child_num, require):
@@ -566,7 +597,7 @@ class Provide(object):
         if ret['errors']:
             import pprint
             print "Variables used are"
-            pprint.pprint(self.Variables) 
+            pprint.pprint(self.Variables)
             print "Variable not validated"
             pprint.pprint(ret)
             print "Error: Variables are not been validated!"
@@ -683,7 +714,7 @@ def smart_call(root_provide):
                     # manage_dependancies step is done
                     if scope._current_require is None:
                         scope._next_step()
-                       
+
                 else:
                     done = True
                     for r in scope._current_require:
@@ -696,4 +727,3 @@ def smart_call(root_provide):
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()
-
