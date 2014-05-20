@@ -398,16 +398,19 @@ class Provide(object):
         # This dict contains variables that belongs to this scope.
         self._scope_variables = {}
 
-        if requirer is not None:
+        # If this provide is the Root provide
+        # We initialize depth and tree_id
+        #
+        # NOTE: depth could be deduce from tree_id: depth = len(tree_id)
+        if requirer is None:
+            self.depth = 0
+            self.tree_id = [0]
+        else:
             self.depth = requirer.depth + 1
             self.tree_id = []
             for i in requirer.tree_id:
                 self.tree_id.append(i)
             self.tree_id.append(child_num)
-
-        else:
-            self.depth = 0
-            self.tree_id = [0]
 
         #self.ignore = False
         self._step_current = 0
@@ -481,18 +484,27 @@ class Provide(object):
         self.remotes = []
         self.requires = []
         idx = 0
+
+        # Here, a not really clean hack to order requires.
+        # We begin with 'remote' requires because to give to them
+        # first child indexes.
         for p in dct_json:
             special = p['name'] in ['enter', 'leave', 'cross']
             for require in p['requires']:
                 if require['type'] in ['external', 'local']:
                     self.remotes.append(Requires(Remote.from_json(
                         require, special=special, child_num=idx, from_provide=self)))
-                elif require['type'] in ['simple']:
+                    idx += 1
+        # Then, we give last indexes to simple requires.
+        for p in dct_json:
+            special = p['name'] in ['enter', 'leave', 'cross']
+            for require in p['requires']:
+                if require['type'] in ['simple']:
                     requires = Requires(Require.from_json(
                         require, special=special, child_num=idx, from_provide=self))
                     requires.append()
                     self.requires.append(requires)
-                idx += 1
+                    idx += 1
 
     def _build_requires(self):
         """Get all requires"""
