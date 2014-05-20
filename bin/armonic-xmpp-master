@@ -136,11 +136,16 @@ class Master(ClientXMPP):
                            ftype="list-single",
                            desc="specialize the provide or disable it",
                            options=[DONT_MANAGE] + provide.matches())
-
+        
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
         session['id'] = "session_id_pour_test"
+
+        # If the root provide step is done, this is the last answer.
+        if step == 'done' and provide == self.root_provide:
+            session['next'] = None
+            session['has_next'] = False
 
         return session
 
