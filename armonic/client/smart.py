@@ -139,7 +139,7 @@ class Variable(object):
 
         if self.from_xpath is None:
             for v in scope:
-                if self.name == v.name:
+                if self.name == v.name and self is not v:
                     logger.debug("Variable [%s] resolved by [%s] with value %s" %(
                         self.xpath, v.xpath, v._value))
                     self._resolved_by = v
