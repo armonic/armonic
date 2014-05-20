@@ -36,20 +36,23 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
+    @Provide(tags=['internal'])
     @Require('http_document',
              [VString("httpdDocumentRoot",
-                      default='/var/www/')])
+              default='/var/www/')])
     def get_documentRoot(self, requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
+    @Provide(label='Set Apache listen port',
+             tags=['expert', 'webserver', 'apache'])
     @Require('conf', [Port("port")])
     # flags={'restart':True})
     def set_port(self, requires):
         """Set listen and vhost port"""
         self.conf.setPort(requires.conf.variables().port.value)
 
-    @Provide()
+    @Provide(tags=['internal'])
     def get_port(self):
         """Set listen and vhost port"""
         return {"port": self.conf.port.value}

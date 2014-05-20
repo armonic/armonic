@@ -2,6 +2,7 @@ import logging
 import time
 import MySQLdb
 
+from armonic import Provide
 from armonic.lifecycle import State, Transition, Lifecycle, MetaState
 from armonic.require import Require, RequireExternal, RequireLocal
 from armonic.variable import VString, Port, Password, VInt, VUrl
@@ -203,6 +204,8 @@ class Active(MetaState):
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
+    @Provide(label='Create a MySQL database',
+             tags=['database', 'mysql'])
     @Require('auth',
              variables=[Password(
                  'root_password',
@@ -228,6 +231,8 @@ class Active(MetaState):
         # return [d[0] for d in rows]
         return {}
 
+    @Provide(label='Delete a MySQL database',
+             tags=['database', 'mysql'])
     @Require('auth',
              variables=[Password(
                  'root_password',
@@ -325,6 +330,7 @@ class ActiveAsSlave(MetaState):
                 logPosition))
         cur.execute("slave start;")
 
+    @Provide(tags=['internal'])
     @Require('auth_root',
              variables=[Password(
                  'root_password',
@@ -385,6 +391,7 @@ class ActiveAsMaster(MetaState):
         cur.execute("GRANT REPLICATION SLAVE ON *.* TO '%s'@'%%' IDENTIFIED BY '%s';" % (slave_user, slave_password))
         cur.execute("FLUSH PRIVILEGES;")
 
+    @Provide(tags=['internal'])
     @Require('auth',
              variables=[Password(
                  'root_password',
@@ -430,6 +437,8 @@ class ActiveAsMaster(MetaState):
 #                     provide_ret=[VString('filePath'),VString('logFile'), VInt('logPostion')])
 #        return "/tmp/dump_db.sql"
 
+    @Provide(label='Create a database on a MySQL master',
+             tags=['database', 'mysql', 'expert'])
     @Require('auth',
              variables=[Password(
                  'root_password',

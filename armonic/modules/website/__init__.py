@@ -1,4 +1,4 @@
-from armonic import Lifecycle, State, Transition
+from armonic import Lifecycle, State, Transition, Provide
 from armonic.states import InitialState
 from armonic.require import RequireLocal
 from armonic.variable import VString
@@ -26,6 +26,8 @@ class Active(State):
     def enter(self):
         logger.info("Activation of webserver service...")
 
+    @Provide(label="Fake website creation",
+             tags=['demo'])
     @RequireLocal("webserver", "//WebServer//start")
     def start(self, requires):
         logger.info("Start website")

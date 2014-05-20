@@ -71,9 +71,8 @@ class Active(State):
     def leave(self):
         logger.debug("you should call 'apache.leaveActiveState(%s)'" % self.httpdDocumentRoot)
 
-    @Provide(label="Activate a Wordpress website",
-             help="This provide can be used to create and activate a wordpress website.",
-             tags=["web"])
+    @Provide(label="Create a Wordpress",
+             tags=["web", "app"])
     def get_website(self):
         return
 
@@ -97,10 +96,8 @@ class ActiveWithNfs(State):
     def enter(self, requires):
         pass
 
-    @Provide(label="Activate a Wordpress website on a NFS share",
-             help=("This provide can be used to create and activate"
-                   " a wordpress website via a nfs share. See the provide "
-                   "description of this state for more informations."),
+    @Provide(label="Create a Wordpress using an NFS share",
+             help=("Wordpress data will be stored on the NFS share allowing to have multiple instances,"),
              tags=["web", "expert", "nfs"])
     def get_website(self):
         pass

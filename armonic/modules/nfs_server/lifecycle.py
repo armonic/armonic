@@ -2,6 +2,7 @@ import os
 import os.path
 import logging
 
+from armonic import Provide
 from armonic.lifecycle import State, Transition, Lifecycle
 from armonic.require import Require
 from armonic.provide import Flags
@@ -92,6 +93,8 @@ class Installed(InstallPackagesUrpm):
 
 class Configured(State):
 
+    @Provide(label='Add an NFS share',
+             tags=['nfs', 'expert', 'data'])
     @Require("export", variables=[VString("name"), Host("client")])
     @Flags(restart=True)
     def get_dir(self, requires):
@@ -115,6 +118,7 @@ class Active(ActiveWithSystemd):
     # This should be useless because we should call it in state
     # Configuration and the n call start provide. But Zephyrus is
     # currently not able to call two provide...
+    @Provide(tags=['internal'])
     @Require("export", variables=[VString("name"), Host("client")])
     @Flags(restart=True)
     def get_dir(self, requires):

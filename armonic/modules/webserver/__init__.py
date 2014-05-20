@@ -1,7 +1,5 @@
-from armonic import Lifecycle, State, Transition
+from armonic import Lifecycle, State, Transition, Provide, Require
 from armonic.states import InitialState
-from armonic.provide import Provide
-from armonic.require import Require
 from armonic.variable import VString, Port
 
 
@@ -27,6 +25,7 @@ class Configured(State):
         logger.info("Configuration of webserver service...")
         logger.info("Webserver listening on port %d" % port)
 
+    @Provide(tags=['internal'])
     @Require("document_root", variables=[VString("path", default="/var/www/")])
     def create_document_root(self, requires):
         document_root = requires.document_root.variables().path.value
@@ -38,7 +37,8 @@ class Active(State):
     def enter(self):
         logger.info("Activation of webserver service...")
 
-    @Provide()
+    @Provide(label='Fake webserver activation',
+             tags=['demo'])
     def start(self):
         pass
 

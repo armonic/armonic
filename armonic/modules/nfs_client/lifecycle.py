@@ -4,6 +4,7 @@ import os
 import logging
 import time
 
+from armonic import Provide
 from armonic.lifecycle import State, Transition, Lifecycle
 from armonic.require import Require, RequireExternal
 from armonic.variable import VString, Host
@@ -26,6 +27,8 @@ class Installed(InstallPackagesUrpm):
 class Active(State):
     services = ["nfs-utils-clients"]
 
+    @Provide(label="Mount an NFS share",
+            tags=["nfs", "expert", "data"])
     @RequireExternal(
         'nfs',
         "//Nfs_server/Active/get_dir",
