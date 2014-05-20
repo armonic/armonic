@@ -59,6 +59,7 @@ class ActiveWithSystemd(State):
             self.__systemctl("reload")
             logger.info("Restarting services '%s': done." % self.services)
 
+    @Provide()
     def start(self):
         logger.info("Start (via provide) services '%s': done." % self.services)
 
