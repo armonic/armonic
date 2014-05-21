@@ -73,7 +73,7 @@ class Master(ClientXMPP):
             tags = ""
             if p['tags'] is not None:
                 tags = ",".join(p['tags'])
-                
+
             form.add_item(OrderedDict({
                 "xpath": p['xpath'],
                 "tag": tags,
@@ -112,8 +112,8 @@ class Master(ClientXMPP):
         #if self.current_step == "manage":
         #    provide, step, args = self.smart.send(True)
         if self.current_step == "specialize":
-            provide, step, args = self.smart.send(
-                payload['values']["xpath"])
+            provide, step, args = self.smart.send(payload['values']["xpath"])
+
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(1)
         else:
@@ -121,6 +121,7 @@ class Master(ClientXMPP):
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step
+
         print "Current step is now %s" % step
 
         form['instructions'] = step
@@ -136,7 +137,15 @@ class Master(ClientXMPP):
                            ftype="list-single",
                            desc="specialize the provide or disable it",
                            options=[DONT_MANAGE] + provide.matches())
-        
+
+        if step == 'validation':
+            for variable in provide.variables():
+                form.add_field(var=str(variable.xpath),
+                               label=str(variable.name),
+                               ftype="text-single",
+                               value=str(variable.value),
+                               required=True)
+
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
