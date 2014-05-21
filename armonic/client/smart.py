@@ -46,7 +46,6 @@ it which returns a generator. We use this generator to walk on provides::
 # It's not able to manage path
 
 import logging
-import copy
 
 logger = logging.getLogger(__name__)
 
