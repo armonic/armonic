@@ -104,6 +104,19 @@ def provide_to_table(provide):
                 print "    Variable (return): ", "%s type:%s default:%s" % (a['name'].ljust(15),a['type'].ljust(8),a['default'])
 
 
+def print_path(ret):
+    """Get the return of provide|state_path method"""
+    for r in ret:
+        print
+        print r['xpath']
+        if r['paths'] == []:
+            print "  can not be reached."
+        for i, p in enumerate(r['paths']):
+            print "path %i" % i
+            for a in p:
+                print "  ", "%5s " % a[1], a[0]
+
+
 def state_to_table(state):
     x = PrettyTable(["Property","Value"])
     x.align = "l"
@@ -150,8 +163,7 @@ def cmd_state(args):
             print r['xpath']
             provide_to_table(r)
     elif args.path:
-        pprint.pprint(client.call('state_goto_path', args.xpath))
-
+        print_path(client.state_goto_path(args.xpath))
     else:
         for s in client.state(xpath=args.xpath, doc=False):
             print s
@@ -166,15 +178,7 @@ def cmd_state_goto(args):
 def cmd_provide(args):
     if args.path:
         ret = client.provide_call_path(args.xpath)
-        for r in ret:
-            print
-            print r['xpath']
-            if r['paths'] == []:
-                print "  can not be reached."
-            for i, p in enumerate(r['paths']):
-                print "path %i" % i
-                for a in p:
-                    print "  ", "%5s " % a[1], a[0]
+        print_path(ret)
         return
     else:
         ret=client.provide(args.xpath)

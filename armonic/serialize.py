@@ -55,12 +55,13 @@ class Serialize(object):
                 for s in states]
 
     @expose
-    def state_goto_path(self, xpath):
-        ret = self.lf_manager.state_goto_path(xpath)
+    def state_goto_path(self, state_xpath):
+        ret = self.lf_manager.state_goto_path(state_xpath)
         acc = []
-        for state, path in ret:
-            acc.append({'xpath': state.get_xpath(),
-                        'actions': [(i[0].name, i[1]) for i in path]})
+        for state, paths in ret:
+            acc.append({
+                'xpath': state.get_xpath(),
+                'paths': [[(s.name, m) for s, m in path] for path in paths]})
         return acc
 
     @expose
