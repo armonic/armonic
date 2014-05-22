@@ -76,7 +76,7 @@ class Active(State):
     def get_website(self):
         return
 
-    @Provide()
+    @Provide(tags=['internal'])
     def get_network_port(self):
         """Return the httpd listening port for this wordpress installation"""
         return "Call Httpd.getPortByDocumentRoot('%s')" % self.httpdDocumentRoot

@@ -191,6 +191,7 @@ class Active(MetaState):
     """Launch mysql server and provide some actions on databases."""
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
+    @Provide(tags=['internal'])
     @Require("auth", [VString('user'), VString('password')])
     def getDatabases(self, requires):
         user = requires.get('auth').variables().get('user').value
@@ -374,6 +375,7 @@ class ConfiguredAsMaster(State):
 class ActiveAsMaster(MetaState):
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
+    @Provide(tags=['internal'])
     @Require('slave_id', [VString('user', default='replication'),
                           VString('password', default='password')])
     @Require('auth',
