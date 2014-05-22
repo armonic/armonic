@@ -19,7 +19,7 @@ class Configured(State):
     """Configure listen and vhost port"""
 
     @Require('conf', [Port("port", default=8080)])
-    @Require('augeas', [VString("root", default="/")])
+    @Require('augeas', [VString("root", default="/", expert=True)])
     def enter(self, requires):
         """Set listen and vhost port"""
         port = requires.conf.variables().port.value

@@ -26,8 +26,8 @@ class Configured(State):
     """Configure mysql.
     - set port
     - disable skipnetworking"""
-    @Require('conf', [Port("port", default=3306)])
-    @Require('augeas', [VString("root", default="/")])
+    @Require('conf', [Port("port", default=3306, expert=True)])
+    @Require('augeas', [VString("root", default="/", expert=True)])
     def enter(self, requires):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s" %
@@ -61,7 +61,7 @@ class Configured(State):
 class SetRootPassword(State):
     """Set initial Mysql root password"""
 
-    @Require('auth', [VString("password", default="root")])
+    @Require('auth', [VString("password", default="root", label="Initial root password for MySQL")])
     def enter(self, requires):
         pwd = requires.auth.variables().password.value  # password.value
         thread_mysqld = ProcessThread("mysql",
@@ -113,7 +113,7 @@ class ResetRootPassword(State):
     password and stop mysqld."""
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
-    @Require("auth", [VString("password", default="root")])
+    @Require("auth", [VString("password", default="root", label="New root password for MySQL")])
     def enter(self, requires):
         logger.debug("%s.%s changing mysql root password ...",
                      self.lf_name,
@@ -211,9 +211,9 @@ class Active(MetaState):
              variables=[Password(
                  'root_password',
                  from_xpath="Mysql/SetRootPassword/enter/auth/password")])
-    @Require('data', [VString('user'),
-                      VString('password'),
-                      VString('database')])
+    @Require('data', [VString('user', label="Database user name"),
+                      VString('password', label="Database user password"),
+                      VString('database', label="Database name")])
     def addDatabase(self, requires):
         """Add a user and a database.
         User have permissions on all databases."""
