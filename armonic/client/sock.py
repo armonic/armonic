@@ -59,9 +59,6 @@ class ClientSocket(object):
     def lifecycle(self, xpath, long_description=False):
         return self.call("lifecycle", xpath, long_description)
 
-    def provide_call_requires(self, xpath):
-        return self.call("provide_call_requires", provide_xpath_uri=xpath)
-
     def provide_call(self, provide_xpath_uri, requires):
         return self.call("provide_call",
                          provide_xpath_uri=provide_xpath_uri,
@@ -78,13 +75,23 @@ class ClientSocket(object):
                          relative=relative,
                          resource=resource)
 
+    def provide(self, provide_xpath):
+        return self.call("provide", provide_xpath=provide_xpath)
+
+    def provide_call_path(self, provide_xpath):
+        return self.call("provide_call_path", provide_xpath=provide_xpath)
+
+    def provide_call_requires(self, provide_xpath_uri, path_idx=0):
+        return self.call("provide_call_requires",
+                         provide_xpath_uri=provide_xpath_uri,
+                         path_idx=path_idx)
+
     def state(self, xpath, doc=False):
         return self.call("state", xpath=xpath, doc=doc)
 
     def state_goto_path(self, state_xpath):
         return self.call("state_goto_path",
                          state_xpath=state_xpath)
-
     def _receive_string(self):
         packer = struct.Struct("!I?")
         recv_size = 0
