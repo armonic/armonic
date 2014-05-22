@@ -140,14 +140,19 @@ class Master(ClientXMPP):
 
         if step == 'validation':
             for variable in provide.variables():
-                if variable._resolved_by:
-                    continue
                 value = variable.value_get_one()
-                form.add_field(var=str(variable.xpath),
-                               label=str(variable.name),
-                               ftype="text-single",
-                               value=str(value),
-                               required=True)
+                field = form.add_field(var=str(variable.xpath),
+                                       label=str(variable.name),
+                                       ftype="list-multi",
+                                       options=[
+                                           {"label": "value", "value": str(value)},
+                                           {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
+                                           {"label": "suggested_by", "value": str(getattr(variable._suggested_by, "xpath", ""))},
+                                           {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))}
+                                       ],
+                                       required=variable.required)
+                for key, value in variable.extra.items():
+                    field.add_option(label=str(key), value=str(value))
 
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
