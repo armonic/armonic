@@ -164,18 +164,35 @@ if __name__ == "__main__":
         elif provide.step == "validation":
             if provide.variables() != []:
                 print indent(provide.depth, "Variables are:")
+
+                def xpathOrNone(var):
+                    if var is not None:
+                        return var.xpath
+                    else: return None
+
                 for v in provide.variables():
-                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath))
+                    logger.debug("\tXpath:           ", v.xpath)
+                    logger.debug("\tValue :          ", v.value)
+                    logger.debug("\tValueResolved    ", v.value_resolved)
+                    logger.debug("\tDefault:         ", v.default)
+                    logger.debug("\tDefaultResolved: ", v.default_resolved)
+                    logger.debug("\tResolvedBy     : ", xpathOrNone(v._resolved_by))
+                    logger.debug("\tSetBy          : ", xpathOrNone(v._set_by))
+                    logger.debug("\tSuggestedBy    : ", xpathOrNone(v._suggested_by))
+                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
 
                 print indent(provide.depth, "Variables scope is:")
                 for v in provide.variables_scope():
-                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value).ljust(25), v.xpath))
+                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
 
                 for v in provide.variables():
                     if v.value is None:
                         if v.from_xpath is not None:
                             print v.from_xpath
-                        ret = user_input_variable(variable_name=v.name, message=indent(provide.depth, "Fill it:"))
+                        print v.xpath
+                        ret = user_input_variable(variable_name=v.name,
+                                                  message=indent(provide.depth, "Fill %s" % v.xpath),
+                                                  prefill=str(v.value_get_one()))
                         v.value = ret[v.name]
 
                 logger.debug("Serialized variables:")
