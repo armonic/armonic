@@ -61,11 +61,16 @@ class Variable(object):
         self.name = name
         self.xpath = xpath
         self.from_xpath = from_xpath
-        self.default = default
+        self._default = default
         self._value = value
 
+        self._is_skel = True
+
         # Capture the variable used to resolve self
+        self._bound_to = None
         self._resolved_by = None
+        self._set_by = None
+        self._suggested_by = None
 
     def copy(self, from_require):
         var = Variable(
@@ -73,8 +78,10 @@ class Variable(object):
             from_require=from_require,
             xpath=self.xpath,
             from_xpath=self.from_xpath,
-            default=self.default,
+            default=self._default,
             value=self._value)
+
+        var._is_skel = False
 
         # All variable are added to a global list
         self.from_require.from_provide.Variables.append(var)
@@ -88,37 +95,68 @@ class Variable(object):
                    xpath=dct_json['xpath'],
                    from_xpath=dct_json['from_xpath'],
                    default=dct_json['default'],
-                   value=dct_json['default'],
+                   value=None,
                    **kwargs)
         return this
 
     @property
+    def default(self):
+        return self._default
+
+    @property
+    def default_resolved(self):
+        self._bind()
+        return self._resolve()._default
+
+    @property
     def value(self):
-        self._resolve(self.from_require._scope_variables)
+        return self._value
 
-        # Be careful, infinite loop is possible. Since this should never
-        # happen, we don't avoid it in order to detect it!
-        if self._resolved_by is not None:
-            return self._resolved_by.value
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+    def value_get_one(self):
+        """Try to get a value from default, or resolved."""
+        return (self.value or
+                self.value_resolved or
+                self.default_resolved or
+                self.default)
+
+    @property
+    def value_resolved(self):
+        """Returns the value resolved."""
+        self._bind()
+        return self._resolve()._value
+
+    def _resolve(self):
+        """When bindings have been created, this method can be used to get a
+        bound variable. First, we try to get the variable set_by, then
+        suggested_by, then resolved_by and finally, we use self."""
+        if self._set_by is not None:
+            return self._set_by
+        elif self._suggested_by is not None:
+            return self._suggested_by
+        elif self._resolved_by is not None:
+            return self._resolved_by
         else:
-            return self._value
+            return self
 
-    def _resolve(self, scope):
-        """Try to assign a value to this variable. If from_xpath is not None,
-        it tries to to find back the corresponding
-        variable. Otherwise, it tries to find a value in the scope.
+    def _bind(self):
+        """Try to bind this variable to another one by assigning attributes
+        _resolved_by, _set_by or _suggested_by.
 
+        If from_xpath is not None, it tries to to find back the
+        corresponding variable. Otherwise, it tries to find a value in
+        the scope.
         """
-        if self._value is not None:
-            return
+        scope = self.from_require._scope_variables
 
-        # If the variable is host, try to find it from called provide
         if self.name == 'host' and self._value is None:
             if self.from_require.type == 'external':
                 if self.from_require.provide is not None:
                     self._value = self.from_require.provide.host
                     # FIXME: We have a problem because host doesn't come from a variable!
-                    self._resolved_by = None
             return
 
         # If the variable has a from_xpath attribute,
@@ -126,7 +164,7 @@ class Variable(object):
         if self.from_xpath is not None:
             for v in self.from_require.from_provide.Variables:
                 if v.xpath == self.from_xpath:
-                    self._resolved_by = v
+                    self._set_by = v
                     logger.debug("Variable [%s] value comes from [%s] with value %s" %(
                         self.xpath, v.xpath, v._value))
                     return
@@ -139,27 +177,31 @@ class Variable(object):
         if self.from_xpath is None:
             for v in scope:
                 if self.name == v.name and self is not v:
-                    logger.debug("Variable [%s] resolved by [%s] with value %s" %(
+                    logger.debug("Variable [%s] is suggested by [%s] with value %s" %(
                         self.xpath, v.xpath, v._value))
-                    self._resolved_by = v
+                    logger.debug("Variable [%s] is resolved by [%s] with value %s" %(
+                        v.xpath, self.xpath, v._value))
+                    self._suggested_by = v
+                    v._resolved_by = self
 
     def pprint(self):
         return {"name": self.name,
                 "xpath": self.xpath,
-                "default": self.default,
+                "default": self._default,
                 "value": self.value}
 
     def __repr__(self):
-        if self._resolved_by is not None:
-            resolved_by = self._resolved_by.xpath
+        if self._bound_to is not None:
+            bound_to = self._bound_to.xpath
         else:
-            resolved_by = None
-        return "Variable(%s, name=%s, value=%s, xpath=%s, resolved_by=%s)" % (
+            bound_to = None
+        return "Variable(skel=%s, %s, name=%s, value=%s, xpath=%s, bound_to=%s)" % (
+            self._is_skel,
             id(self),
             self.name,
             self._value,
             self.xpath,
-            resolved_by)
+            bound_to)
 
 
 class Requires(list):
@@ -167,7 +209,7 @@ class Requires(list):
     def __init__(self, skel):
         self.skel = skel
 
-    def append(self):
+    def get_new_require(self):
         new = self.skel.copy()
         list.append(self, new)
         return new
@@ -284,13 +326,15 @@ class Remote(Require):
 
         new.provide_args = []
         for v in self.provide_args:
-            new.provide_args.append(v.copy(new))
-            new._scope_variables.append(v)
+            new_variable = v.copy(new)
+            new.provide_args.append(new_variable)
+            new._scope_variables.append(new_variable)
 
         new.provide_ret = []
         for v in self.provide_ret:
-            new.provide_ret.append(v.copy(new))
-            new._scope_variables.append(v)
+            new_variable = v.copy(new)
+            new.provide_ret.append(new_variable)
+            new._scope_variables.append(new_variable)
 
         new.json = self.json
         return new
@@ -312,7 +356,7 @@ class Remote(Require):
 
             # This variable is added to the scope.
             # This should useless since it is the skeleton
-            this._scope_variables.append(var)
+            #this._scope_variables.append(var)
 
         # Here, we add provide ret variable.
         this.provide_ret = []
@@ -321,7 +365,7 @@ class Remote(Require):
             this.provide_ret.append(var)
 
             # This variable is added to the scope.
-            this._scope_variables.append(var)
+            #this._scope_variables.append(var)
 
         this.json = dct_json
         return this
@@ -501,7 +545,7 @@ class Provide(object):
                 if require['type'] in ['simple']:
                     requires = Requires(Require.from_json(
                         require, special=special, child_num=idx, from_provide=self))
-                    requires.append()
+                    requires.get_new_require()
                     self.requires.append(requires)
                     idx += 1
 
@@ -705,14 +749,14 @@ def smart_call(root_provide):
                         if req.skel.nargs == "*":
                             number = yield (scope, scope.step, req)
                             for i in range(0,number):
-                                new = req.append()
+                                new = req.get_new_require()
                                 p = scope.build_child(
                                     generic_xpath=new.provide_xpath,
                                     child_num=new.child_num,
                                     require=new)
                                 new.provide = p
                         else:
-                            new = req.append()
+                            new = req.get_new_require()
                             p = scope.build_child(
                                 generic_xpath=new.provide_xpath,
                                 child_num=new.child_num,
