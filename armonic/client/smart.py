@@ -56,13 +56,15 @@ class Variable(object):
 
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
         self.from_xpath = from_xpath
         self._default = default
         self._value = value
+        self.required = required
+        self.extra = extra
 
         self._is_skel = True
 
@@ -79,7 +81,9 @@ class Variable(object):
             xpath=self.xpath,
             from_xpath=self.from_xpath,
             default=self._default,
-            value=self._value)
+            value=self._value,
+            required=self.required,
+            extra=self.extra)
 
         var._is_skel = False
 
@@ -92,11 +96,13 @@ class Variable(object):
     def from_json(cls, dct_json, **kwargs):
         logger.debug("Creating variable %s" % dct_json['xpath'])
         this = cls(dct_json['name'],
+                   from_require=kwargs.pop('from_require', None),
                    xpath=dct_json['xpath'],
                    from_xpath=dct_json['from_xpath'],
                    default=dct_json['default'],
                    value=None,
-                   **kwargs)
+                   required=dct_json['required'],
+                   extra=dct_json['extra'])
         return this
 
     @property
