@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     if args.host is None:
         import armonic.common
-        armonic.common.load_lifecycles()
+        armonic.common.load_default_lifecycles()
         lfm = Serialize(os_type=OsTypeMBS())
         class MyProvide(Provide):
             # @lfm.setter
