@@ -69,16 +69,16 @@ class Master(ClientXMPP):
         form.add_reported("label")
         form.add_reported("help")
 
-        for p in self.lfm.provide("//*"):
-            tags = ""
-            if p['tags'] is not None:
-                tags = ",".join(p['tags'])
+        for provide in self.lfm.provide("//*"):
+            if provide['extra'].get('tags'):
+                tags = ",".join(provide['extra']['tags'])
 
             form.add_item(OrderedDict({
-                "xpath": p['xpath'],
+                "xpath": provide['xpath'],
                 "tag": tags,
-                "label": p['label'],
-                "help": p['help']}))
+                "label": provide['extra'].get('label', provide['name']),
+                "help": provide['extra'].get('help', '')
+            }))
 
         session['payload'] = form
         session['next'] = None  # self._handle_command_init_walk

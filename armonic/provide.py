@@ -27,15 +27,11 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     """
     _persist = True
 
-    def __init__(self, name=None, requires=[], flags={},
-                 tags=None, help=None, label=None, **extra):
+    def __init__(self, name=None, requires=[], flags={}, **extra):
         IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         self.flags = flags
-        self.tags = tags
-        self.help = help
-        self.label = label
 
         # Last caller
         self.source = None
@@ -51,9 +47,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
             func._provide = self
         func._provide.name = func.__name__
         func._provide.flags.update(self.flags)
-        func._provide.tags = self.tags
-        func._provide.help = self.help
-        func._provide.label = self.label
+        func._provide.extra.update(self.extra)
         for require in self:
             if not require in func._provide:
                 func._provide.append(require)
@@ -149,13 +143,14 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     def to_primitive(self):
         """Serialize the provide to a python dict.
         """
-        return {"name": self.name,
-                "xpath": self.get_xpath_relative(),
-                "help": self.help,
-                "tags": self.tags,
-                "label": self.label,
-                "requires": [r.to_primitive() for r in self],
-                "flags": self.flags}
+        primitive = ExtraInfoMixin.to_primitive(self)
+        primitive.update({
+            "name": self.name,
+            "xpath": self.get_xpath_relative(),
+            "requires": [r.to_primitive() for r in self],
+            "flags": self.flags
+        })
+        return primitive
 
     def get_values(self):
         source = self.source
