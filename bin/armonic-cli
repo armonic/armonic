@@ -88,9 +88,19 @@ def parseArgs(args):
 
 
 def provide_to_table(provide):
-    print "  Label  : ", provide['label']
-    print "  Tags   : ", provide['tags']
-    print "  Help   : ", provide['help']
+    try:
+        print "  Label  : %s" % provide['extra']['label']
+    except KeyError:
+        pass
+    try:
+        print "  Tags   : %s" % provide['extra']['tags']
+    except KeyError:
+        pass
+    try:
+        print "  Help   : %s" % provide['extra']['help']
+    except KeyError:
+        pass
+
     for r in provide['requires']:
         print "  Require:    ", "%s type:%s" % (r['name'].ljust(15), r['type'].ljust(15))
         if r['type'] == 'simple':
