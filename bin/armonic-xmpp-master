@@ -12,7 +12,7 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
-armonic.common.load_lifecycles()
+armonic.common.load_default_lifecycles()
 lfm = Serialize(os_type=OsTypeMBS())
 
 DONT_MANAGE = "None"
@@ -88,8 +88,8 @@ class Master(ClientXMPP):
         return session
 
     def _handle_command_build(self, iq, session):
-        form = self['xep_0004'].makeForm('form', 'Specify a provide')
-        form['instructions'] = 'Specify a provide'
+        form = self['xep_0004'].makeForm('form', 'Specify a provide to build')
+        form['instructions'] = 'specify'
         form.add_field(var="xpath")
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
