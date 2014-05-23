@@ -774,6 +774,8 @@ def smart_call(root_provide):
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
                             number = yield (scope, scope.step, req)
+                            if type(number) is not int:
+                                raise TypeError("Multiplicity step must send a integer!")
                             for i in range(0,number):
                                 new = req.get_new_require()
                                 p = scope.build_child(
