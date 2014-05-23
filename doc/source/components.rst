@@ -8,3 +8,4 @@ In depth documentation
    require
    variable
    flag
+   xpath
