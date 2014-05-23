@@ -225,11 +225,16 @@ parser = argparse.ArgumentParser(
     description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
-parser.add_argument('--port','-P', type=int, default=8000,help='Mss agent port (default: %(default)s)')
+parser.add_argument('--port','-P', type=int, default=8000,help='Armonic agent port (default: %(default)s)')
 parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
+
 parser.add_argument('--no-remote', action='store_true', default=False,  help="Directly use Armonic module.")
 parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'], default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+parser.add_argument('--lifecycle-dir', type=str, help="A lifecycle directory. This is only useful on no-remote mode.")
+parser.add_argument('--no-default', action='store_true', default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+
+
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
@@ -305,6 +310,7 @@ if args.no_remote is False:
     client.add_logging_handler(sh)
 else:
     from armonic.utils import OsTypeMBS, OsTypeDebianWheezy
+    logging.basicConfig(level=args.verbose)
     os_type = None
     if args.os_type == "mbs":
         os_type = OsTypeMBS()
@@ -313,7 +319,11 @@ else:
         
     import armonic.serialize
     import armonic.common
-    armonic.common.load_lifecycles()
+    if not args.no_default:
+        armonic.common.load_default_lifecycles()
+    if args.lifecycle_dir is not None:
+        armonic.common.load_lifecycle(args.lifecycle_dir)
+    
     client = armonic.serialize.Serialize(os_type)
 
 args.func(args)
