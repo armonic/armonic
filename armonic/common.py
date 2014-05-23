@@ -111,36 +111,51 @@ def format_input_variables(requires=[]):
         return [variables_values]
 
 
-def load_lifecycles(lifecycle_dir=None,
-                    lifecycle_includes=[],
+def load_lifecycle(lifecycle_path, raise_import_error=False):
+    """Import a lifecycle. The lifecycle is a python module."""
+    module_dir = os.path.abspath(
+        os.path.join(os.path.abspath(lifecycle_path), os.pardir))
+    if module_dir not in sys.path:
+        logger.debug("Inserting module dir %s in 'sys.path'..." % module_dir)
+        sys.path.insert(0, module_dir)
+    lifecycle = os.path.relpath(lifecycle_path, module_dir)
+    if os.path.exists(os.path.join(module_dir,
+                                   lifecycle,
+                                   '__init__.py')):
+
+        logger.debug("Importing lifecycle %s..." % lifecycle)
+        try:
+            __import__(lifecycle)
+            logger.info("Imported lifecycle %s" % lifecycle)
+        except ImportError:
+            logger.exception(
+                "Exception on import lifecycle %s:" % lifecycle)
+            if raise_import_error:
+                raise
+
+
+def load_default_lifecycles(raise_import_error=False):
+    """Import default lifecycles"""
+    lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
+    logger.info("Loading default lifecycles...")
+    for lifecycle in os.listdir(lifecycle_dir):
+        load_lifecycle(os.path.join(lifecycle_dir, lifecycle))
+
+
+def load_lifecycle_repository(lifecycle_repository,
                     raise_import_error=False):
-    """Import Lifecycle modules from lifecycle_dir
+    """Import Lifecycle modules from lifecycle_repository which is a
+    directory that contains several modules.
 
     :param raise_import_error: Raise import error if True
-    """
-    if lifecycle_dir is None:
-        lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
-        logger.info("Loading default lifecycles...")
-    else:
-        lifecycle_dir = os.path.abspath(lifecycle_dir)
-        logger.info("Loading lifecycles in '%s'...", lifecycle_dir)
 
-    sys.path.insert(0, lifecycle_dir)
-    for lifecycle in os.listdir(lifecycle_dir):
-        if lifecycle_includes and lifecycle not in lifecycle_includes:
-            continue
-        if os.path.exists(os.path.join(lifecycle_dir,
-                                       lifecycle,
-                                       '__init__.py')):
-            logger.debug("Importing lifecycle %s..." % lifecycle)
-            try:
-                __import__(lifecycle)
-                logger.info("Imported lifecycle %s" % lifecycle)
-            except ImportError:
-                logger.exception(
-                    "Exception on import lifecycle %s:" % lifecycle)
-                if raise_import_error:
-                    raise
+    """
+    lifecycle_repository = os.path.abspath(lifecycle_repository)
+    logger.info("Loading lifecycles in repository '%s'..." % lifecycle_repository)
+
+    for lifecycle in os.listdir(lifecycle_repository):
+        load_lifecycle(os.path.join(lifecycle_repository, lifecycle),
+                       raise_import_error=raise_import_error)
 
 
 class DoesNotExist(Exception):
