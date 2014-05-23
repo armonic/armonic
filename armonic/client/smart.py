@@ -640,10 +640,13 @@ class Provide(ArmonicProvide):
             raise AttributeError("'manage' attribute must not be None. Must be set at 'manage' step")
 
     def matches(self):
-        """Return the list of xpaths that matched the generic_xpath"""
-        return self.lfm.uri(xpath=self.generic_xpath,
-                            relative=True,
-                            resource="provide")
+        """Return the list of provides that matched the generic_xpath"""
+        provides = self.lfm.uri(xpath=self.generic_xpath,
+                                relative=True,
+                                resource="provide")
+        for index, xpath in enumerate(provides):
+            provides[index] = self.lfm.provide(xpath)[0]
+        return provides
 
     def on_specialize(self, xpath):
         """Actions after the provide has been specialized."""
@@ -654,7 +657,6 @@ class Provide(ArmonicProvide):
         xpath, yield doesn't occurs if this method returns False.
 
         Thus, by returning True, specialization always yields.
-
         """
         return False
 
@@ -736,7 +738,7 @@ def smart_call(root_provide):
                 if len(m) > 1 or scope.do_specialize():
                     specialized = yield(scope, scope.step, m)
                 elif len(m) == 1:
-                    specialized = m[0]
+                    specialized = m[0]['xpath']
                 else:
                     raise Exception(
                         "Xpath '%s' matches nothing!" % scope.generic_xpath)

@@ -30,10 +30,10 @@ def user_input_choose_amongst(choices, prefix=''):
     while True:
         print "%sYou must choose a provide amongst:" % prefix
         for i, c in enumerate(choices) :
-            print "- %s%d) %s" % (prefix, i, c)
+            print "- %s%d) %s" % (prefix, i, c['xpath'])
         answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices)-1))
         try:
-            return choices[int(answer)]
+            return choices[int(answer)]['xpath']
         except Exception as e:
             print e
             print "%sInvalid choice. Do it again!" % (prefix)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='armonic-iter-smart')
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
     parser.add_argument('--verbose',"-v", action="store_true")
-    parser.add_argument('--host', type=str, 
+    parser.add_argument('--host', type=str,
                         default=None,
                         help='Host where to call the provide')
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     else:
         verbosity = logging.INFO
 
-    logging.basicConfig(level=verbosity, 
+    logging.basicConfig(level=verbosity,
                         format = '%(levelname)5s - %(message)s')
 
     if args.host is None:
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             def do_lfm(self):
                 self.lfm = lfm
                 return False
-                
+
             def on_manage(self, data):
                 return True
 
@@ -112,14 +112,14 @@ if __name__ == "__main__":
             def on_lfm(self, host):
                 self.host = host
                 self.lfm = ClientSocket(host=host, handlers=[handler])
-                
+
         root_provide = MyProvide(generic_xpath=args.xpath)
         root_provide.lfm = lfm
-            
-        
+
+
 
     generator = smart_call(root_provide)
-    
+
     # Data sent to the generator
     data = None
 
@@ -131,14 +131,14 @@ if __name__ == "__main__":
         try:
             if data is None:
                 (provide, step, args) = generator.next()
-            else: 
+            else:
                 (provide, step, args) = generator.send(data)
                 data = None
         except StopIteration:
             break
         if provide.tree_id == None:
             pass
-#        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth), 
+#        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth),
 #                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
@@ -153,14 +153,14 @@ if __name__ == "__main__":
                 prefill = ""
             host = user_input_variable(variable_name = "location", message = msg, prefix = indent(provide.depth), prefill=prefill)
             data = host['location']
-            
+
         elif provide.step == "specialize":
             data = user_input_choose_amongst(args, prefix=indent(provide.depth))
 
         elif provide.step == "set_dependancies":
             pass
 
-                
+
         elif provide.step == "validation":
             if provide.variables() != []:
                 print indent(provide.depth, "Variables are:")
@@ -198,8 +198,8 @@ if __name__ == "__main__":
                 logger.debug("Serialized variables:")
                 for v in provide.variables_serialized():
                     logger.debug("\t%s" % str(v))
-            
-                    
+
+
 
         elif provide.step == "multiplicity":
             require = args

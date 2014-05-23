@@ -135,10 +135,15 @@ class Master(ClientXMPP):
                        value=str(provide.tree_id))
 
         if step == 'specialize':
-            form.add_field(var="specialize",
-                           ftype="list-single",
-                           desc="specialize the provide or disable it",
-                           options=[DONT_MANAGE] + provide.matches())
+            field = form.add_field(var="specialize",
+                                   ftype="list-single",
+                                   desc="specialize the provide or disable it",
+                                   options=[
+                                       {"label": "Manual", "value": DONT_MANAGE}
+                                   ])
+            for provide_match in provide.matches():
+                field.add_option(label=str(provide_match['extra'].get('label', provide_match['name'])),
+                                 value=str(provide_match['xpath']))
 
         if step == 'validation':
             for variable in provide.variables():
