@@ -9,9 +9,9 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
 
-from pprint import pprint
 
 logger = logging.getLogger()
+
 
 def user_input_confirm(msg, prefix=''):
     """Ask the user if he confirm the msg question.
