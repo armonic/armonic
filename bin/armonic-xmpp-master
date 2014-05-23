@@ -2,6 +2,7 @@
 
 import logging
 import argparse
+from uuid import uuid4
 
 from sleekxmpp import ClientXMPP
 
@@ -81,7 +82,7 @@ class Master(ClientXMPP):
         session['payload'] = form
         session['next'] = None  # self._handle_command_init_walk
         session['has_next'] = False
-        session['id'] = "session_id_pour_test"
+        session['id'] = str(uuid4())
 
         return session
 
@@ -92,7 +93,7 @@ class Master(ClientXMPP):
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
-        session['id'] = "session_id_pour_test"
+        session['id'] = str(uuid4())
 
         self.smart = None
         self.root_provide = None
@@ -162,7 +163,6 @@ class Master(ClientXMPP):
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
-        session['id'] = "session_id_pour_test"
 
         # If the root provide step is done, this is the last answer.
         if step == 'done' and provide == self.root_provide:
