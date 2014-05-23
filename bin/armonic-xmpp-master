@@ -38,8 +38,6 @@ class MyProvide(Provide):
         provide."""
         if data == DONT_MANAGE:
             self.manage = False
-        else:
-            self.specialized_xpath = data
 
 class Master(ClientXMPP):
 

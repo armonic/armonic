@@ -742,8 +742,9 @@ def smart_call(root_provide):
                 else:
                     raise Exception(
                         "Xpath '%s' matches nothing!" % scope.generic_xpath)
-                scope._build_provide(specialized)
                 scope.on_specialize(specialized)
+                if scope.manage:
+                    scope._build_provide(specialized)
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
