@@ -402,7 +402,24 @@ class Remote(Require):
                     break
 
 
-class Provide(object):
+class ArmonicProvide(object):
+
+    def __init__(self):
+        self.xpath = None
+        self.name = ""
+        self.extra = {}
+
+    def _build_provide(self, provide_xpath_uri):
+        provides = self.lfm.provide(provide_xpath_uri)
+        self.from_json(provides[0])
+
+    def from_json(self, dct_json):
+        self.name = dct_json['name']
+        self.xpath = dct_json['xpath']
+        self.extra = dct_json.get('extra', {})
+
+
+class Provide(ArmonicProvide):
     """This class describe a provide and its requires and remotes requires
     contains provide. Thus, this object can describe a tree. To build
     the tree, the function :func:`smart_call` must be used.
@@ -440,6 +457,7 @@ class Provide(object):
 
     def __init__(self, generic_xpath, requirer=None,
                  child_num=None, require=None):
+        ArmonicProvide.__init__(self)
         self.generic_xpath = generic_xpath
         self.requirer = requirer
         self.require = require
@@ -483,7 +501,6 @@ class Provide(object):
 
         self.manage = True
         self.call = None
-        self.specialized_xpath = None
 
         # Attribute host is required for external Provide
         self.host = None
@@ -557,7 +574,7 @@ class Provide(object):
 
     def _build_requires(self):
         """Get all requires"""
-        provides = self.lfm.provide_call_requires(self.specialized_xpath)
+        provides = self.lfm.provide_call_requires(self.xpath)
         self._build_require_from_call_require(provides)
 
     def _requirator(self):
@@ -629,9 +646,8 @@ class Provide(object):
                             resource="provide")
 
     def on_specialize(self, xpath):
-        """Used to specialize the generic_xpath. You must define
-        self.specialized_xpath."""
-        self.specialized_xpath = xpath
+        """Actions after the provide has been specialized."""
+        pass
 
     def do_specialize(self):
         """Specialization can not be avoided. If the provide matches only 1
@@ -655,7 +671,7 @@ class Provide(object):
     def lfm_call(self):
         # FIXME. This is a temporary hack!
         ret = self.lfm.provide_call_validate(
-            provide_xpath_uri=self.specialized_xpath,
+            provide_xpath_uri=self.xpath,
             requires=self.variables_serialized())
         if ret['errors']:
             import pprint
@@ -667,12 +683,12 @@ class Provide(object):
             exit(1)
 
         self.provide_ret = self.lfm.provide_call(
-            provide_xpath_uri=self.specialized_xpath,
+            provide_xpath_uri=self.xpath,
             requires=self.variables_serialized())
 
         self.update_scope_provide_ret(self.provide_ret)
         # self.provide_ret = self.lfm.call("provide_call_validate",
-        #                                  provide_xpath_uri=self.specialized_xpath,
+        #                                  provide_xpath_uri=self.xpath,
         #                                  requires=self.variables_serialized())
         # from pprint import pprint
         # pprint(self.provide_ret)
@@ -714,6 +730,20 @@ def smart_call(root_provide):
                 scope._test_lfm()
                 scope._next_step()
 
+            elif scope.step == "specialize":
+                m = scope.matches()
+                logger.debug("Specialize matches: %s" % m)
+                if len(m) > 1 or scope.do_specialize():
+                    specialized = yield(scope, scope.step, m)
+                elif len(m) == 1:
+                    specialized = m[0]
+                else:
+                    raise Exception(
+                        "Xpath '%s' matches nothing!" % scope.generic_xpath)
+                scope._build_provide(specialized)
+                scope.on_specialize(specialized)
+                scope._next_step()
+
             elif scope.step == "set_dependancies":
                 if scope.do_set_dependancies():
                     data = yield(scope, scope.step, None)
@@ -731,19 +761,6 @@ def smart_call(root_provide):
                     scope.on_call(data)
                 if scope.call:
                     scope.lfm_call()
-                scope._next_step()
-
-            elif scope.step == "specialize":
-                m = scope.matches()
-                logger.debug("Specialize matches: %s" % m)
-                if len(m) > 1 or scope.do_specialize():
-                    specialized = yield(scope, scope.step, m)
-                elif len(m) == 1:
-                    specialized = m[0]
-                else:
-                    raise Exception(
-                        "Xpath '%s' matches nothing!" % scope.generic_xpath)
-                scope.on_specialize(specialized)
                 scope._next_step()
 
             elif scope.step == "multiplicity":

@@ -127,7 +127,9 @@ class Master(ClientXMPP):
         form['instructions'] = step
         form.add_field(var="provide",
                        ftype="fixed",
-                       value=provide.generic_xpath)
+                       value=provide.xpath or provide.generic_xpath,
+                       label=provide.extra.get('label', provide.name))
+
         form.add_field(var="tree_id",
                        ftype="fixed",
                        value=str(provide.tree_id))
