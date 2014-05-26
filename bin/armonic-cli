@@ -164,18 +164,18 @@ def cmd_xpath(args):
 
 def cmd_state(args):
     if args.long_description:
-        for r in client.state(xpath=args.xpath, doc=True):
+        for r in client.state(xpath=args.state_xpath, doc=True):
             state_to_table(r)
 
     elif args.requires_list:
-        ret=client.call('state_goto_requires', args.xpath)
+        ret=client.call('state_goto_requires', args.state_xpath)
         for r in ret['requires']:
             print r['xpath']
             provide_to_table(r)
     elif args.path:
-        print_path(client.state_goto_path(args.xpath))
+        print_path(client.state_goto_path(args.state_xpath))
     else:
-        for s in client.state(xpath=args.xpath, doc=False):
+        for s in client.state(xpath=args.state_xpath, doc=False):
             print s
 
 def cmd_state_current(args):
@@ -183,7 +183,7 @@ def cmd_state_current(args):
         dict_to_table(r)
 
 def cmd_state_goto(args):
-    pprint.pprint(client.state_goto(args.xpath, parseArgs(args.require)))
+    pprint.pprint(client.state_goto(args.state_xpath_uri, parseArgs(args.require)))
 
 def cmd_provide(args):
     if args.path:
@@ -275,11 +275,11 @@ parser_state.add_argument('--requires-list','-r',action='store_true',help="List 
 parser_state.set_defaults(func=cmd_state)
 
 parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module.')
-parser_state_current.add_argument('xpath' , type=str, help='a xpath that correspond to lifecycles.')
+parser_state_current.add_argument('state-xpath' , type=str, help='a xpath that matches states')
 parser_state_current.set_defaults(func=cmd_state_current)
 
-parser_state_goto = subparsers.add_parser('state-goto', help='Go to a state of a module.')
-parser_state_goto.add_argument('xpath' , type=str, help='a xpath that correspond to a unique state.')
+parser_state_goto = subparsers.add_parser('state-goto', help='go to a state of a module')
+parser_state_goto.add_argument('state-xpath-uri' , type=str, help='a XPath URI corresponding to a State')
 parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'.")
 parser_state_goto.set_defaults(func=cmd_state_goto)
 
