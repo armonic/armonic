@@ -27,8 +27,8 @@ class Configured(State):
     """Set database informations"""
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
-    @Require('augeas', [VString("root", default="/", expert=True)])
-    @RequireExternal("db", "//Mysql//addDatabase",
+    @Require('augeas', [VString("root", default="/", label="Augeas root path", expert=True)])
+    @RequireExternal("db", "//Mysql//add_database",
                      provide_args=[VString("user",
                                            default="wordpress_user"),
                                    Password("password",
@@ -57,19 +57,18 @@ class Configured(State):
 
 
 class Active(State):
-    httpdDocumentRoot = None
+    document_root = None
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
-    @RequireLocal("http_document", "//Httpd//get_documentRoot",
-                  provide_args=[VString("httpdDocumentRoot",
-                                default="/var/www/wordpress")])
+    @RequireLocal("http_document", "//Httpd//get_document_root",
+                  provide_args=[VString("root", default="/var/www/wordpress")])
     @RequireLocal("http_start", "//Httpd//start")
     def enter(self, requires):
-        self.httpdDocumentRoot = requires.http_document.variables().httpdDocumentRoot.value
-        logger.debug("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s" % (self.lf_name, self.name, self.httpdDocumentRoot))
+        self.document_root = requires.http_document.variables().root.value
+        logger.debug("%s.%-10s: TODO : write to MSS database : wordpress use a vhost=%s" % (self.lf_name, self.name, self.document_root))
 
     def leave(self):
-        logger.debug("you should call 'apache.leaveActiveState(%s)'" % self.httpdDocumentRoot)
+        logger.debug("you should call 'apache.leaveActiveState(%s)'" % self.document_root)
 
     @Provide(label="Create a Wordpress",
              tags=["web", "app"])
@@ -79,7 +78,7 @@ class Active(State):
     @Provide(tags=['internal'])
     def get_network_port(self):
         """Return the httpd listening port for this wordpress installation"""
-        return "Call Httpd.getPortByDocumentRoot('%s')" % self.httpdDocumentRoot
+        return "Call Httpd.getPortByDocumentRoot('%s')" % self.document_root
 
 
 class ActiveWithNfs(State):
@@ -90,7 +89,7 @@ class ActiveWithNfs(State):
         provide_args=[
             VString(
                 "path",
-                from_xpath="Wordpress/Active/enter/http_document/httpdDocumentRoot",
+                from_xpath="Wordpress/Active/enter/http_document/root",
                 modifier="%s/wp-content"),
             VString("name", default="wordpress")])
     def enter(self, requires):

@@ -18,8 +18,8 @@ class NotInstalled(State):
 class Configured(State):
     """Configure listen and vhost port"""
 
-    @Require('conf', [Port("port", default=8080)])
-    @Require('augeas', [VString("root", default="/", expert=True)])
+    @Require('conf', [Port("port", default=8080, label="Listen port", expert=True)])
+    @Require('augeas', [VString("root", default="/", label="Augeas root path", expert=True)])
     def enter(self, requires):
         """Set listen and vhost port"""
         port = requires.conf.variables().port.value
@@ -36,17 +36,19 @@ class Configured(State):
         """ set wordpress.php """
         logger.info("do nothing...")
 
-    @Provide(tags=['internal'])
+    @Provide(label="Get Apache2 document root",
+             tags=['internal'])
     @Require('http_document',
-             [VString("httpdDocumentRoot",
-              default='/var/www/')])
-    def get_documentRoot(self, requires):
+             [VString("root",
+              default='/var/www/',
+              label="Document root path")])
+    def get_document_root(self, requires):
         """Get document root path of default vhost."""
         return self.conf.documentRoot.value
 
-    @Provide(label='Set Apache listen port',
+    @Provide(label='Set Apache2 listen port',
              tags=['expert', 'webserver', 'apache'])
-    @Require('conf', [Port("port")])
+    @Require('conf', [Port("port", expert=True)])
     # flags={'restart':True})
     def set_port(self, requires):
         """Set listen and vhost port"""
@@ -60,6 +62,10 @@ class Configured(State):
 
 class Active(ActiveWithSystemd):
     services = ["httpd"]
+
+    @Provide(label="Start Apache2 service")
+    def start(self):
+        ActiveWithSystemd.start(self)
 
 
 class Installed(InstallPackagesUrpm):

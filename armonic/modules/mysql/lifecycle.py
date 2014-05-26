@@ -26,8 +26,8 @@ class Configured(State):
     """Configure mysql.
     - set port
     - disable skipnetworking"""
-    @Require('conf', [Port("port", default=3306, expert=True)])
-    @Require('augeas', [VString("root", default="/", expert=True)])
+    @Require('conf', [Port("port", default=3306, label="Listen port", expert=True)])
+    @Require('augeas', [VString("root", default="/", label="Augeas root path", expert=True)])
     def enter(self, requires):
         """ set mysql port """
         logger.info("%s.%-10s: edit my.cnf with requires %s" %
@@ -175,9 +175,17 @@ class ResetRootPassword(State):
 class ActiveOnDebian(ActiveWithSystemV):
     services = ["mysql"]
 
+    @Provide(label="Start MySQL service")
+    def start(self):
+        ActiveWithSystemV.start(self)
+
 
 class ActiveOnMBS(ActiveWithSystemd):
     services = ["mysqld"]
+
+    @Provide(label="Start MySQL service")
+    def start(self):
+        ActiveWithSystemd.start(self)
 
 
 class EnsureMysqlIsStopped(ActiveWithSystemd):
@@ -193,7 +201,7 @@ class Active(MetaState):
 
     @Provide(tags=['internal'])
     @Require("auth", [VString('user'), VString('password')])
-    def getDatabases(self, requires):
+    def get_databases(self, requires):
         user = requires.get('auth').variables().get('user').value
         password = requires.get('auth').variables().get('password').value
 
@@ -211,10 +219,13 @@ class Active(MetaState):
              variables=[Password(
                  'root_password',
                  from_xpath="Mysql/SetRootPassword/enter/auth/password")])
-    @Require('data', [VString('user', label="Database user name"),
-                      VString('password', label="Database user password"),
+    @Require('data', [VString('user',
+                              label="Database user name",
+                              help="A user will be created for this database."),
+                      VString('password',
+                              label="Database user password"),
                       VString('database', label="Database name")])
-    def addDatabase(self, requires):
+    def add_database(self, requires):
         """Add a user and a database.
         User have permissions on all databases."""
         database = requires.get('data').variables().get('database').value
@@ -224,12 +235,12 @@ class Active(MetaState):
 
         if database in ['database']:
             raise Exception("database name can not be '%s'" % database)
-        self.addUser('root', mysql_root_pwd, user, password)
+        self.add_user('root', mysql_root_pwd, user, password)
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;" % database)
-        rows = cur.fetchall()
-        # return [d[0] for d in rows]
+        #rows = cur.fetchall()
+        #return [d[0] for d in rows]
         return {}
 
     @Provide(label='Delete a MySQL database',
@@ -239,7 +250,7 @@ class Active(MetaState):
                  'root_password',
                  from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     @Require('data', [VString('database')])
-    def rmDatabase(self, user, password, database):
+    def rm_database(self, user, password, database):
         con = MySQLdb.connect('localhost', user,
                               password)
         cur = con.cursor()
@@ -248,7 +259,7 @@ class Active(MetaState):
 
     #@Require('auth', [VString('user'), VString('password')])
     #@Require('user', [VString('username'), VString('userpassword')])
-    def addUser(self, user, password, newUser, userPassword):
+    def add_user(self, user, password, newUser, userPassword):
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cmd = "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' IDENTIFIED BY '%s' WITH GRANT OPTION;" % (newUser, userPassword)
@@ -448,7 +459,7 @@ class ActiveAsMaster(MetaState):
     @Require('data', [VString('user'),
                       VString('password'),
                       VString('database')])
-    def addDatabaseMaster(self, requires):
+    def add_database_master(self, requires):
         """Add a user and a database. User have permissions on all databases.
         """
         database = requires.get('data').variables().get('database').value
@@ -458,14 +469,14 @@ class ActiveAsMaster(MetaState):
 
         if database in ['database']:
             raise Exception("database name can not be '%s'" % database)
-        self.addUser('root', mysql_root_pwd, user, password)
+        self.add_user('root', mysql_root_pwd, user, password)
         con = MySQLdb.connect('localhost', user, password)
         cur = con.cursor()
         cur.execute("CREATE DATABASE IF NOT EXISTS %s;" % database)
         rows = cur.fetchall()
         return [d[0] for d in rows]
 
-    def addUser(self, user, password, newUser, userPassword):
+    def add_user(self, user, password, newUser, userPassword):
         con = MySQLdb.connect('localhost',
                               user,
                               password)
