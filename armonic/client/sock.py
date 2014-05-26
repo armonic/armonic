@@ -89,9 +89,11 @@ class ClientSocket(object):
     def state(self, xpath, doc=False):
         return self.call("state", xpath=xpath, doc=doc)
 
-    def state_goto_path(self, state_xpath):
-        return self.call("state_goto_path",
-                         state_xpath=state_xpath)
+    def state_goto(self, xpath, requires={}):
+        return self.call("state_goto",
+                         xpath=xpath,
+                         requires=requires)
+
     def _receive_string(self):
         packer = struct.Struct("!I?")
         recv_size = 0

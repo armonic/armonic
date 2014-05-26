@@ -183,7 +183,7 @@ def cmd_state_current(args):
         dict_to_table(r)
 
 def cmd_state_goto(args):
-    pprint.pprint(client.call('state_goto', args.xpath, parseArgs(args.require)))
+    pprint.pprint(client.state_goto(args.xpath, parseArgs(args.require)))
 
 def cmd_provide(args):
     if args.path:
