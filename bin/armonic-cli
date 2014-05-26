@@ -179,7 +179,7 @@ def cmd_state(args):
             print s
 
 def cmd_state_current(args):
-    for r in client.call('state_current', args.xpath):
+    for r in client.state_current(args.xpath):
         dict_to_table(r)
 
 def cmd_state_goto(args):

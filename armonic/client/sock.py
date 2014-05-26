@@ -94,6 +94,10 @@ class ClientSocket(object):
                          xpath=xpath,
                          requires=requires)
 
+    def state_current(self, xpath):
+        return self.call("state_current",
+                         xpath=xpath)
+
     def _receive_string(self):
         packer = struct.Struct("!I?")
         recv_size = 0
