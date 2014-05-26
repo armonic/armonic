@@ -265,9 +265,9 @@ parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associa
 parser_xpath.set_defaults(func=cmd_xpath)
 
 parser_state = subparsers.add_parser('state', help='List states.')
-parser_state.add_argument("xpath" , type=str,
+parser_state.add_argument("state-xpath" , type=str,
                           default="//*[@ressource='state']", nargs="?",
-                          help="A xpath. Default is '%(default)s' which matches all states.")
+                          help="A xpath that matches states. Default is '%(default)s' which matches all states.")
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description.")
 parser_state.add_argument('--path','-p',action='store_true',help="Show state path to go to these states.")
 parser_state.add_argument('--requires-list','-r',action='store_true',help="List Requires to go to these states.")
