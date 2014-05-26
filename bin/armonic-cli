@@ -179,7 +179,7 @@ def cmd_state(args):
             print s
 
 def cmd_state_current(args):
-    for r in client.state_current(args.xpath):
+    for r in client.state_current(args.state_xpath):
         dict_to_table(r)
 
 def cmd_state_goto(args):
@@ -265,7 +265,7 @@ parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associa
 parser_xpath.set_defaults(func=cmd_xpath)
 
 parser_state = subparsers.add_parser('state', help='List states.')
-parser_state.add_argument("state-xpath" , type=str,
+parser_state.add_argument("state_xpath", type=str,
                           default="//*[@ressource='state']", nargs="?",
                           help="A xpath that matches states. Default is '%(default)s' which matches all states.")
 parser_state.add_argument('--long-description','-l',action='store_true',help="Show long description.")
@@ -275,11 +275,11 @@ parser_state.add_argument('--requires-list','-r',action='store_true',help="List 
 parser_state.set_defaults(func=cmd_state)
 
 parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module.')
-parser_state_current.add_argument('state-xpath' , type=str, help='a xpath that matches states')
+parser_state_current.add_argument('state_xpath' , type=str, help='a xpath that matches states')
 parser_state_current.set_defaults(func=cmd_state_current)
 
 parser_state_goto = subparsers.add_parser('state-goto', help='go to a state of a module')
-parser_state_goto.add_argument('state-xpath-uri' , type=str, help='a XPath URI corresponding to a State')
+parser_state_goto.add_argument('state_xpath_uri' , type=str, help='a XPath URI corresponding to a State')
 parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'.")
 parser_state_goto.set_defaults(func=cmd_state_goto)
 
