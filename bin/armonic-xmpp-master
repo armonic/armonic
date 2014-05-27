@@ -181,7 +181,6 @@ class Master(ClientXMPP):
                                        label=str(variable.name),
                                        ftype="list-multi",
                                        options=[
-                                           {"label": "name", "value": str(variable.name)},
                                            {"label": "value", "value": str(value)},
                                            {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
                                            {"label": "suggested_by", "value": str(getattr(variable._suggested_by, "xpath", ""))},
