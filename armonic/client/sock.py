@@ -75,6 +75,10 @@ class ClientSocket(object):
                          relative=relative,
                          resource=resource)
 
+    def to_xml(self, xpath=None):
+        """Return the xml representation of agent."""
+        return self.call("to_xml", xpath=xpath)
+
     def provide(self, provide_xpath):
         return self.call("provide", provide_xpath=provide_xpath)
 

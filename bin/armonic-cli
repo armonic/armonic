@@ -227,7 +227,7 @@ def cmd_plot(args):
     elif args.T == 'automaton':
         raise NotImplementedError
     elif args.T == 'xml':
-        print(client.call('to_xml', args.module))
+        print(client.to_xml(args.module))
 
 
 parser = argparse.ArgumentParser(
