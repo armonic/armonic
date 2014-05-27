@@ -439,6 +439,7 @@ class Provide(ArmonicProvide):
     STEPS = ["manage",
              "lfm",
              "specialize",
+             "post_specialize",
              "set_dependancies",
              "multiplicity",
              "validation",
@@ -660,8 +661,14 @@ class Provide(ArmonicProvide):
         """
         return False
 
-    def update_scope_provide_ret(self, provide_ret):
+    def on_post_specialize(self, data):
+        """Actions after specialization"""
+        pass
 
+    def do_post_specialize(self):
+        return False
+
+    def update_scope_provide_ret(self, provide_ret):
         """When the provide call returns value, we habve to update the scope
         of the require in order to be able to use these value to fill
         depending provides.
@@ -745,6 +752,12 @@ def smart_call(root_provide):
                 scope.on_specialize(specialized)
                 if scope.manage:
                     scope._build_provide(specialized)
+                scope._next_step()
+
+            elif scope.step == "post_specialize":
+                if scope.do_post_specialize():
+                    data = yield(scope, scope.step, None)
+                    scope.on_post_specialize(data)
                 scope._next_step()
 
             elif scope.step == "set_dependancies":
