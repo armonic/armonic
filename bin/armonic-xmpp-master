@@ -12,6 +12,7 @@ import armonic.common
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeMBS
+from armonic.client.sock import ClientSocket
 
 armonic.common.load_default_lifecycles()
 lfm = Serialize(os_type=OsTypeMBS())
@@ -20,9 +21,24 @@ DONT_MANAGE = "None"
 """Describe the value passed to not manage a provide"""
 
 class MyProvide(Provide):
+
     def do_lfm(self):
         self.lfm = lfm
         return False
+
+    def do_post_specialize(self):
+        self.suggested_host = ""
+        # suggest the host of the parent require
+        if self.requirer and self.requirer.host:
+            self.suggested_host = self.requirer.host
+        return self.is_external
+
+    def on_post_specialize(self, host):
+        self.host = str(host)
+        if host in ("localhost", "127.1", "127.0.0.1"):
+            self.lfm = lfm
+        else:
+            self.lfm = ClientSocket(host=host)
 
     def do_call(self):
         return False
@@ -110,11 +126,16 @@ class Master(ClientXMPP):
 
         #if self.current_step == "manage":
         #    provide, step, args = self.smart.send(True)
+        #
         if self.current_step == "specialize":
-            provide, step, args = self.smart.send(payload['values']["xpath"])
+            provide, step, args = self.smart.send(payload['values']['xpath'])
+
+        elif self.current_step == "post_specialize":
+            provide, step, args = self.smart.send(payload['values']['host'])
 
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(1)
+
         else:
             provide, step, args = self.smart.next()
 
@@ -143,6 +164,15 @@ class Master(ClientXMPP):
             for provide_match in provide.matches():
                 field.add_option(label=str(provide_match['extra'].get('label', provide_match['name'])),
                                  value=str(provide_match['xpath']))
+
+        if step == 'post_specialize':
+            provide_label = provide.extra.get('label', provide.xpath)
+            label = provide_label[0].lower() + provide_label[1:]
+            field = form.add_field(var="host",
+                                   ftype="input-single",
+                                   desc="on which host do you want to call the provide",
+                                   label="Where do you want to %s ?" % label,
+                                   value=provide.suggested_host)
 
         if step == 'validation':
             for variable in provide.variables():
