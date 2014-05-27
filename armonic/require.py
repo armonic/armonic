@@ -130,7 +130,7 @@ class Require(XMLRessource, ExtraInfoMixin):
         return self.name
 
     def _xml_children(self):
-        return self._variables_skel
+        return self._variables_skel 
 
     def _xml_ressource_name(self):
         return "require"
@@ -382,25 +382,25 @@ class RequireLocal(Require):
 class RequireExternal(RequireLocal):
     """To specify a configuration variable which can be provided
     by a *provide* of a external module.
-    A '__host' variable is automatically added to the args list.
+    A 'host' variable is automatically added to the args list.
     It MUST be provided.
     """
     def __init__(self, name, xpath, provide_args=[], provide_ret=[], nargs="1", **extra):
         for v in provide_args:
-            if v.name == '__host':
+            if v.name == 'host':
                 raise RequireDefinitionError(
-                    "Variable name '__host' can not be use because it is a"
+                    "Variable name 'host' can not be use because it is a"
                     " reserved variable name for External require.")
 
         RequireLocal.__init__(self, name, xpath,
-                              provide_args + [Host('__host')],
+                              provide_args + [Host('host')],
                               provide_ret, nargs, **extra)
         self.type = "external"
 
     def generate_provide_args(self, dct={}):
         ret = ({}, [])
         for a in self.provide_args:
-            if a.name == '__host':
+            if a.name == 'host':
                 continue
             if a.name in dct:
                 ret[0].update({a.name: dct[a.name]})
