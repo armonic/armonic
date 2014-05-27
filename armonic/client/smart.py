@@ -494,11 +494,20 @@ class Provide(ArmonicProvide):
         #
         # If this provide comes from a local require, the lfm is taken
         # from the requirer.
+        self.lfm = None
+        self.is_local = False
         if (require is not None and
                 require.type == "local"):
             self.lfm = requirer.lfm
-        else:
-            self.lfm = None
+            self.is_local = True
+
+        self.is_external = False
+        if (require is not None and
+                require.type == "external"):
+            self.is_external = True
+        # consider the root_provide like an external require
+        if requirer is None:
+            self.is_external = True
 
         self.manage = True
         self.call = None
