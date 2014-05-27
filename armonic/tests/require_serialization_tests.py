@@ -128,7 +128,7 @@ class TestSerialization(unittest.TestCase):
             'provide_ret': [],
             'provide_args': [
                 {
-                    'name': 'host',
+                    'name': '__host',
                     'type': 'str',
                     'required': True,
                     'xpath': None,
@@ -141,7 +141,7 @@ class TestSerialization(unittest.TestCase):
             ],
             'variables': [[
                 {
-                    'name': 'host',
+                    'name': '__host',
                     'type': 'str',
                     'required': True,
                     'xpath': None,
@@ -154,7 +154,7 @@ class TestSerialization(unittest.TestCase):
             ]],
             'variables_skel': [
                 {
-                    'name': 'host',
+                    'name': '__host',
                     'type': 'str',
                     'required': True,
                     'xpath': None,

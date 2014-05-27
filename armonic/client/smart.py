@@ -158,7 +158,7 @@ class Variable(object):
         """
         scope = self.from_require._scope_variables
 
-        if self.name == 'host' and self._value is None:
+        if self.name == '__host' and self._value is None:
             if self.from_require.type == 'external':
                 if self.from_require.provide is not None:
                     self._value = self.from_require.provide.host
