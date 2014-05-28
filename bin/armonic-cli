@@ -215,7 +215,7 @@ def cmd_provide_call(args):
         else:
             pprint.pprint(armonic.client.utils.require_validation_error(ret))
     else:
-        pprint.pprint(client.call('provide_call', args.xpath, parseArgs(args.require)))
+        pprint.pprint(client.provide_call(args.xpath, parseArgs(args.require)))
 
 def cmd_plot(args):
     if args.T == 'dot':

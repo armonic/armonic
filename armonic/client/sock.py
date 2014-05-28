@@ -59,11 +59,6 @@ class ClientSocket(object):
     def lifecycle(self, xpath, long_description=False):
         return self.call("lifecycle", xpath, long_description)
 
-    def provide_call(self, provide_xpath_uri, requires):
-        return self.call("provide_call",
-                         provide_xpath_uri=provide_xpath_uri,
-                         requires=requires)
-
     def provide_call_validate(self, provide_xpath_uri, requires):
         return self.call("provide_call_validate",
                          provide_xpath_uri=provide_xpath_uri,
@@ -89,6 +84,11 @@ class ClientSocket(object):
         return self.call("provide_call_requires",
                          provide_xpath_uri=provide_xpath_uri,
                          path_idx=path_idx)
+
+    def provide_call(self, provide_xpath_uri, requires=[], path_idx=0):
+        return self.call("provide_call",
+                         provide_xpath_uri=provide_xpath_uri,
+                         requires=requires, path_idx=path_idx)
 
     def state(self, xpath, doc=False):
         return self.call("state", xpath=xpath, doc=doc)
