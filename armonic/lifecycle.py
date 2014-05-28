@@ -141,7 +141,7 @@ class State(XMLRessource):
     def lf_name(self, name):
         self._lf_name = name
 
-    def _enter(self, requires=[]):
+    def _enter_safe(self, requires=[]):
         """Check all state requires are satisfated and enter into State
 
         :param requires: variable values to fill the requires::
@@ -419,7 +419,7 @@ class Lifecycle(XMLRessource):
         logger.event({'event': 'state_appling',
                       'state': state.name,
                       'lifecycle': self.name})
-        ret = state._enter(requires)
+        ret = state._enter_safe(requires)
         logger.debug("push state %s" % state)
         self._stack.append(state)
         logger.event({'event': 'state_applied',
