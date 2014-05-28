@@ -187,11 +187,11 @@ def cmd_state_goto(args):
 
 def cmd_provide(args):
     if args.path:
-        ret = client.provide_call_path(args.xpath)
+        ret = client.provide_call_path(args.provide_xpath)
         print_path(ret)
         return
     else:
-        ret=client.provide(args.xpath)
+        ret=client.provide(args.provide_xpath)
         for provide in ret:
             if args.all:
                 print
@@ -285,7 +285,7 @@ parser_state_goto.set_defaults(func=cmd_state_goto)
 
 
 parser_provide = subparsers.add_parser('provide', help='List provides.')
-parser_provide.add_argument('xpath' , type=str, help='a xpath')
+parser_provide.add_argument('provide_xpath' , type=str, help='a xpath that matches Provide resources')
 parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
 parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
 parser_provide.add_argument('--all','-a',action='store_true',help="Show all provides required to call the provide")
