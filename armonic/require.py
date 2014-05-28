@@ -130,7 +130,7 @@ class Require(XMLRessource, ExtraInfoMixin):
         return self.name
 
     def _xml_children(self):
-        return self._variables_skel 
+        return self._variables_skel
 
     def _xml_ressource_name(self):
         return "require"
@@ -393,7 +393,7 @@ class RequireExternal(RequireLocal):
                     " reserved variable name for External require.")
 
         RequireLocal.__init__(self, name, xpath,
-                              provide_args + [Host('host')],
+                              [Host('host', label="Host")] + provide_args,
                               provide_ret, nargs, **extra)
         self.type = "external"
 
