@@ -30,11 +30,17 @@ class Configured(State):
     @Require('augeas', [VString("root", default="/", label="Augeas root path", expert=True)])
     @RequireExternal("db", "//Mysql//add_database",
                      provide_args=[VString("user",
-                                           default="wordpress_user"),
+                                           default="wordpress_user",
+                                           label="Database user",
+                                           help="MySQL user to connect to the Wordpress database"),
                                    Password("password",
-                                            default="wordpress_pwd"),
+                                            default="wordpress_pwd",
+                                            label="Database user password",
+                                            help="MySQL user password to the Wordpress database"),
                                    VString("database",
-                                           default="wordpress_db")])
+                                           default="wordpress_db",
+                                           label="Database name",
+                                           help="The Wordpress database name")])
     def enter(self, requires):
         """set value in wp-config.php"""
         self.conf = configuration.Wordpress(autoload=True, augeas_root=requires.augeas.variables().root.value)
@@ -61,7 +67,9 @@ class Active(State):
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
     @RequireLocal("http_document", "//Httpd//get_document_root",
-                  provide_args=[VString("root", default="/var/www/wordpress")])
+                  provide_args=[VString("root",
+                                        default="/var/www/wordpress",
+                                        label="Path to Wordpress files")])
     @RequireLocal("http_start", "//Httpd//start")
     def enter(self, requires):
         self.document_root = requires.http_document.variables().root.value
