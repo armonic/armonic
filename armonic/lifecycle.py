@@ -5,6 +5,8 @@ import copy
 import sys
 from platform import uname
 
+import armonic.common
+
 from armonic.common import IterContainer, DoesNotExist, ProvideError, \
                            format_input_variables
 from armonic.provide import Provide
@@ -150,10 +152,15 @@ class State(XMLRessource):
         provide.fill(requires)
         provide.validate()
         try:
-            if provide:
-                ret = f_provide(provide)
+            if armonic.common.SIMULATION:
+                logger.warning("Provide call %s is simulated" % provide.name)
+                ret = {}
             else:
-                ret = f_provide()
+                if provide:
+                    ret = f_provide(provide)
+                else:
+                    ret = f_provide()
+            
             provide.finalize()
         except ValidationError:
             raise

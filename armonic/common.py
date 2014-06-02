@@ -10,6 +10,13 @@ from armonic.utils import get_first_ip
 VERSION = "0.1"
 
 
+SIMULATION = False
+"""If set to True, provide call is not realized, just simulated. This
+is used to design Provide/Require interactions.
+
+"""
+
+
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
     useful if we simultaneous use several agents.

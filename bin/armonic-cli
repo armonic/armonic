@@ -243,7 +243,7 @@ parser.add_argument('--no-remote', action='store_true', default=False,  help="Di
 parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'], default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
 parser.add_argument('--lifecycle-dir', type=str, help="A lifecycle directory. This is only useful on no-remote mode.")
 parser.add_argument('--no-default', action='store_true', default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
-
+parser.add_argument('--simulation', action='store_true', default=False, help="Don't execute provide calls. This is only useful on no-remote mode.")
 
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
 parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
@@ -319,6 +319,8 @@ if args.no_remote is False:
     client = ClientSocket(args.host, args.port)
     client.add_logging_handler(sh)
 else:
+    armonic.common.SIMULATION = args.simulation
+
     from armonic.utils import OsTypeMBS, OsTypeDebianWheezy
     logging.basicConfig(level=args.verbose)
     os_type = None
