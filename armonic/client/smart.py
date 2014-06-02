@@ -429,7 +429,7 @@ class Provide(ArmonicProvide):
     If method do_step returns True, this step is 'yielded'.
     Method on_step takes as input the sent data.
 
-    :param child_number: if this Provide is a dependancies, this is
+    :param child_number: if this Provide is a dependencies, this is
     the number of this child.
     :param requirer: the provide that need this require
     :param require: the remote require of the requirer that leads
@@ -440,7 +440,7 @@ class Provide(ArmonicProvide):
              "lfm",
              "specialize",
              "post_specialize",
-             "set_dependancies",
+             "set_dependencies",
              "multiplicity",
              "validation",
              "call",
@@ -632,11 +632,11 @@ class Provide(ArmonicProvide):
         if self.call is None:
             raise AttributeError("'call' attribute must not be None. Must be set at 'call' step")
 
-    def do_set_dependancies(self):
+    def do_set_dependencies(self):
         """Return False by default."""
         return False
 
-    def on_set_dependancies(self, call):
+    def on_set_dependencies(self, call):
         pass
 
     def do_manage(self):
@@ -769,10 +769,10 @@ def smart_call(root_provide):
                     scope.on_post_specialize(data)
                 scope._next_step()
 
-            elif scope.step == "set_dependancies":
-                if scope.do_set_dependancies():
+            elif scope.step == "set_dependencies":
+                if scope.do_set_dependencies():
                     data = yield(scope, scope.step, None)
-                    scope.on_set_dependancies(data)
+                    scope.on_set_dependencies(data)
                 scope._build_requires()
                 scope._next_step()
 
@@ -818,7 +818,7 @@ def smart_call(root_provide):
                         pass
 
                     # If all requires have been treated, the
-                    # manage_dependancies step is done
+                    # manage_dependencies step is done
                     if scope._current_require is None:
                         scope._next_step()
 
