@@ -141,6 +141,26 @@ class State(XMLRessource):
     def lf_name(self, name):
         self._lf_name = name
 
+    def _provide_call(self, f_provide, provide, requires=[]):
+        """Call a provide.
+        :param f_provide: is the function to call
+        :param provide: is the provide object
+        :param requires: is the list of input requires
+        """
+        provide.fill(requires)
+        provide.validate()
+        try:
+            if provide:
+                ret = f_provide(provide)
+            else:
+                ret = f_provide()
+            provide.finalize()
+        except ValidationError:
+            raise
+        except Exception, e:
+            raise ProvideError(provide, e.message, sys.exc_info())
+        return ret
+
     def _enter_safe(self, requires=[]):
         """Check all state requires are satisfated and enter into State
 
@@ -153,19 +173,7 @@ class State(XMLRessource):
 
         :type requires: tuple of variable values and deployment info
         """
-        self.provide_enter.fill(requires)
-        self.provide_enter.validate()
-        try:
-            if self.provide_enter:
-                ret = self.enter(self.provide_enter)
-            else:
-                ret = self.enter()
-            self.provide_enter.finalize()
-        except ValidationError:
-            raise
-        except Exception, e:
-            raise ProvideError(self.provide_by_name('enter'), e.message, sys.exc_info())
-        return ret
+        return self._provide_call(self.enter, self.provide_enter, requires)
 
     def enter(self):
         """Called when a state is applied"""
@@ -671,18 +679,7 @@ class Lifecycle(XMLRessource):
         state_index = self._stack.index(state)
         provide = state.provide_by_name(provide_name)
         provide_method = getattr(state, provide_name)
-        provide.fill(requires)
-        provide.validate()
-        try:
-            if provide:
-                ret = provide_method(provide)
-            else:
-                ret = provide_method()
-            provide.finalize()
-        except ValidationError:
-            raise
-        except Exception, e:
-            raise ProvideError(provide, e.message, sys.exc_info())
+        ret = state._provide_call(provide_method, provide, requires)
         logger.debug("Provide %s returns values %s" % (provide_name, ret))
         logger.debug("Propagate flags %s to upper states" % provide.flags)
         for s in self._stack[state_index:]:
