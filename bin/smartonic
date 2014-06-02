@@ -61,6 +61,19 @@ if __name__ == "__main__":
                         default=None,
                         help='Host where to call the provide')
 
+    parser.add_argument('--no-remote', action='store_true',
+                        default=False,  help="Directly use Armonic module.")
+    parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'],
+                        default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+    parser.add_argument('--lifecycle-dir', type=str,
+                        help="A lifecycle directory. This is only useful on no-remote mode.")
+    parser.add_argument('--no-default', action='store_true',
+                        default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+    parser.add_argument('--simulation', action='store_true',
+                        default=False,
+                        help="Don't execute provide calls. This is only useful on no-remote mode.")
+
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -69,12 +82,23 @@ if __name__ == "__main__":
         verbosity = logging.INFO
 
     logging.basicConfig(level=verbosity,
-                        format = '%(levelname)5s - %(message)s')
+                        format = '%(levelname)7s - %(message)s')
 
-    if args.host is None:
+    if args.no_remote:
         import armonic.common
-        armonic.common.load_default_lifecycles()
-        lfm = Serialize(os_type=OsTypeMBS())
+        armonic.common.SIMULATION = args.simulation
+
+        os_type = None
+        if args.os_type == "mbs":
+            os_type = OsTypeMBS()
+        elif args.os_type == "debian":
+            os_type = OsTypeDebianWheezy()
+
+        if not args.no_default:
+            armonic.common.load_default_lifecycles()
+        if args.lifecycle_dir is not None:
+            armonic.common.load_lifecycle(args.lifecycle_dir)
+        lfm = Serialize(os_type=os_type)
         class MyProvide(Provide):
             # @lfm.setter
             # def lfm(self, value):
@@ -85,10 +109,6 @@ if __name__ == "__main__":
 
             def on_manage(self, data):
                 return True
-
-            def do_call(self):
-                return False
-
 
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
@@ -106,15 +126,15 @@ if __name__ == "__main__":
         format = '%(levelname)5s %(ip)15s - %(message)s'
         handler.setFormatter(ColorFormatter(format))
 
-
-        lfm = ClientSocket(host=args.host, handlers=[handler])
         class MyProvide(Provide):
             def on_lfm(self, host):
                 self.host = host
                 self.lfm = ClientSocket(host=host, handlers=[handler])
 
         root_provide = MyProvide(generic_xpath=args.xpath)
-        root_provide.lfm = lfm
+        if args.host is not None:
+            lfm = ClientSocket(host=args.host, handlers=[handler])
+            root_provide.lfm = lfm
 
 
 
@@ -171,14 +191,14 @@ if __name__ == "__main__":
                     else: return None
 
                 for v in provide.variables():
-                    logger.debug("\tXpath:           ", v.xpath)
-                    logger.debug("\tValue :          ", v.value)
-                    logger.debug("\tValueResolved    ", v.value_resolved)
-                    logger.debug("\tDefault:         ", v.default)
-                    logger.debug("\tDefaultResolved: ", v.default_resolved)
-                    logger.debug("\tResolvedBy     : ", xpathOrNone(v._resolved_by))
-                    logger.debug("\tSetBy          : ", xpathOrNone(v._set_by))
-                    logger.debug("\tSuggestedBy    : ", xpathOrNone(v._suggested_by))
+                    logger.debug("\tXpath:           %s" % v.xpath)
+                    logger.debug("\tValue :          %s" % v.value)
+                    logger.debug("\tValueResolved    %s" % v.value_resolved)
+                    logger.debug("\tDefault:         %s" % v.default)
+                    logger.debug("\tDefaultResolved: %s" % v.default_resolved)
+                    logger.debug("\tResolvedBy     : %s" % xpathOrNone(v._resolved_by))
+                    logger.debug("\tSetBy          : %s" % xpathOrNone(v._set_by))
+                    logger.debug("\tSuggestedBy    : %s" % xpathOrNone(v._suggested_by))
                     print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
 
                 print indent(provide.depth, "Variables scope is:")
