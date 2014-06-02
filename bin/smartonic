@@ -201,7 +201,8 @@ if __name__ == "__main__":
                     logger.debug("\tSuggestedBy    : %s" % xpathOrNone(v._suggested_by))
                     print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
 
-                print indent(provide.depth, "Variables scope is:")
+                if provide.variables_scope() != []:
+                    print indent(provide.depth, "Variables scope is:")
                 for v in provide.variables_scope():
                     print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
 
@@ -209,7 +210,6 @@ if __name__ == "__main__":
                     if v.value is None:
                         if v.from_xpath is not None:
                             print v.from_xpath
-                        print v.xpath
                         ret = user_input_variable(variable_name=v.name,
                                                   message=indent(provide.depth, "Fill %s" % v.xpath),
                                                   prefill=str(v.value_get_one()))
