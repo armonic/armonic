@@ -804,7 +804,12 @@ def smart_call(root_provide):
                         # Get the next require to manage
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
-                            number = yield (scope, scope.step, req)
+                            multiplicity = yield (scope, scope.step, req)
+                            if req.skel.type == 'external':
+                                if type(multiplicity) is not list:
+                                    raise TypeError("Multiplicity step for external requires must send a list!")
+                                number = len(multiplicity)
+                                
                             if type(number) is not int:
                                 raise TypeError("Multiplicity step must send a integer!")
                             for i in range(0,number):
@@ -814,6 +819,8 @@ def smart_call(root_provide):
                                     child_num=new.child_num,
                                     require=new)
                                 new.provide = p
+                                if req.skel.type == 'external':
+                                    new.provide.host = multiplicity[i]
                         else:
                             new = req.get_new_require()
                             p = scope.build_child(

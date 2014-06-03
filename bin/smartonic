@@ -221,7 +221,6 @@ if __name__ == "__main__":
                     logger.debug("\t%s" % str(v))
 
 
-
         elif provide.step == "multiplicity":
             require = args
             while True:
@@ -233,6 +232,13 @@ if __name__ == "__main__":
                     print e
                     print indent(provide.depth, "Invalid choice. Do it again!")
             data = answer
+            
+            adresses = []
+            if require.skel.type == 'external':
+                for i in range(0,data):
+                    adresses.append(raw_input(indent(provide.depth, "What is adress of node %s? " % i)))
+                data = adresses
+
 
         elif provide.step == "call":
             data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
