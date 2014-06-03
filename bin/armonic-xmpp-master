@@ -134,7 +134,7 @@ class Master(ClientXMPP):
             provide, step, args = self.smart.send(payload['values']['host'])
 
         elif self.current_step == "multiplicity":
-            provide, step, args = self.smart.send(1)
+            provide, step, args = self.smart.send(int(payload['values']['multiplicity']))
 
         else:
             provide, step, args = self.smart.next()
@@ -153,6 +153,11 @@ class Master(ClientXMPP):
         form.add_field(var="tree_id",
                        ftype="fixed",
                        value=str(provide.tree_id))
+
+        if step == 'multiplicity':
+            form.add_field(var="multiplicity",
+                           ftype="input-single",
+                           value="1")
 
         if step == 'specialize':
             field = form.add_field(var="specialize",
