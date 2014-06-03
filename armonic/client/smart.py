@@ -656,7 +656,7 @@ class Provide(ArmonicProvide):
                                 relative=True,
                                 resource="provide")
 
-        for index, xpath in enumerate(provides):
+        for xpath in provides:
             provide_info = self.lfm.provide(xpath)
             if provide_info:
                 matches.append(provide_info[0])

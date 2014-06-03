@@ -160,7 +160,7 @@ class State(XMLRessource):
                     ret = f_provide(provide)
                 else:
                     ret = f_provide()
-            
+
             provide.finalize()
         except ValidationError:
             raise
@@ -384,7 +384,7 @@ class Lifecycle(XMLRessource):
     def doc(self):
         """Return docstring of this lifecycle."""
         return self.__class__.__doc__
-        
+
     def state_list(self, reachable=False):
         """To get all available states.
 
