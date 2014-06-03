@@ -655,7 +655,11 @@ class Provide(ArmonicProvide):
                                 relative=True,
                                 resource="provide")
         for index, xpath in enumerate(provides):
-            provides[index] = self.lfm.provide(xpath)[0]
+            provide_info = self.lfm.provide(xpath)
+            if provide_info:
+                provides[index] = provide_info[0]
+            else:
+                del provides[index]
         return provides
 
     def on_specialize(self, xpath):
