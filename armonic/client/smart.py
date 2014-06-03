@@ -761,8 +761,9 @@ def smart_call(root_provide):
                 elif len(m) == 1:
                     specialized = m[0]['xpath']
                 else:
-                    raise Exception(
-                        "Xpath '%s' matches nothing!" % scope.generic_xpath)
+                    raise Exception('No path to %s found on %s' % \
+                            (scope.generic_xpath, scope.lfm.lf_manager.os_type))
+
                 scope.on_specialize(specialized)
                 if scope.manage:
                     scope._build_provide(specialized)
