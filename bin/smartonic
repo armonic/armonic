@@ -24,17 +24,17 @@ def user_input_confirm(msg, prefix=''):
     return True
 
 
-def user_input_choose_amongst(choices, prefix=''):
+def user_input_choose_amongst(choices, prefix='', title=''):
     """Ask the user if he confirm the msg question.
 
     :rtype: True if user confirm, False if not"""
     while True:
-        print "%sYou must choose a provide amongst:" % prefix
+        print "%s%s:" % (title, prefix)
         for i, c in enumerate(choices):
-            print "%s  %d) %s" % (prefix, i, c['xpath'])
-        answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices) - 1))
+            print "- %s%d) %s" % (prefix, i, c)
+        answer = raw_input("%sChoose [0-%d]: " % (prefix, len(choices) - 1))
         try:
-            return choices[int(answer)]['xpath']
+            return choices[int(answer)]
         except Exception as e:
             print e
             print "%sInvalid choice. Do it again!" % (prefix)
@@ -98,6 +98,9 @@ if __name__ == "__main__":
                     return False
                 else:
                     return True
+
+            def do_path_choice(self):
+                return True
 
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
@@ -172,7 +175,15 @@ if __name__ == "__main__":
             data = host['location']
 
         elif provide.step == "specialize":
-            data = user_input_choose_amongst(args, prefix=indent(provide.depth))
+            args = map(lambda p: p['xpath'], args)
+            data = user_input_choose_amongst(args, prefix=indent(provide.depth),
+                                             title="You must choose a provide amongst")
+
+        elif provide.step == "path_choice":
+            args = [" -> ".join([state for state, method in path]) for path in args]
+            data = user_input_choose_amongst(args, prefix=indent(provide.depth),
+                                             title="You must choose the path to call the provide")
+            data = args.index(data)
 
         elif provide.step == "set_dependencies":
             pass

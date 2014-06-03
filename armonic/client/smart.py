@@ -459,6 +459,7 @@ class Provide(ArmonicProvide):
              "lfm",
              "specialize",
              "post_specialize",
+             "path_choice",
              "set_dependencies",
              "multiplicity",
              "validation",
@@ -489,6 +490,9 @@ class Provide(ArmonicProvide):
 
         # This dict contains variables that belongs to this scope.
         self._scope_variables = {}
+
+        # The path index used
+        self._path_index = 0
 
         # If this provide is the Root provide
         # We initialize depth and tree_id
@@ -605,7 +609,8 @@ class Provide(ArmonicProvide):
 
     def _build_requires(self):
         """Get all requires"""
-        provides = self.lfm.provide_call_requires(self.xpath)
+        provides = self.lfm.provide_call_requires(self.xpath,
+                                                  path_idx=self._path_index)
         self._build_require_from_call_require(provides)
 
     def _requirator(self):
@@ -709,6 +714,9 @@ class Provide(ArmonicProvide):
     def do_post_specialize(self):
         return False
 
+    def do_path_choice(self):
+        return False
+
     def update_scope_provide_ret(self, provide_ret):
         """When the provide call returns value, we habve to update the scope
         of the require in order to be able to use these value to fill
@@ -723,7 +731,8 @@ class Provide(ArmonicProvide):
         # FIXME. This is a temporary hack!
         ret = self.lfm.provide_call_validate(
             provide_xpath_uri=self.xpath,
-            requires=self.variables_serialized())
+            requires=self.variables_serialized(),
+            path_idx=self._path_index)
         if ret['errors']:
             import pprint
             import json
@@ -740,7 +749,8 @@ class Provide(ArmonicProvide):
 
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.xpath,
-            requires=self.variables_serialized())
+            requires=self.variables_serialized(),
+            path_idx=self._path_index)
 
         self.update_scope_provide_ret(self.provide_ret)
         # self.provide_ret = self.lfm.call("provide_call_validate",
@@ -808,6 +818,14 @@ def smart_call(root_provide):
                 if scope.do_post_specialize():
                     data = yield(scope, scope.step, None)
                     scope.on_post_specialize(data)
+                scope._next_step()
+
+            elif scope.step == "path_choice":
+                p = scope.lfm.provide_call_path(scope.xpath)
+                path_list = p[0]['paths']
+                if len(path_list) > 1 and scope.do_path_choice():
+                    data = yield(scope, scope.step, path_list)
+                    scope._path_index = data
                 scope._next_step()
 
             elif scope.step == "set_dependencies":
