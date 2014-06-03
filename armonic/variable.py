@@ -84,10 +84,10 @@ class Variable(XMLRessource, ExtraInfoMixin):
         already have fill it because filled values will be used.
         """
         self.error = None
-        if not value:
+        if value is None:
             value = self.value
 
-        if not value and self.required:
+        if value is None and self.required:
             self.error = "%s is required" % self.name
             raise ValidationError(variable_name=self.name,
                                   msg="%s is required" % self.name)
@@ -225,7 +225,7 @@ class VString(Variable):
         self._value = self._validate_type(value)
 
     def _validate(self, value=None):
-        if not value:
+        if value is None:
             value = self.value
 
         Variable._validate(self, value)
