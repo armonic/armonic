@@ -65,7 +65,7 @@ if __name__ == "__main__":
                         default=False,  help="Directly use Armonic module.")
     parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'],
                         default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
-    parser.add_argument('--lifecycle-dir', type=str,
+    parser.add_argument('--lifecycle-dir', type=str, action='append',
                         help="A lifecycle directory. This is only useful on no-remote mode.")
     parser.add_argument('--no-default', action='store_true',
                         default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
@@ -97,7 +97,8 @@ if __name__ == "__main__":
         if not args.no_default:
             armonic.common.load_default_lifecycles()
         if args.lifecycle_dir is not None:
-            armonic.common.load_lifecycle(args.lifecycle_dir)
+            for l in args.lifecycle_dir:
+                armonic.common.load_lifecycle(l)
         lfm = Serialize(os_type=os_type)
         class MyProvide(Provide):
             # @lfm.setter
