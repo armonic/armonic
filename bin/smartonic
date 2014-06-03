@@ -7,7 +7,7 @@ from itertools import repeat
 
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
-from armonic.utils import OsTypeMBS
+from armonic.utils import OsTypeMBS, OsTypeDebianWheezy
 
 
 logger = logging.getLogger()
