@@ -689,7 +689,8 @@ class Provide(ArmonicProvide):
         """
         # A provide should ALWAYS return a dict.
         if type(self.provide_ret) is dict:  # FIXME
-            self.require.update_provide_ret(self.provide_ret)
+            if self.has_requirer():
+                self.require.update_provide_ret(self.provide_ret)
 
     def lfm_call(self):
         # FIXME. This is a temporary hack!
