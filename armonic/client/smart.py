@@ -483,7 +483,7 @@ class Provide(ArmonicProvide):
         #self.ignore = False
         self._step_current = 0
 
-        self._current_require = None
+        self._current_requires = None
         self._children_generator = None
 
         # Contain all requires. A require can be several time in this
@@ -599,6 +599,7 @@ class Provide(ArmonicProvide):
         return self._children_generator
 
     def build_child(self, generic_xpath, child_num, require):
+        """Build and return a new provide by using the same class. """
         ret = self.__class__(generic_xpath=generic_xpath,
                              requirer=self,
                              child_num=child_num,
@@ -798,10 +799,13 @@ def smart_call(root_provide):
                 scope._next_step()
 
             elif scope.step == "multiplicity":
-                if scope._current_require is None:
-                    # For each require, provides are built
+                # If no requires are currently managed, we will try to
+                # find one (via scope._requirator()). If we are not
+                # able to find one, then this step is done and we go
+                # to the next step.
+                if scope._current_requires is None:
                     try:
-                        # Get the next require to manage
+                        # We are trying to get a next Requires
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
                             multiplicity = yield (scope, scope.step, req)
@@ -812,8 +816,13 @@ def smart_call(root_provide):
                                 
                             if type(number) is not int:
                                 raise TypeError("Multiplicity step must send a integer!")
-                            for i in range(0,number):
+                            for i in range(0, number):
+                                # We build a new Require object from
+                                # the skeleton
                                 new = req.get_new_require()
+                                # We create a new provide child to the
+                                # current provide and attach the
+                                # require to this provide.
                                 p = scope.build_child(
                                     generic_xpath=new.provide_xpath,
                                     child_num=new.child_num,
@@ -828,25 +837,31 @@ def smart_call(root_provide):
                                 child_num=new.child_num,
                                 require=new)
                             new.provide = p
-                        scope._current_require = req
+                        scope._current_requires = req
 
                     except StopIteration:
-                        pass
+                        # If all requires have been treated, the
+                        # manage_dependencies step is done
+                        if scope._current_requires is None:
+                            scope._next_step()
 
-                    # If all requires have been treated, the
-                    # manage_dependencies step is done
-                    if scope._current_require is None:
-                        scope._next_step()
-
+                # If a requires is currently managed, we have to
+                # process all provide attached to this Requires since
+                # it can have a multiplicity greather than 1.  
+                #
+                # We scan this requires to find the next non processed
+                # one. If all provides have been processed, then we
+                # set the current_requires to None in order to lookup
+                # for the next Requires (at next main loop iteration)
                 else:
                     done = True
-                    for r in scope._current_require:
+                    for r in scope._current_requires:
                         if r.provide.manage == True and not r.provide.step == "done":
                             done = False
                             scope = r.provide
                             break
                     if done:
-                        scope._current_require = None
+                        scope._current_requires = None
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()
