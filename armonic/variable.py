@@ -194,6 +194,12 @@ class VList(Variable):
                                                    self.default)
 
 
+class VHosts(VList):
+    def __init__(self, name, default=None, required=True, **extra):
+        VList.__init__(self, name, list,
+                       default=default, required=required, **extra)
+
+
 class VString(Variable):
     """Variable of type string
     """
