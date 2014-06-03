@@ -195,6 +195,7 @@ class VList(Variable):
 
 
 class VHosts(VList):
+    type = 'vhosts'
     def __init__(self, name, default=None, required=True, **extra):
         VList.__init__(self, name, Host,
                        default=default, required=required, **extra)

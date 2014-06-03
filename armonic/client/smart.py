@@ -56,7 +56,7 @@ class Variable(object):
 
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -64,6 +64,7 @@ class Variable(object):
         self._default = default
         self._value = value
         self.required = required
+        self.type = type
         self.extra = extra
 
         self._is_skel = True
@@ -83,6 +84,7 @@ class Variable(object):
             default=self._default,
             value=self._value,
             required=self.required,
+            type=self.type,
             extra=self.extra)
 
         var._is_skel = False
@@ -102,6 +104,7 @@ class Variable(object):
                    default=dct_json['default'],
                    value=None,
                    required=dct_json['required'],
+                   type=dct_json['type'],
                    extra=dct_json['extra'])
         return this
 
@@ -157,6 +160,15 @@ class Variable(object):
         the scope.
         """
         scope = self.from_require._scope_variables
+
+        # Variables type vhosts is a special kind of variable.  To
+        # fill it, we accumulate host value of all brothers of this
+        # provide.
+        if self.type == 'vhosts':
+            acc = []
+            for r in self.from_require._from_requires:
+                acc.append(r.provide.host)
+            self._value = acc
 
         if self.name == 'host' and self._value is None:
             if self.from_require.type == 'external':
@@ -217,6 +229,7 @@ class Requires(list):
 
     def get_new_require(self):
         new = self.skel.copy()
+        new._from_requires = self
         list.append(self, new)
         return new
 
@@ -252,6 +265,7 @@ class Require(object):
 
         self.child_num = child_num
         self.from_provide = from_provide
+        self._from_requires = None
         # If this require comes from a special provide, ie. entry,
         # leave or cross. This is used to avoir variable value
         # propagation to require that comes from states.
