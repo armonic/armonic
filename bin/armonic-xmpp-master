@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 import logging
 import argparse
 from uuid import uuid4
@@ -11,11 +12,8 @@ from sleekxmpp.thirdparty import OrderedDict
 import armonic.common
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
-from armonic.utils import OsTypeMBS
+from armonic.utils import OsTypeAll
 from armonic.client.sock import ClientSocket
-
-armonic.common.load_default_lifecycles()
-lfm = Serialize(os_type=OsTypeMBS())
 
 DONT_MANAGE = "None"
 """Describe the value passed to not manage a provide"""
@@ -208,7 +206,7 @@ class Master(ClientXMPP):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='scheduler')
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
     parser.add_argument('--host',
                         type=str,
                         default="im.aeolus.org",
@@ -225,7 +223,21 @@ if __name__ == '__main__':
     parser.add_argument('--input-event-file', '-i',
                         default='-', type=argparse.FileType('r', 0),
                         help="Input file where events are read")
+    parser.add_argument('--lifecycle-dir', type=str, action='append',
+                        help="A lifecycle directory")
+    parser.add_argument('--no-default', action='store_true',
+                        default=False, help="Don't load default lifecycles")
     args = parser.parse_args()
+
+
+    if not args.no_default:
+        armonic.common.load_default_lifecycles()
+
+    if args.lifecycle_dir is not None:
+        for l in args.lifecycle_dir:
+            armonic.common.load_lifecycle(l)
+
+    lfm = Serialize(os_type=OsTypeAll())
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)-8s %(message)s')
