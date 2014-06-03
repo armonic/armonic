@@ -83,6 +83,7 @@ class Master(ClientXMPP):
         form.add_reported("help")
 
         for provide in self.lfm.provide("//*"):
+            tags = ""
             if provide['extra'].get('tags'):
                 tags = ",".join(provide['extra']['tags'])
 
