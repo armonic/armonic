@@ -18,6 +18,7 @@ from armonic.client.sock import ClientSocket
 DONT_MANAGE = "None"
 """Describe the value passed to not manage a provide"""
 
+
 class MyProvide(Provide):
 
     def do_lfm(self):
@@ -26,7 +27,10 @@ class MyProvide(Provide):
 
     def do_post_specialize(self):
         self.suggested_host = ""
-        # suggest the host of the parent require
+        # host is already set
+        if self.host:
+            return False
+        # suggest the host of the parent provide
         if self.requirer and self.requirer.host:
             self.suggested_host = self.requirer.host
         return self.is_external
@@ -53,6 +57,7 @@ class MyProvide(Provide):
         provide."""
         if data == DONT_MANAGE:
             self.manage = False
+
 
 class Master(ClientXMPP):
 
@@ -133,7 +138,7 @@ class Master(ClientXMPP):
             provide, step, args = self.smart.send(payload['values']['host'])
 
         elif self.current_step == "multiplicity":
-            provide, step, args = self.smart.send(int(payload['values']['multiplicity']))
+            provide, step, args = self.smart.send(payload['values']['multiplicity'].split(','))
 
         else:
             provide, step, args = self.smart.next()
@@ -153,10 +158,9 @@ class Master(ClientXMPP):
                        ftype="fixed",
                        value=str(provide.tree_id))
 
-        if step == 'multiplicity':
-            form.add_field(var="multiplicity",
-                           ftype="input-single",
-                           value="1")
+        form.add_field(var="host",
+                       ftype="fixed",
+                       value=str(provide.host or ""))
 
         if step == 'specialize':
             field = form.add_field(var="specialize",
@@ -177,6 +181,14 @@ class Master(ClientXMPP):
                                    desc="on which host do you want to call the provide",
                                    label="Where do you want to %s ?" % label,
                                    value=provide.suggested_host)
+
+        if step == 'multiplicity':
+            provide_label = provide.extra.get('label', provide.xpath)
+            label = provide_label[0].lower() + provide_label[1:]
+            form.add_field(var="multiplicity",
+                           ftype="input-single",
+                           label="On which hosts do you want to %s ?" % label,
+                           value="1")
 
         if step == 'validation':
             for variable in provide.variables():
