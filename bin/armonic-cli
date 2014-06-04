@@ -232,6 +232,8 @@ def cmd_plot(args):
     elif args.T == 'xml':
         print(client.to_xml(args.module))
 
+help_require="specify requires. Format is 'require_name value1:value value2:value'. If the variable is a list, the format is 'require_name variable_list:[value1,value2,...]' (spaces are forbidden)."
+
 
 parser = argparse.ArgumentParser(
     prog='armonic-client',
@@ -283,7 +285,7 @@ parser_state_current.set_defaults(func=cmd_state_current)
 
 parser_state_goto = subparsers.add_parser('state-goto', help='go to a state of a module')
 parser_state_goto.add_argument('state_xpath_uri' , type=str, help='a XPath URI corresponding to a State')
-parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help="specify requires. Format is 'require_name value1:value value2:value'.")
+parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help=help_require)
 parser_state_goto.set_defaults(func=cmd_state_goto)
 
 
@@ -297,8 +299,8 @@ parser_provide.set_defaults(func=cmd_provide)
 
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
-parser_provide_call.add_argument('--check','-c',action='store_true',help="Check if requires are valid")
-parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help="specify requires. Format is 'require_name value1:value value2:value'")
+parser_provide_call.add_argument('--check','-c',action='store_true',help="check if requires are valid. This calls provide_call_validation API method.")
+parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help=help_require)
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
