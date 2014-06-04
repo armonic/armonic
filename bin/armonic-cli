@@ -20,6 +20,9 @@ import armonic.client.utils
 import os
 
 def read_string(string):
+    """Try to transform string argument value to armonic primitive type"""
+    if string.startswith('[') and string.endswith(']'):
+        return string[1:-1].split(",")
     try:
         return int(string)
     except ValueError:
@@ -209,7 +212,7 @@ def cmd_provide(args):
 
 def cmd_provide_call(args):
     if args.check:
-        ret = client.call('provide_call_validate', args.xpath, parseArgs(args.require))
+        ret = client.provide_call_validate(args.xpath, parseArgs(args.require))
         if ret['errors'] is False:
             print "Requires are valid."
         else:
