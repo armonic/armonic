@@ -1,8 +1,8 @@
 import inspect
 import logging
-import pprint
 import copy
 import sys
+import re
 from platform import uname
 
 import armonic.common
@@ -77,12 +77,24 @@ class StateFactory(type):
             # cls.provide_enter etc...
             setattr(state_class, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
 
-
         # register custom provides
         funcs = inspect.getmembers(state_class, predicate=inspect.ismethod)
         for (fname, f) in funcs:
             if hasattr(f, '_provide') and fname not in STATE_RESERVED_METHODS:
-                state_class._provides.append(copy.deepcopy(f._provide))
+                provide = copy.deepcopy(f._provide)
+
+                # Format provide extra args with class attributes
+                for key, value in provide.extra.items():
+                    if isinstance(value, basestring):
+                        matches = re.search('{([^}]*)}', value)
+                        if not matches:
+                            continue
+                        format_dct = {}
+                        for match in matches.groups():
+                            format_dct[match] = getattr(state_class, match, "")
+                        provide.extra[key] = value.format(**format_dct)
+
+                state_class._provides.append(provide)
                 logger.debug("Registered %s in state %s" % (f._provide, state_class.__name__))
 
         return state_class

@@ -18,6 +18,8 @@ class ActiveWithSystemd(State):
     """
     services = []
     """List of services to be started when entering the state"""
+    service_name = ""
+    """Human name of the service to start"""
     supported_os_type = [armonic.utils.OsTypeMBS()]
     """Supported OS list for this state"""
 
@@ -59,7 +61,7 @@ class ActiveWithSystemd(State):
             self.__systemctl("reload")
             logger.info("Restarting services '%s': done." % self.services)
 
-    @Provide()
+    @Provide(label="Start {service_name} service")
     def start(self):
         logger.info("Start (via provide) services '%s': done." % self.services)
 
@@ -69,6 +71,8 @@ class ActiveWithSystemV(State):
     """
     services = []
     """List of services to be started when entering the state"""
+    service_name = ""
+    """Human name of the service to start"""
     supported_os_type = [armonic.utils.OsTypeDebian()]
     """Supported OS list for this state"""
 
@@ -106,7 +110,7 @@ class ActiveWithSystemV(State):
                 logger.info("%s.%-10s: /etc/init.d/%s reload" %
                             (self.lf_name, self.name, service))
 
-    @Provide()
+    @Provide(label="Start {service_name} service")
     def start(self):
         logger.info("%s.%-10s: call %s.start provide (going to state Active if not already reached)" %
                     (self.lf_name, self.name))

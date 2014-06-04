@@ -1,9 +1,9 @@
 import logging
 
-from armonic.lifecycle import State, Transition, Lifecycle
+from armonic.lifecycle import State, Transition, Lifecycle, MetaState
 from armonic.require import Require, RequireExternal
 from armonic.variable import Port
-from armonic.states import ActiveWithSystemd, InstallPackagesUrpm, RunScript
+from armonic.states import ActiveWithSystemd, InstallPackagesUrpm, RunScript, ActiveWithSystemV
 
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,18 @@ class Configured(RunScript):
                       "port": requires.conf.variables().port.value})
 
 
-class Active(ActiveWithSystemd):
+class ActiveSysD(ActiveWithSystemd):
     services = ["varnish"]
+    service_name = "Varnish"
+
+
+class ActiveSysV(ActiveWithSystemV):
+    services = ["varnish"]
+    service_name = "Varnish"
+
+
+class Active(MetaState):
+    implementations = [ActiveSysD, ActiveSysV]
 
 
 class Installed(InstallPackagesUrpm):

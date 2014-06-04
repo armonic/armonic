@@ -174,22 +174,17 @@ class ResetRootPassword(State):
 
 class ActiveOnDebian(ActiveWithSystemV):
     services = ["mysql"]
-
-    @Provide(label="Start MySQL service")
-    def start(self):
-        ActiveWithSystemV.start(self)
+    service_name = "MySQL"
 
 
 class ActiveOnMBS(ActiveWithSystemd):
     services = ["mysqld"]
-
-    @Provide(label="Start MySQL service")
-    def start(self):
-        ActiveWithSystemd.start(self)
+    service_name = "MySQL"
 
 
 class EnsureMysqlIsStopped(ActiveWithSystemd):
     services = ["mysqld"]
+    service_name = "MySQL"
 
     def enter(self, requires):
         ActiveWithSystemd.leave(self)
