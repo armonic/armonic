@@ -178,10 +178,10 @@ class VList(Variable):
             raise ValidationError(msg="%s must be a list" % self.name, variable_name=self.name)
         return value
 
-    def _validate(self):
-        Variable._validate(self)
-        for value in self.value:
-            value._validate()
+    def _validate(self, value):
+        Variable._validate(self, value)
+        for v in value:
+            v._validate()
         return self._custom_validation()
 
     def __iter__(self):
