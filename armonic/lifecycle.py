@@ -849,8 +849,8 @@ class LifecycleManager(XMLRessource):
 
         :rtype: dict
         """
-        return {"os-type": armonic.utils.OS_TYPE.name,
-                "os-release": armonic.utils.OS_TYPE.release,
+        return {"os-type": self.os_type.name,
+                "os-release": self.os_type.release,
                 "version": armonic.common.VERSION}
 
     def lifecycle(self, lifecycle_xpath):
