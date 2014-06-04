@@ -117,9 +117,8 @@ class Variable(XMLRessource, ExtraInfoMixin):
         return str(self.value)
 
     def __repr__(self):
-        return "<%s(%s, xpath=%s, value=%s, default=%s)>" % (self.__class__.__name__,
-                                                   self.name, self._xpath, self.value,
-                                                   self.default)
+        return "<%s(%s, xpath=%s, value=%s, default=%s)>" % (
+            self.__class__.__name__, self.name, self._xpath, self.value, self.default)
 
 
 class VList(Variable):
@@ -178,10 +177,19 @@ class VList(Variable):
             raise ValidationError(msg="%s must be a list" % self.name, variable_name=self.name)
         return value
 
-    def _validate(self, value):
+    def _validate(self, value=None):
+        if value is None:
+            value = self.value
         Variable._validate(self, value)
-        for v in value:
-            v._validate()
+        for key, val in enumerate(value):
+            if not isinstance(val, Variable):
+                if not self._inner_inner_class:
+                    value[key] = self._inner_class(key)
+                else:
+                    value[key] = self._inner_class(key, self._inner_inner_class)
+                value[key]._validate(val)
+            else:
+                value[key]._validate()
         return self._custom_validation()
 
     def __iter__(self):
@@ -196,6 +204,7 @@ class VList(Variable):
 
 class VHosts(VList):
     type = 'vhosts'
+
     def __init__(self, name, default=None, required=True, **extra):
         VList.__init__(self, name, Host,
                        default=default, required=required, **extra)
@@ -228,7 +237,6 @@ class VString(Variable):
     def _validate(self, value=None):
         if value is None:
             value = self.value
-
         Variable._validate(self, value)
         if self.pattern and not re.match(self.pattern, value):
             self.error = self.pattern_error
@@ -250,9 +258,8 @@ class VInt(Variable):
     """Maximum value"""
 
     def _validate(self, value=None):
-        if not value:
+        if value is None:
             value = self.value
-
         Variable._validate(self, value)
         if self.min_val is not None and value < self.min_val:
             raise ValidationError(variable_name=self.name,
@@ -299,6 +306,8 @@ class VBool(Variable):
     type = 'bool'
 
     def _validate(self, value=None):
+        if value is None:
+            value = self.value
         Variable._validate(self, value)
         if not (value is True or value is False):
             raise ValidationError(variable_name=self.name,

@@ -75,6 +75,21 @@ class TestVariable(unittest.TestCase):
         self.assertEqual(t.value[0].value, "foo")
         self.assertEqual(t.value[1].value, "bar")
 
+    def test_VList_validation(self):
+        class VIntMax(VInt):
+            max_val = 5
+        t = VList("list1", inner=VIntMax)
+        with self.assertRaises(ValidationError):
+            t.fill(["foo", "bar"])
+        t.fill([1, 2, 3])
+        t._validate()
+        t._validate([1, 2, 3])
+        t.fill([1, 22, 35])
+        with self.assertRaises(ValidationError):
+            t._validate()
+        with self.assertRaises(ValidationError):
+            t._validate([1, 22, 35])
+
     def test_VList_of_VList(self):
         t = VList("Vlist", inner=VList("innerVList", inner=VString))
         t.value = [["foo", "bar"], ["test", "str"]]
