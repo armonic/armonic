@@ -174,6 +174,9 @@ class RepositoriesApt(State):
             conf = RepositoriesConf(autoload=True)
 
         for r in self.repositories:
+            if self._is_repository_exist(conf.repositories, r):
+                logger.debug("Repository %s already exist" % r)
+                continue
             logger.info("Add repository %s" % r)
             repository = Repository()
             repository.type.value = r[0]
@@ -199,3 +202,20 @@ class RepositoriesApt(State):
                 raise Exception("Key %s has not been added" % key)
 
         run("/usr/bin/apt-get", ["update"])
+
+    def _is_repository_exist(self, repositories, repository):
+        """This method is not really strong. In some case, it's doens't
+        work. Need to be improved."""
+        for r in repositories:
+            try:
+                if ((r.type.value == repository[0] and
+                     r.uri.value == repository[1] and
+                     r.distribution.value == repository[2] and
+                     r.component1.value == repository[3] and
+                     r.component2.value == repository[4] and
+                     r.component3.value == repository[5])):
+                    return True
+            except IndexError:
+                return True
+
+        return False
