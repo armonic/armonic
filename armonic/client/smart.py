@@ -230,7 +230,11 @@ class Requires(list):
     def get_new_require(self):
         new = self.skel.copy()
         new._from_requires = self
-        list.append(self, new)
+        try:
+            new.child_num = self[-1].child_num + 1
+        except IndexError:
+            pass
+        self.append(new)
         return new
 
     def variables_serialized(self):
@@ -489,10 +493,7 @@ class Provide(ArmonicProvide):
             self.tree_id = [0]
         else:
             self.depth = requirer.depth + 1
-            self.tree_id = []
-            for i in requirer.tree_id:
-                self.tree_id.append(i)
-            self.tree_id.append(child_num)
+            self.tree_id = requirer.tree_id + [child_num]
 
         #self.ignore = False
         self._step_current = 0
@@ -827,7 +828,7 @@ def smart_call(root_provide):
                                 if type(multiplicity) is not list:
                                     raise TypeError("Multiplicity step for external requires must send a list!")
                                 number = len(multiplicity)
-                                
+
                             if type(number) is not int:
                                 raise TypeError("Multiplicity step must send a integer!")
                             for i in range(0, number):
@@ -861,7 +862,7 @@ def smart_call(root_provide):
 
                 # If a requires is currently managed, we have to
                 # process all provide attached to this Requires since
-                # it can have a multiplicity greather than 1.  
+                # it can have a multiplicity greather than 1.
                 #
                 # We scan this requires to find the next non processed
                 # one. If all provides have been processed, then we
