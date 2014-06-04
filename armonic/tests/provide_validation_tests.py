@@ -183,11 +183,11 @@ class TestProvideValidation(unittest.TestCase):
             validation['requires'].provide7.foo7.variables(2)
         self.assertFalse(validation['errors'])
 
-    def test_variable_path_ambigious(self):
-        with self.assertRaises(XpathMultipleMatch):
-            self.lfm.provide_call_validate("//ProvideValidationLF//provide8",
-                                           requires=[[("//ProvideValidationLF//foo", "test1"),
-                                                      ("//ProvideValidationLF//bar", "test1")]])
+    #def test_variable_path_ambigious(self):
+        #with self.assertRaises(XpathMultipleMatch):
+            #self.lfm.provide_call_validate("//ProvideValidationLF//provide8",
+                                           #requires=[[("//ProvideValidationLF//foo", "test1"),
+                                                      #("//ProvideValidationLF//bar", "test1")]])
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
