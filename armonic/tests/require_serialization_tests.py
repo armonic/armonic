@@ -136,7 +136,9 @@ class TestSerialization(unittest.TestCase):
                     'error': None,
                     'value': None,
                     'default': None,
-                    'extra': {}
+                    'extra': {
+                        'label': 'Host'
+                    }
                 }
             ],
             'variables': [[
@@ -149,7 +151,9 @@ class TestSerialization(unittest.TestCase):
                     'error': None,
                     'value': None,
                     'default': None,
-                    'extra': {}
+                    'extra': {
+                        'label': 'Host'
+                    }
                 }
             ]],
             'variables_skel': [
@@ -162,7 +166,9 @@ class TestSerialization(unittest.TestCase):
                     'error': None,
                     'value': None,
                     'default': None,
-                    'extra': {}
+                    'extra': {
+                        'label': 'Host'
+                    }
                 }
             ],
             'extra': {}
