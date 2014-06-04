@@ -813,7 +813,9 @@ class LifecycleManager(XMLRessource):
         If it is not specified, the os type is automatically discovered.
     """
     def __init__(self, os_type=None, autoload=True):
-        self.os_type = os_type
+        self.os_type = armonic.utils.OS_TYPE
+        if os_type:
+            self.os_type = os_type
         self.lf_loaded = {}
         self.lf = {}
         for lf in armonic.utils.get_subclasses(Lifecycle):
