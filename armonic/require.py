@@ -393,7 +393,7 @@ class RequireExternal(RequireLocal):
                     " reserved variable name for External require.")
 
         RequireLocal.__init__(self, name, xpath,
-                              [Host('host', label="Host")] + provide_args,
+                              [Host('host', label="Host", expert=True)] + provide_args,
                               provide_ret, nargs, **extra)
         self.type = "external"
 
