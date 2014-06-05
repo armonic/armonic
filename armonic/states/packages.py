@@ -165,7 +165,8 @@ class RepositoriesApt(State):
     keys = []
     """A key is a pair of server, and key."""
 
-    @Require("augeas", [VString("root", required=False)])
+    @Require("augeas", [VString("root", label="Augeas root path",
+                        default="/", expert=True, required=False)])
     def enter(self, requires):
         augeas_root = requires.augeas.variables().root.value
         if augeas_root is not None:
