@@ -129,7 +129,7 @@ class TestSerialization(unittest.TestCase):
             'provide_args': [
                 {
                     'name': 'host',
-                    'type': 'str',
+                    'type': 'armonic_host',
                     'required': True,
                     'xpath': None,
                     'from_xpath': None,
@@ -137,14 +137,15 @@ class TestSerialization(unittest.TestCase):
                     'value': None,
                     'default': None,
                     'extra': {
-                        'label': 'Host'
+                        'label': 'Host',
+                        'expert': True
                     }
                 }
             ],
             'variables': [[
                 {
                     'name': 'host',
-                    'type': 'str',
+                    'type': 'armonic_host',
                     'required': True,
                     'xpath': None,
                     'from_xpath': None,
@@ -152,14 +153,15 @@ class TestSerialization(unittest.TestCase):
                     'value': None,
                     'default': None,
                     'extra': {
-                        'label': 'Host'
+                        'label': 'Host',
+                        'expert': True
                     }
                 }
             ]],
             'variables_skel': [
                 {
                     'name': 'host',
-                    'type': 'str',
+                    'type': 'armonic_host',
                     'required': True,
                     'xpath': None,
                     'from_xpath': None,
@@ -167,7 +169,8 @@ class TestSerialization(unittest.TestCase):
                     'value': None,
                     'default': None,
                     'extra': {
-                        'label': 'Host'
+                        'label': 'Host',
+                        'expert': True
                     }
                 }
             ],
