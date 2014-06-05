@@ -22,7 +22,7 @@ import logging
 import copy
 
 from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
-from armonic.variable import Host
+from armonic.variable import ArmonicHost
 from armonic.provide import Provide
 from armonic.xml_register import XMLRegistery, XMLRessource
 
@@ -393,7 +393,7 @@ class RequireExternal(RequireLocal):
                     " reserved variable name for External require.")
 
         RequireLocal.__init__(self, name, xpath,
-                              [Host('host', label="Host", expert=True)] + provide_args,
+                              [ArmonicHost('host', label="Host", expert=True)] + provide_args,
                               provide_ret, nargs, **extra)
         self.type = "external"
 

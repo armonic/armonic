@@ -202,14 +202,6 @@ class VList(Variable):
                                                    self.default)
 
 
-class VHosts(VList):
-    type = 'vhosts'
-
-    def __init__(self, name, default=None, required=True, **extra):
-        VList.__init__(self, name, Host,
-                       default=default, required=required, **extra)
-
-
 class VString(Variable):
     """Variable of type string
     """
@@ -324,6 +316,24 @@ class VBool(Variable):
             raise ValidationError(msg="%s must be a boolean" % self.name,
                                   variable_name=self.name)
         return value
+
+
+class ArmonicHost(VString):
+    """Internal variable that contains the host of an RequireExternal
+    """
+    type = 'armonic_host'
+    pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
+    pattern_error = 'Incorrect host (pattern: %s)' % pattern
+
+
+class ArmonicHosts(VList):
+    """Internal variable to store the list of hosts
+    when deploying multiple instances."""
+    type = 'armonic_hosts'
+
+    def __init__(self, name, default=None, required=True, **extra):
+        VList.__init__(self, name, ArmonicHost,
+                       default=default, required=required, **extra)
 
 
 class Host(VString):

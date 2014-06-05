@@ -161,17 +161,20 @@ class Variable(object):
         """
         scope = self.from_require._scope_variables
 
-        # Variables type vhosts is a special kind of variable.  To
-        # fill it, we accumulate host value of all brothers of this
-        # provide.
-        if self.type == 'vhosts' and self.from_require.from_provide.require:
+        # Variables type armonic_hosts is a special kind of variable. To
+        # fill it, we accumulate host value of all brothers of this provide.
+        if self.type == 'armonic_hosts' and self.from_require.from_provide.require:
             self._value = [r.provide.host for r in self.from_require.from_provide.require._from_requires]
 
-        if self.name == 'host' and self._value is None:
-            if self.from_require.type == 'external':
-                if self.from_require.provide is not None:
-                    self._value = self.from_require.provide.host
-                    # FIXME: We have a problem because host doesn't come from a variable!
+        if self.type == 'armonic_host' and self._value is None:
+            if self.from_require.type == 'external' and self.from_require.provide:
+                self._value = self.from_require.provide.host
+                # FIXME: We have a problem because host doesn't come from a variable!
+
+            # Auto-fill the value if ArmonicHost specified in a Require
+            if self.from_require.type == 'simple' and self.from_require.from_provide:
+                self._value = self.from_require.from_provide.host
+
             return
 
         # If the variable has a from_xpath attribute,
