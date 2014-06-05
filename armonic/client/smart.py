@@ -166,7 +166,8 @@ class Variable(object):
         # provide.
         if self.type == 'vhosts':
             acc = []
-            for r in self.from_require._from_requires:
+            print self.from_require.xpath
+            for r in self.from_require.from_provide.require._from_requires:
                 acc.append(r.provide.host)
             self._value = acc
 
@@ -478,7 +479,12 @@ class Provide(ArmonicProvide):
                  child_num=None, require=None):
         ArmonicProvide.__init__(self)
         self.generic_xpath = generic_xpath
+        
+        # the provide that need this require
         self.requirer = requirer
+
+        # the remote require of the requirer that leads
+        # to this provide.
         self.require = require
 
         # This dict contains variables that belongs to this scope.
