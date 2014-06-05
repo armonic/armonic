@@ -164,12 +164,8 @@ class Variable(object):
         # Variables type vhosts is a special kind of variable.  To
         # fill it, we accumulate host value of all brothers of this
         # provide.
-        if self.type == 'vhosts':
-            acc = []
-            print self.from_require.xpath
-            for r in self.from_require.from_provide.require._from_requires:
-                acc.append(r.provide.host)
-            self._value = acc
+        if self.type == 'vhosts' and self.from_require.from_provide.require:
+            self._value = [r.provide.host for r in self.from_require.from_provide.require._from_requires]
 
         if self.name == 'host' and self._value is None:
             if self.from_require.type == 'external':
@@ -479,7 +475,7 @@ class Provide(ArmonicProvide):
                  child_num=None, require=None):
         ArmonicProvide.__init__(self)
         self.generic_xpath = generic_xpath
-        
+
         # the provide that need this require
         self.requirer = requirer
 
