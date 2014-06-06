@@ -4,9 +4,9 @@ import sys
 import logging
 import argparse
 from uuid import uuid4
+import json
 
 from sleekxmpp import ClientXMPP
-
 from sleekxmpp.thirdparty import OrderedDict
 
 import armonic.common
@@ -14,6 +14,7 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeAll
 from armonic.client.sock import ClientSocket
+
 
 DONT_MANAGE = "None"
 """Describe the value passed to not manage a provide"""
@@ -128,7 +129,7 @@ class Master(ClientXMPP):
             self.root_provide = MyProvide(generic_xpath=xpath)
             self.smart = smart_call(self.root_provide)
 
-        #if self.current_step == "manage":
+        # if self.current_step == "manage":
         #    provide, step, args = self.smart.send(True)
         #
         if self.current_step == "specialize":
@@ -156,7 +157,7 @@ class Master(ClientXMPP):
 
         form.add_field(var="tree_id",
                        ftype="fixed",
-                       value=str(provide.tree_id))
+                       value=str(json.dumps(provide.tree_id)))
 
         form.add_field(var="host",
                        ftype="fixed",
@@ -180,7 +181,7 @@ class Master(ClientXMPP):
                                    ftype="input-single",
                                    desc="on which host do you want to call the provide",
                                    label="Where do you want to %s ?" % label,
-                                   value=provide.suggested_host)
+                                   value=json.dumps(provide.suggested_host))
 
         if step == 'multiplicity':
             provide_label = provide.extra.get('label', provide.xpath)
@@ -192,7 +193,7 @@ class Master(ClientXMPP):
 
         if step == 'validation':
             for variable in provide.variables():
-                value = variable.value_get_one()
+                value = json.dumps(variable.value_get_one())
                 field = form.add_field(var=str(variable.xpath),
                                        label=str(variable.name),
                                        ftype="list-multi",
@@ -201,8 +202,7 @@ class Master(ClientXMPP):
                                            {"label": "type", "value": str(variable.type)},
                                            {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
                                            {"label": "suggested_by", "value": str(getattr(variable._suggested_by, "xpath", ""))},
-                                           {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))}
-                                       ],
+                                           {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))}],
                                        required=variable.required)
                 for key, value in variable.extra.items():
                     field.add_option(label=str(key), value=str(value))
@@ -242,7 +242,6 @@ if __name__ == '__main__':
     parser.add_argument('--no-default', action='store_true',
                         default=False, help="Don't load default lifecycles")
     args = parser.parse_args()
-
 
     if not args.no_default:
         armonic.common.load_default_lifecycles()
