@@ -28,7 +28,7 @@ class Configured(State):
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
     @Require('augeas', [VString("root", default="/", label="Augeas root path", expert=True)])
-    @RequireExternal("db", "//Mysql//add_database",
+    @RequireExternal("db", "//add_database",
                      provide_args=[VString("user",
                                            default="wordpress_user",
                                            label="Database user",
