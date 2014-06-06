@@ -56,7 +56,7 @@ class Variable(object):
 
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, unique, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -65,6 +65,7 @@ class Variable(object):
         self._value = value
         self.required = required
         self.type = type
+        self.unique = unique
         self.extra = extra
 
         self._is_skel = True
@@ -85,6 +86,7 @@ class Variable(object):
             value=self._value,
             required=self.required,
             type=self.type,
+            unique=self.unique,
             extra=self.extra)
 
         var._is_skel = False
@@ -105,6 +107,7 @@ class Variable(object):
                    value=None,
                    required=dct_json['required'],
                    type=dct_json['type'],
+                   unique=dct_json['unique'],
                    extra=dct_json['extra'])
         return this
 
@@ -148,6 +151,8 @@ class Variable(object):
             return self._suggested_by
         elif self._resolved_by is not None:
             return self._resolved_by
+        elif self._bound_to is not None:
+            return self._bound_to
         else:
             return self
 
@@ -190,6 +195,13 @@ class Variable(object):
             logger.info("Variable [%s] from_xpath [%s] not found" % (
                 self.xpath, self.from_xpath))
 
+        if self.unique is True:
+            for v in self.from_require.from_provide.Variables:
+                if v.xpath == self.xpath:
+                    self._bound_to = v
+                    logger.debug("Variable [%s] bound to [%s] with value %s" % (
+                        self, v, v._value))
+
         if self.from_require.special and not self.name == 'host':
             return
 
@@ -210,17 +222,13 @@ class Variable(object):
                 "value": self.value}
 
     def __repr__(self):
-        if self._bound_to is not None:
-            bound_to = self._bound_to.xpath
-        else:
-            bound_to = None
-        return "Variable(skel=%s, %s, name=%s, value=%s, xpath=%s, bound_to=%s)" % (
+        return "Variable(skel=%s, %s, name=%s, value=%s, xpath=%s, unique=%s)" % (
             self._is_skel,
             id(self),
             self.name,
             self._value,
             self.xpath,
-            bound_to)
+            self.unique)
 
 
 class Requires(list):

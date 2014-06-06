@@ -27,7 +27,7 @@ class Variable(XMLRessource, ExtraInfoMixin):
     """
     type = None
 
-    def __init__(self, name, default=None, required=True, from_xpath=None, **extra):
+    def __init__(self, name, default=None, required=True, from_xpath=None, unique=False, **extra):
         ExtraInfoMixin.__init__(self, **extra)
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value
@@ -37,6 +37,7 @@ class Variable(XMLRessource, ExtraInfoMixin):
         self.default = default
         self._value = default
         self.from_xpath = from_xpath
+        self.unique = unique
         self.error = None
 
     def _xml_tag(self):
@@ -55,7 +56,8 @@ class Variable(XMLRessource, ExtraInfoMixin):
              'default': self.default,
              'value': self.value,
              'error': self.error,
-             'from_xpath': self.from_xpath})
+             'from_xpath': self.from_xpath,
+             'unique': self.unique})
         return primitive
 
     @property
@@ -141,14 +143,14 @@ class VList(Variable):
     _inner_class = None
     _inner_inner_class = None
 
-    def __init__(self, name, inner, default=None, required=True, **extra):
+    def __init__(self, name, inner, default=None, required=True, unique=False, **extra):
         if inspect.isclass(inner):
             self._inner_class = inner
         else:
             self._inner_class = inner.__class__
         if self._inner_class == VList:
             self._inner_inner_class = inner._inner_class
-        Variable.__init__(self, name, default, required, from_xpath=None, **extra)
+        Variable.__init__(self, name, default, required, from_xpath=None, unique=unique, **extra)
 
     @property
     def value(self):
@@ -211,8 +213,8 @@ class VString(Variable):
     pattern_error = None
     """Error message if the value doesn't match the regexp"""
 
-    def __init__(self, name, default=None, required=True, from_xpath=None, modifier="%s", **extra):
-        Variable.__init__(self, name, default, required, from_xpath, **extra)
+    def __init__(self, name, default=None, required=True, from_xpath=None, unique=False, modifier="%s", **extra):
+        Variable.__init__(self, name, default, required, from_xpath, unique, **extra)
         self._modifier = modifier
 
     @property
