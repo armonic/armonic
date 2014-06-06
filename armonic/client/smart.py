@@ -158,6 +158,8 @@ class Variable(object):
         If from_xpath is not None, it tries to to find back the
         corresponding variable. Otherwise, it tries to find a value in
         the scope.
+
+        'host' variables are particular cases.
         """
         scope = self.from_require._scope_variables
 
@@ -170,12 +172,11 @@ class Variable(object):
             if self.from_require.type == 'external' and self.from_require.provide:
                 self._value = self.from_require.provide.host
                 # FIXME: We have a problem because host doesn't come from a variable!
-
+                return
             # Auto-fill the value if ArmonicHost specified in a Require
             if self.from_require.type == 'simple' and self.from_require.from_provide:
                 self._value = self.from_require.from_provide.host
-
-            return
+                return
 
         # If the variable has a from_xpath attribute,
         # try to find back its value
@@ -189,7 +190,7 @@ class Variable(object):
             logger.info("Variable [%s] from_xpath [%s] not found" % (
                 self.xpath, self.from_xpath))
 
-        if self.from_require.special:
+        if self.from_require.special and not self.name == 'host':
             return
 
         if self.from_xpath is None:
