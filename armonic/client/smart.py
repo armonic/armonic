@@ -184,7 +184,7 @@ class Variable(object):
             for v in self.from_require.from_provide.Variables:
                 if v.xpath == self.from_xpath:
                     self._set_by = v
-                    logger.debug("Variable [%s] value comes from [%s] with value %s" %(
+                    logger.debug("Variable [%s] value comes from [%s] with value %s" % (
                         self.xpath, v.xpath, v._value))
                     return
             logger.info("Variable [%s] from_xpath [%s] not found" % (
@@ -196,9 +196,9 @@ class Variable(object):
         if self.from_xpath is None:
             for v in scope:
                 if self.name == v.name and self is not v:
-                    logger.debug("Variable [%s] is suggested by [%s] with value %s" %(
+                    logger.debug("Variable [%s] is suggested by [%s] with value %s" % (
                         self.xpath, v.xpath, v._value))
-                    logger.debug("Variable [%s] is resolved by [%s] with value %s" %(
+                    logger.debug("Variable [%s] is resolved by [%s] with value %s" % (
                         v.xpath, self.xpath, v._value))
                     self._suggested_by = v
                     v._resolved_by = self
@@ -381,7 +381,7 @@ class Remote(Require):
 
             # This variable is added to the scope.
             # This should useless since it is the skeleton
-            #this._scope_variables.append(var)
+            # this._scope_variables.append(var)
 
         # Here, we add provide ret variable.
         this.provide_ret = []
@@ -390,7 +390,7 @@ class Remote(Require):
             this.provide_ret.append(var)
 
             # This variable is added to the scope.
-            #this._scope_variables.append(var)
+            # this._scope_variables.append(var)
 
         this.json = dct_json
         return this
@@ -494,14 +494,14 @@ class Provide(ArmonicProvide):
         # We initialize depth and tree_id
         #
         # NOTE: depth could be deduce from tree_id: depth = len(tree_id)
-        if requirer is None:
+        if not self.has_requirer():
             self.depth = 0
             self.tree_id = [0]
         else:
             self.depth = requirer.depth + 1
             self.tree_id = requirer.tree_id + [child_num]
 
-        #self.ignore = False
+        # self.ignore = False
         self._step_current = 0
 
         self._current_requires = None
@@ -572,7 +572,7 @@ class Provide(ArmonicProvide):
         return Provide.STEPS[self._step_current]
 
     def _next_step(self):
-        if self._step_current+1 > len(Provide.STEPS)-1:
+        if self._step_current + 1 > len(Provide.STEPS) - 1:
             raise IndexError
         self._step_current += 1
 
@@ -753,7 +753,7 @@ def smart_call(root_provide):
         if scope.step == "done" or not scope.manage:
             # If all dependencies of root node have been threated we
             # break the loop
-            if scope.requirer == None:
+            if not scope.has_requirer():
                 break
             # If all dependencies have been threated we
             # go back to its requirer.
@@ -877,7 +877,7 @@ def smart_call(root_provide):
                 else:
                     done = True
                     for r in scope._current_requires:
-                        if r.provide.manage == True and not r.provide.step == "done":
+                        if r.provide.manage is True and not r.provide.step == "done":
                             done = False
                             scope = r.provide
                             break
