@@ -245,7 +245,7 @@ parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGE
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
 
 parser.add_argument('--no-remote', action='store_true', default=False,  help="Directly use Armonic module.")
-parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'], default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'], default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
 parser.add_argument('--lifecycle-dir', type=str, help="A lifecycle directory. This is only useful on no-remote mode.")
 parser.add_argument('--no-default', action='store_true', default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
 parser.add_argument('--simulation', action='store_true', default=False, help="Don't execute provide calls. This is only useful on no-remote mode.")
@@ -326,13 +326,15 @@ if args.no_remote is False:
 else:
     armonic.common.SIMULATION = args.simulation
 
-    from armonic.utils import OsTypeMBS, OsTypeDebianWheezy
+    from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
     logging.basicConfig(level=args.verbose)
     os_type = None
     if args.os_type == "mbs":
         os_type = OsTypeMBS()
     elif args.os_type == "debian":
         os_type = OsTypeDebianWheezy()
+    elif args.os_type == "any":
+        os_type = OsTypeAll()
         
     import armonic.serialize
     import armonic.common

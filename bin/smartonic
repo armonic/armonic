@@ -7,7 +7,7 @@ from itertools import repeat
 
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
-from armonic.utils import OsTypeMBS, OsTypeDebianWheezy
+from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
 logger = logging.getLogger()
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--no-remote', action='store_true',
                         default=False,  help="Directly use Armonic module.")
-    parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch'],
+    parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
                         default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
     parser.add_argument('--lifecycle-dir', type=str, action='append',
                         help="A lifecycle directory. This is only useful on no-remote mode.")
@@ -97,6 +97,8 @@ if __name__ == "__main__":
             os_type = OsTypeMBS()
         elif args.os_type == "debian":
             os_type = OsTypeDebianWheezy()
+        elif args.os_type == "any":
+            os_type = OsTypeAll()
 
         if not args.no_default:
             armonic.common.load_default_lifecycles()
