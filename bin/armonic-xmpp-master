@@ -20,6 +20,20 @@ DONT_MANAGE = "None"
 """Describe the value passed to not manage a provide"""
 
 
+class MUCHandler(logging.Handler):
+
+    def __init__(self, client=None, *args, **kwargs):
+        logging.Handler.__init__(self, *args, **kwargs)
+        self.client = client
+
+    def emit(self, record):
+        if self.client.muc_room and record:
+            self.client.send_message(mto=self.client.muc_room,
+                                     mbody=record.msg,
+                                     mtype='groupchat')
+        return True
+
+
 class MyProvide(Provide):
 
     def do_lfm(self):
@@ -62,11 +76,26 @@ class MyProvide(Provide):
 
 class Master(ClientXMPP):
 
-    def __init__(self, jid, password, lfm):
+    def __init__(self, jid, password, muc_domain, lfm):
         ClientXMPP.__init__(self, jid, password)
         self.add_event_handler("session_start", self.session_start)
         self.lfm = lfm
         self.smart = None
+
+        self.muc_nick = 'master'
+        self.muc_domain = muc_domain
+        self.muc_room = None
+
+    def leave_muc_room(self):
+        if self.muc_room:
+            self['xep_0045'].leaveMUC(self.muc_room, self.muc_nick)
+            self.muc_room = None
+
+    def join_muc_room(self, session):
+        self.muc_room = "%s@%s" % (session['id'], self.muc_domain)
+        logger.info('Joining muc_room %s' % self.muc_room)
+        self['xep_0045'].joinMUC(self.muc_room,
+                                 self.muc_nick)
 
     def session_start(self, event):
         self.send_presence()
@@ -80,6 +109,8 @@ class Master(ClientXMPP):
                                      handler=self._handle_command_build)
 
     def _handle_command_provides(self, iq, session):
+        self.leave_muc_room()
+
         print "_handle_command_provides"
         form = self['xep_0004'].makeForm('form', 'List of provides')
         form['instructions'] = 'Choose a xpath amongst them'
@@ -108,6 +139,8 @@ class Master(ClientXMPP):
         return session
 
     def _handle_command_build(self, iq, session):
+        self.leave_muc_room()
+
         form = self['xep_0004'].makeForm('form', 'Specify a provide to build')
         form['instructions'] = 'specify'
         form.add_field(var="xpath")
@@ -115,10 +148,11 @@ class Master(ClientXMPP):
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
         session['id'] = str(uuid4())
-
         self.smart = None
         self.root_provide = None
         self.current_step = None
+
+        self.join_muc_room(session)
 
         return session
 
@@ -225,6 +259,10 @@ if __name__ == '__main__':
                         type=str,
                         default="im.aeolus.org",
                         help="XMPP server host")
+    parser.add_argument('--muc-domain',
+                        type=str,
+                        default="logs.aeolus.org",
+                        help="XMPP MUC domain")
     parser.add_argument('--port',
                         default=5222, type=int,
                         help="XMPP server port (default '%(default)s')")
@@ -254,13 +292,19 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)-8s %(message)s')
+    logger = logging.getLogger()
 
-    xmpp = Master('%s/master' % args.jid, args.password, lfm=lfm)
+    xmpp = Master('%s/master' % args.jid, args.password, args.muc_domain, lfm=lfm)
 
     xmpp.register_plugin('xep_0030')  # Service Discovery
     xmpp.register_plugin('xep_0004')  # Data Forms
     xmpp.register_plugin('xep_0050')  # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
+    xmpp.register_plugin('xep_0045')  # MUC
+
+    muc_handler = MUCHandler(xmpp)
+    muc_handler.addFilter(logging.Filter('armonic'))
+    logger.addHandler(muc_handler)
 
     xmpp.connect(address=(args.host, args.port))
     try:
