@@ -628,7 +628,12 @@ class Provide(ArmonicProvide):
         return ret
 
     def do_lfm(self):
-        """The step lfm is applied if it returns True."""
+        """The step lfm is applied if it returns True.
+
+        Currently, do_lfm is already called, even if the provide is
+        local. We may only call it when the provide is external
+
+        """
         return self.lfm is None
 
     def on_lfm(self, lfm):
