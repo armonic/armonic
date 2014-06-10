@@ -171,7 +171,7 @@ def cmd_state(args):
             state_to_table(r)
 
     elif args.requires_list:
-        ret=client.call('state_goto_requires', args.state_xpath)
+        ret=client.state_goto_requires(args.state_xpath)
         for r in ret['requires']:
             print r['xpath']
             provide_to_table(r)
