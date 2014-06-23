@@ -3,6 +3,18 @@
 Requires
 ########
 
+A *require* allows user to specify values required to apply a state or
+to call a provide. Basically, a *require* is used to specify a tuple
+of values. These values are described by a list of
+:class:`armonic.variable.Variable`.
+
+The parameter `nargs` of a *require* is used to specify how many
+times a require can be specified. For instance, a load balancer
+requires several backend where each backend consists of a host and
+port variable. The nargs parameters of the backend require of a load
+balancer can be set to '*'.
+
+
 Require
 =======
 
