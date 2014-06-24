@@ -43,5 +43,5 @@ setup(
         'Topic :: System :: Installation/Setup',
         'Topic :: System :: Software Distribution'
     ],
-    test_suite = 'nose.collector'
+    test_suite='nose.collector'
 )
