@@ -52,6 +52,7 @@ Complete documentation
    lifecycle
    components
    api
+   howto_orchestration
 
 Indices and tables
 ==================
