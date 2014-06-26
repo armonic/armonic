@@ -141,14 +141,14 @@ class VList(Variable):
     _inner_class = None
     _inner_inner_class = None
 
-    def __init__(self, name, inner, default=None, required=True, **extra):
+    def __init__(self, name, inner, default=None, required=True, from_xpath=None, **extra):
         if inspect.isclass(inner):
             self._inner_class = inner
         else:
             self._inner_class = inner.__class__
         if self._inner_class == VList:
             self._inner_inner_class = inner._inner_class
-        Variable.__init__(self, name, default, required, from_xpath=None, **extra)
+        Variable.__init__(self, name, default, required, from_xpath=from_xpath, **extra)
 
     @property
     def value(self):
@@ -318,6 +318,18 @@ class VBool(Variable):
         return value
 
 
+class ArmonicFirstInstance(VBool):
+    """This variable must be used to specify if an instance is the first
+    one or not. This will be used by the lifecycle to realize some special
+    initial stuff.
+
+    This special variable type allows smartlib to specify first
+    instance and other. This is useful for replicated instances such
+    as Galera.
+    """
+    type = 'armonic_first_instance'
+
+
 class ArmonicHost(VString):
     """Internal variable that contains the host of an RequireExternal
     """
@@ -331,9 +343,9 @@ class ArmonicHosts(VList):
     when deploying multiple instances."""
     type = 'armonic_hosts'
 
-    def __init__(self, name, default=None, required=True, **extra):
+    def __init__(self, name, default=None, required=True, from_xpath=None, **extra):
         VList.__init__(self, name, ArmonicHost,
-                       default=default, required=required, **extra)
+                       default=default, required=required, from_xpath=from_xpath, **extra)
 
 
 class Host(VString):
