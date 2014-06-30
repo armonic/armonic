@@ -7,6 +7,7 @@ from itertools import repeat
 
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
+import armonic.client.utils
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
@@ -48,7 +49,7 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
     prompt = "%s%s\n%s%s = " % (prefix, message, prefix, variable_name)
     readline.set_startup_hook(lambda: readline.insert_text(prefill))
     try:
-        return {variable_name:raw_input(prompt)}
+        return {variable_name:armonic.client.utils.read_string(raw_input(prompt))}
     finally:
         readline.set_startup_hook()
 

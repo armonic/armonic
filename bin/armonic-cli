@@ -19,21 +19,13 @@ import armonic.client.utils
 
 import os
 
-def read_string(string):
-    """Try to transform string argument value to armonic primitive type"""
-    if string.startswith('[') and string.endswith(']'):
-        return string[1:-1].split(",")
-    try:
-        return int(string)
-    except ValueError:
-        return string
 
 def reqList(args):
     """take a list of "args:value" strings and return a dict"""
     acc={}
     for a in args:
         s=a.split(":")
-        acc.update({s[0]:read_string(s[1])})
+        acc.update({s[0]:armonic.client.utils.read_string(s[1])})
     return acc
 
 
@@ -211,14 +203,19 @@ def cmd_provide(args):
 
 
 def cmd_provide_call(args):
+    if args.require is not None:
+        args_require = parseArgs(args.require)
+    elif args.json_require is not None:
+        print args.json_require
+        args_require = json.loads(args.json_require)
     if args.check:
-        ret = client.provide_call_validate(args.xpath, parseArgs(args.require))
+        ret = client.provide_call_validate(args.xpath, args_require)
         if ret['errors'] is False:
             print "Requires are valid."
         else:
             pprint.pprint(armonic.client.utils.require_validation_error(ret))
     else:
-        pprint.pprint(client.provide_call(args.xpath, parseArgs(args.require)))
+        pprint.pprint(client.provide_call(args.xpath,  args_require))
 
 def cmd_plot(args):
     if args.T == 'dot':
@@ -300,7 +297,9 @@ parser_provide.set_defaults(func=cmd_provide)
 parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
 parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
 parser_provide_call.add_argument('--check','-c',action='store_true',help="check if requires are valid. This calls provide_call_validation API method.")
-parser_provide_call.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help=help_require)
+group = parser_provide_call.add_mutually_exclusive_group()
+group.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help=help_require)
+group.add_argument('-J',dest="json_require" , type=str, help="Use raw JSON require format (useful for debugging, see provide_call API for more informations)")
 parser_provide_call.set_defaults(func=cmd_provide_call)
 
 parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
