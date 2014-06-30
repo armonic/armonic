@@ -121,6 +121,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
             try:
                 require.validate()
             except ValidationError as e:
+                logger.debug("Validation error on provide '%s'" % self.get_xpath())
                 e.require_name = require.name
                 raise e
 

@@ -232,8 +232,9 @@ class VString(Variable):
         Variable._validate(self, value)
         if self.pattern and not re.match(self.pattern, value):
             self.error = self.pattern_error
+            msg = "%s (current value is %s)" % (self.pattern_error, value)
             raise ValidationError(variable_name=self.name,
-                                  msg=self.pattern_error)
+                                  msg=msg)
         return self._custom_validation()
 
     def _validate_type(self, value):

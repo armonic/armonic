@@ -1115,7 +1115,11 @@ class LifecycleManager(XMLRessource):
             try:
                 provide.fill(variables_values)
                 provide.validate()
-            except ValidationError:
+            except ValidationError as e:
+                logger.debug("Validation error on provide  '%s'" % provide.get_xpath())
+                logger.debug("                 on require  '%s'" % e.require_name)
+                logger.debug("                 on variable '%s'" % e.variable_name)
+                logger.debug("  with msg: %s" % e.msg)
                 errors = True
         return {'xpath': provide_xpath_uri,
                 'errors': errors,

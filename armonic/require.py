@@ -198,9 +198,12 @@ class Require(XMLRessource, ExtraInfoMixin):
                 try:
                     value = values[variable.name]
                 except KeyError:
+                    msg = "Submitted value doesn't contain key %s" % variable.name
+                    logger.debug("Validation error on require '%s': %s" % 
+                                 (self.get_xpath(), msg))
                     raise ValidationError(
                         variable_name=variable.name,
-                        msg="Submitted value doesn't contain key %s" % variable.name)
+                        msg=msg)
             else:
                 value = variable.value
 
@@ -219,9 +222,11 @@ class Require(XMLRessource, ExtraInfoMixin):
                 try:
                     v = values[idx]
                 except IndexError:
-                    raise ValidationError(
-                        "Values must contains as much element"
-                        " as variables set elements.")
+                    msg = ("Values must contains as much element"
+                           " as variables set elements.")
+                    logger.debug("Validation error on require '%s': %s" % 
+                                 (self.get_xpath(), msg))
+                    raise ValidationError(msg)
                 self.validate_one_set(vs, v)
             else:
                 self.validate_one_set(vs)
