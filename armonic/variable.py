@@ -174,7 +174,9 @@ class VList(Variable):
     def _validate_type(self, value):
         Variable._validate_type(self, value)
         if not type(value) == list:
-            raise ValidationError(msg="%s must be a list" % self.name, variable_name=self.name)
+            msg = "%s must be a list (instead of %s)" % (self.name, type(value))
+            self.error = msg
+            raise ValidationError(msg=msg, variable_name=self.name)
         return value
 
     def _validate(self, value=None):
