@@ -726,6 +726,9 @@ class Provide(ArmonicProvide):
             requires=self.variables_serialized())
         if ret['errors']:
             import pprint
+            import json
+            print "Variables serialized in JSON"
+            print json.dumps(self.variables_serialized())
             print "Variables used are"
             pprint.pprint(self.Variables)
             print "Variable not validated"
