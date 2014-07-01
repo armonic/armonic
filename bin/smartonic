@@ -47,11 +47,22 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
     :rtype: {variable_name:value}
     """
     prompt = "%s%s\n%s%s = " % (prefix, message, prefix, variable_name)
-    readline.set_startup_hook(lambda: readline.insert_text(prefill))
-    try:
-        return {variable_name:read_variable(raw_input(prompt))}
-    finally:
-        readline.set_startup_hook()
+    data = None
+    while True:
+        readline.set_startup_hook(lambda: readline.insert_text(prefill))
+        try:
+            data = read_variable(raw_input(prompt))
+            break
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print "%sThe folowing error occurs:" % prefix
+            print "%s  %s" % (prefix, e)
+            continue
+        finally:
+            readline.set_startup_hook()
+    return {variable_name:data}
+        
 
 
 if __name__ == "__main__":
