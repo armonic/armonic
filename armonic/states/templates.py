@@ -20,7 +20,12 @@ class CopyTemplates(State):
             logger.info("Copying template file from '%s' to '%s': done." % (src, dst))
 
 
-class JinjaTemplate:
+class Jinja(object):
+    """This class helps to use Jinja for template processing.
+
+    This class is experimental. We should be able to define a list of
+    (variable, type) statically and then automatically requires.
+    """
     tmp_files = []
     out_files = []
     name_variable = []
@@ -31,7 +36,7 @@ class JinjaTemplate:
     """
     rootfile = "/"
 
-    def proced(self):
+    def apply(self):
         self.setRootfile(self.rootfile)
         self.templateLoader = jinja2.FileSystemLoader(searchpath=self.rootfile)
         for tmpl_file, out_file, name_variable in zip(self.tmp_files,
@@ -67,7 +72,3 @@ class JinjaTemplate:
         self.name_variable = name_variable
         self.rootfile = rootfile
         self.setRootfile(rootfile)
-
-
-class TemplateJinja(State, JinjaTemplate):
-    pass
