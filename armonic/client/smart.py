@@ -732,7 +732,9 @@ class Provide(ArmonicProvide):
             print "Variables used are"
             pprint.pprint(self.Variables)
             print "Variable not validated"
-            pprint.pprint(ret)
+            #pprint.pprint(ret)
+            import armonic.client.utils
+            armonic.client.utils.require_validation_error(ret)
             print "Error: Variables are not been validated!"
             exit(1)
 

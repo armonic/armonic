@@ -1,7 +1,16 @@
+import json
+
+def read_variable(string):
+    return json.loads(string)
+
+
+def show_variable(variable):
+    return json.dumps(variable)
+
 def read_string(string):
     """Try to transform string argument value to armonic primitive type"""
     if string.startswith('[') and string.endswith(']'):
-        return string[1:-1].split(",")
+        return [l.lstrip() for l in string[1:-1].split(",")]
     try:
         return int(string)
     except ValueError:
