@@ -734,8 +734,8 @@ class Provide(ArmonicProvide):
             print "Variable not validated"
             #pprint.pprint(ret)
             import armonic.client.utils
-            armonic.client.utils.require_validation_error(ret)
-            print "Error: Variables are not been validated!"
+            pprint.pprint(armonic.client.utils.require_validation_error(ret))
+            print "Error: Some variables have not been validated!"
             exit(1)
 
         self.provide_ret = self.lfm.provide_call(
