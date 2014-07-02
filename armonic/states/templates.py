@@ -37,7 +37,7 @@ class Jinja(object):
     rootfile = "/"
 
     def apply(self):
-        self.setRootfile(self.rootfile)
+        self.setrootfile(self.rootfile)
         self.templateLoader = jinja2.FileSystemLoader(searchpath=self.rootfile)
         for tmpl_file, out_file, name_variable in zip(self.tmp_files,
                                                       self.out_files,
@@ -50,25 +50,26 @@ class Jinja(object):
             with open(fileout, "w") as f:
                 f.write(response)
 
-    def setRootfile(self, rootfile):
+    def setrootfile(self, rootfile):
         self.rootfile = rootfile
         self.templateLoader = jinja2.FileSystemLoader(searchpath=self.rootfile)
 
-    def getRootfile(self):
+    def getrootfile(self):
         return self.rootfile
 
-    def getTmp_files(self):
+    def gettmp_files(self):
         return self.tmp_files
 
-    def getOut_files(self):
+    def getout_files(self):
         return self.out_files
 
-    def getName_variable(self):
+    def getname_variable(self):
         return self.name_variable
 
-    def setVariable(self, tmp_files, out_files, name_variable, rootfile="/"):
+    def setvariable(self, tmp_files, out_files, name_variable, rootfile="/"):
         self.tmp_files = tmp_files
         self.out_files = out_files
         self.name_variable = name_variable
         self.rootfile = rootfile
-        self.setRootfile(rootfile)
+        self.setrootfile(rootfile)
+        self.apply()
