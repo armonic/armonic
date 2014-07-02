@@ -203,6 +203,7 @@ def cmd_provide(args):
 
 
 def cmd_provide_call(args):
+    args_require = None
     if args.require is not None:
         args_require = parseArgs(args.require)
     elif args.json_require is not None:
