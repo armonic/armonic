@@ -10,7 +10,8 @@ install_requires = [
     'prettytable',
     'nose',
     'termcolor',
-    'sleekxmpp'
+    'sleekxmpp',
+    'jinja2'
 ]
 
 setup(
