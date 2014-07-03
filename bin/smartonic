@@ -192,7 +192,9 @@ if __name__ == "__main__":
 
         elif provide.step == "lfm":
             msg = "You have to set a location:"
-            if provide.has_requirer():
+            if provide.host is not None:
+                prefill = show_variable(provide.host)
+            elif provide.has_requirer():
                 prefill = show_variable(provide.requirer.lfm._host)
             else:
                 prefill = ""
@@ -266,7 +268,6 @@ if __name__ == "__main__":
                     adresses.append(user_input_variable(variable_name=tmp_var,
                                                          message=indent(provide.depth, "What is adress of node %s? " % i))[tmp_var])
                 data = adresses
-
 
         elif provide.step == "call":
             data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
