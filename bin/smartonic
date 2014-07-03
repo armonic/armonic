@@ -193,7 +193,7 @@ if __name__ == "__main__":
         elif provide.step == "lfm":
             msg = "You have to set a location:"
             if provide.has_requirer():
-                prefill = provide.requirer.lfm._host
+                prefill = show_variable(provide.requirer.lfm._host)
             else:
                 prefill = ""
             host = user_input_variable(variable_name = "location", message = msg, prefix = indent(provide.depth), prefill=prefill)
@@ -262,7 +262,9 @@ if __name__ == "__main__":
             adresses = []
             if require.skel.type == 'external':
                 for i in range(0,data):
-                    adresses.append(raw_input(indent(provide.depth, "What is adress of node %s? " % i)))
+                    tmp_var = "host[%d]" % i
+                    adresses.append(user_input_variable(variable_name=tmp_var,
+                                                         message=indent(provide.depth, "What is adress of node %s? " % i))[tmp_var])
                 data = adresses
 
 
