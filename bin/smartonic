@@ -12,6 +12,7 @@ from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
 logger = logging.getLogger()
+VERBOSE_LEVELS = [(logging.INFO, "INFO"), (logging.DEBUG, "DEBUG")]
 
 
 def user_input_confirm(msg, prefix=''):
@@ -68,7 +69,7 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='armonic-iter-smart')
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
-    parser.add_argument('--verbose',"-v", action="store_true")
+    parser.add_argument('--verbose',"-v", action="count", help='Can be specified many times (%s)' % [v[1] for v in VERBOSE_LEVELS])
     parser.add_argument('--host', type=str,
                         default=None,
                         help='Host where to call the provide')
@@ -88,13 +89,13 @@ if __name__ == "__main__":
                         default=False,
                         help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
 
-
     args = parser.parse_args()
 
-    if args.verbose:
-        verbosity = logging.DEBUG
+    if args.verbose is not None:
+        verbosity = VERBOSE_LEVELS[args.verbose -1][0]
+        print "Verbosity is set to %s" % VERBOSE_LEVELS[args.verbose -1][1]
     else:
-        verbosity = logging.INFO
+        verbosity = logging.CRITICAL
 
     logging.basicConfig(level=verbosity,
                         format = '%(levelname)7s - %(message)s')
@@ -209,10 +210,8 @@ if __name__ == "__main__":
 
 
         elif provide.step == "validation":
-            print "Variables", provide.variables()
-            print id(provide)
             if provide.variables() != []:
-                print indent(provide.depth, "Variables are:")
+                logger.info(indent(provide.depth, "Variables are:"))
 
                 def xpathOrNone(var):
                     if var is not None:
@@ -228,19 +227,20 @@ if __name__ == "__main__":
                     logger.debug("\tResolvedBy     : %s" % xpathOrNone(v._resolved_by))
                     logger.debug("\tSetBy          : %s" % xpathOrNone(v._set_by))
                     logger.debug("\tSuggestedBy    : %s" % xpathOrNone(v._suggested_by))
-                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
+                    logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 if provide.variables_scope() != []:
-                    print indent(provide.depth, "Variables scope is:")
+                    logger.info(indent(provide.depth, "Variables scope is:"))
                 for v in provide.variables_scope():
-                    print indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath))
+                    logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 for v in provide.variables():
                     if v.value is None:
                         if v.from_xpath is not None:
                             print v.from_xpath
                         ret = user_input_variable(variable_name=v.name,
-                                                  message=indent(provide.depth, "Fill using JSON format the variable %s" % v.xpath),
+                                                  prefix=indent(provide.depth),
+                                                  message="Fill using JSON format the variable %s" % v.xpath,
                                                   prefill=show_variable(v.value_get_one()))
                         v.value = ret[v.name]
 
