@@ -1,5 +1,7 @@
 import json
 import logging
+import armonic.common
+from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
 def read_variable(string):
@@ -43,18 +45,40 @@ class Cli(object):
 
     def __init__(self):
         self.logging_level = Cli.VERBOSE_DEFAULT_LEVEL
+        self.os_type = None
 
-    def add_argument_verbose(self, parser):
+    def add_arguments(self, parser):
         """A helper to add a verbose argument"""
         parser.add_argument('--verbose', "-v",
                             action="count",
                             help='Can be specified many times (%s)' % [v[1] for v in Cli.VERBOSE_LEVELS])
 
+        
+        parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
+
+
+        parser.add_argument('--no-remote', action='store_true',
+                            default=False,  help="Directly use Armonic module.")
+        parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
+                            default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+        parser.add_argument('--lifecycle-dir', type=str, action='append',
+                            help="A lifecycle directory. This is only useful on no-remote mode.")
+        parser.add_argument('--no-default', action='store_true',
+                            default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+        parser.add_argument('--simulation', action='store_true',
+                            default=False,
+                            help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
+        parser.add_argument('--dont-call', action='store_true',
+                            default=False,
+                            help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
+
+
+
     def parse_args(self, parser):
         """A helper to parse arguments. This add several common options such
         as verbosity. It returns the same object than parseargs.parse_args."""
 
-        self.add_argument_verbose(parser)
+        self.add_arguments(parser)
         args = parser.parse_args()
 
         if args.verbose is not None:
@@ -63,5 +87,23 @@ class Cli(object):
 
         logging.basicConfig(level=self.logging_level,
                             format = '%(levelname)7s - %(message)s')
+
+
+        if args.no_remote:
+            os_type = None
+            if args.os_type == "mbs":
+                os_type = OsTypeMBS()
+            elif args.os_type == "debian":
+                os_type = OsTypeDebianWheezy()
+            elif args.os_type == "any":
+                os_type = OsTypeAll()
+            self.os_type = os_type
+
+
+            if not args.no_default:
+                armonic.common.load_default_lifecycles()
+            if args.lifecycle_dir is not None:
+                for l in args.lifecycle_dir:
+                    armonic.common.load_lifecycle(l)
 
         return args

@@ -73,20 +73,6 @@ if __name__ == "__main__":
                         default=None,
                         help='Host where to call the provide')
 
-    parser.add_argument('--no-remote', action='store_true',
-                        default=False,  help="Directly use Armonic module.")
-    parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-                        default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
-    parser.add_argument('--lifecycle-dir', type=str, action='append',
-                        help="A lifecycle directory. This is only useful on no-remote mode.")
-    parser.add_argument('--no-default', action='store_true',
-                        default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
-    parser.add_argument('--simulation', action='store_true',
-                        default=False,
-                        help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
-    parser.add_argument('--dont-call', action='store_true',
-                        default=False,
-                        help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
 
     cli = armonic.client.utils.Cli()
     args = cli.parse_args(parser)
@@ -96,20 +82,7 @@ if __name__ == "__main__":
         armonic.common.SIMULATION = args.simulation
         dont_call = args.dont_call
 
-        os_type = None
-        if args.os_type == "mbs":
-            os_type = OsTypeMBS()
-        elif args.os_type == "debian":
-            os_type = OsTypeDebianWheezy()
-        elif args.os_type == "any":
-            os_type = OsTypeAll()
-
-        if not args.no_default:
-            armonic.common.load_default_lifecycles()
-        if args.lifecycle_dir is not None:
-            for l in args.lifecycle_dir:
-                armonic.common.load_lifecycle(l)
-        lfm = Serialize(os_type=os_type)
+        lfm = Serialize(os_type=cli.os_type)
         class MyProvide(Provide):
             # @lfm.setter
             # def lfm(self, value):
