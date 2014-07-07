@@ -249,7 +249,6 @@ parser.add_argument('--no-default', action='store_true', default=False, help="Do
 parser.add_argument('--simulation', action='store_true', default=False, help="Don't execute provide calls. This is only useful on no-remote mode.")
 
 parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
-parser.add_argument('--verbose',"-v", type=int,default=20,help="From 10 (DEBUG) to 50 (ERROR). Default is %(default)s")
 subparsers = parser.add_subparsers(help='<subcommand>')
 
 parser_status = subparsers.add_parser('status', help='Show status of agent.')
@@ -311,7 +310,9 @@ parser_plot.set_defaults(func=cmd_plot)
 
 
 argcomplete.autocomplete(parser)
-args = parser.parse_args()
+
+cli = armonic.client.utils.Cli()
+args = cli.parse_args(parser)
 
 if args.no_remote is False:
     from armonic.client.sock import ClientSocket
@@ -319,7 +320,7 @@ if args.no_remote is False:
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
     format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
     sh = logging.StreamHandler()
-    sh.setLevel(args.verbose)
+    sh.setLevel(cli.logging_level)
     sh.setFormatter(logging.Formatter(format))
     client = ClientSocket(args.host, args.port)
     client.add_logging_handler(sh)
@@ -327,7 +328,6 @@ else:
     armonic.common.SIMULATION = args.simulation
 
     from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
-    logging.basicConfig(level=args.verbose)
     os_type = None
     if args.os_type == "mbs":
         os_type = OsTypeMBS()

@@ -8,11 +8,11 @@ from itertools import repeat
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.client.utils import read_variable, show_variable
+import armonic.client.utils
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
 logger = logging.getLogger()
-VERBOSE_LEVELS = [(logging.INFO, "INFO"), (logging.DEBUG, "DEBUG")]
 
 
 def user_input_confirm(msg, prefix=''):
@@ -69,7 +69,6 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='armonic-iter-smart')
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
-    parser.add_argument('--verbose',"-v", action="count", help='Can be specified many times (%s)' % [v[1] for v in VERBOSE_LEVELS])
     parser.add_argument('--host', type=str,
                         default=None,
                         help='Host where to call the provide')
@@ -89,16 +88,8 @@ if __name__ == "__main__":
                         default=False,
                         help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
 
-    args = parser.parse_args()
-
-    if args.verbose is not None:
-        verbosity = VERBOSE_LEVELS[args.verbose -1][0]
-        print "Verbosity is set to %s" % VERBOSE_LEVELS[args.verbose -1][1]
-    else:
-        verbosity = logging.CRITICAL
-
-    logging.basicConfig(level=verbosity,
-                        format = '%(levelname)7s - %(message)s')
+    cli = armonic.client.utils.Cli()
+    args = cli.parse_args(parser)
 
     if args.no_remote:
         import armonic.common
@@ -148,7 +139,7 @@ if __name__ == "__main__":
                 ret = logging.Formatter.format(self, record)
                 return termcolor.colored(ret, 'blue')
         handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(verbosity)
+        handler.setLevel(cli.logging_level)
         format = '%(levelname)5s %(ip)15s - %(message)s'
         handler.setFormatter(ColorFormatter(format))
 
