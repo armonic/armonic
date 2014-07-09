@@ -51,6 +51,7 @@ Complete documentation
 
    lifecycle
    components
+   smart
    api
    howto_orchestration
 

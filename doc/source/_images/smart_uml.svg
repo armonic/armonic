@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created by diasvg.py -->
+<svg width="27.345cm" height="35.300cm" viewBox="7.300 6.950 34.645 42.250"
+ xmlns="http://www.w3.org/2000/svg"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect x="9.300" y="8.050" width="6.275" height="1.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.300" y="8.050" width="6.275" height="1.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="12.438" y="9.000"  fill="#000000" text-anchor="middle" font-size="1.00" font-family="sans" font-style="normal" font-weight="700">
+Provide</text>
+<rect x="9.300" y="9.450" width="6.275" height="6.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.300" y="9.450" width="6.275" height="6.000" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="9.500" y="10.150"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
++requires: list</text>
+<text x="9.500" y="10.875"  fill="#000000" text-anchor="start" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+contains simple</text>
+<text x="9.500" y="11.575"  fill="#000000" text-anchor="start" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+requires</text>
+<text x="9.500" y="12.700"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
++remotes: list</text>
+<text x="9.500" y="13.425"  fill="#000000" text-anchor="start" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+contains</text>
+<text x="9.500" y="14.125"  fill="#000000" text-anchor="start" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+RequireExternal</text>
+<text x="9.500" y="14.825"  fill="#000000" text-anchor="start" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+and RequireLocal</text>
+<rect x="9.300" y="15.450" width="6.275" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.300" y="15.450" width="6.275" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<rect x="8.600" y="21.950" width="5.283" height="7.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="8.600" y="21.950" width="5.283" height="7.000" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="11.241" y="22.900"  fill="#000000" text-anchor="middle" font-size="1.00" font-family="sans" font-style="normal" font-weight="700">
+Requires</text>
+<text x="11.241" y="23.675"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+To modelize</text>
+<text x="11.241" y="24.375"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+requires arity,</text>
+<text x="11.241" y="25.075"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+ie. a require</text>
+<text x="11.241" y="25.775"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+can be required</text>
+<text x="11.241" y="26.475"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+several times.</text>
+<text x="11.241" y="27.175"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+For instance,</text>
+<text x="11.241" y="27.875"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+Varnish requires</text>
+<text x="11.241" y="28.575"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+several backend.</text>
+<rect x="8.600" y="28.950" width="5.283" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="8.600" y="28.950" width="5.283" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<rect x="8.600" y="29.350" width="5.283" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="8.600" y="29.350" width="5.283" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<rect x="9.250" y="35.000" width="10.125" height="1.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.250" y="35.000" width="10.125" height="1.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="14.313" y="35.950"  fill="#000000" text-anchor="middle" font-size="1.00" font-family="sans" font-style="normal" font-weight="700">
+Remote</text>
+<rect x="9.250" y="36.400" width="10.125" height="1.800" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.250" y="36.400" width="10.125" height="1.800" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="9.450" y="37.100"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
++provide_args: [Variable]</text>
+<text x="9.450" y="37.900"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
++provide_ret: [Variable]</text>
+<rect x="9.250" y="38.200" width="10.125" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="9.250" y="38.200" width="10.125" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="16.834,12.500 17.325,12.500 17.325,17.200 11.241,17.200 11.241,21.950 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="15.575,12.500 16.275,12.260 16.975,12.500 16.275,12.740 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="15.575,12.500 16.275,12.260 16.975,12.500 16.275,12.740 "/>
+<text x="11.441" y="21.750"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
+*</text>
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="11.241,31.009 11.241,32.725 14.313,32.725 14.313,35.000 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="11.241,29.750 11.481,30.450 11.241,31.150 11.001,30.450 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="11.241,29.750 11.481,30.450 11.241,31.150 11.001,30.450 "/>
+<text x="14.513" y="34.800"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
+*</text>
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="14.313,39.859 14.313,42.200 7.350,42.200 7.350,7.000 12.438,7.000 12.438,8.050 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="14.313,38.600 14.553,39.300 14.313,40.000 14.073,39.300 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="14.313,38.600 14.553,39.300 14.313,40.000 14.073,39.300 "/>
+<text x="12.637" y="7.850"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
+1</text>
+<rect x="16.975" y="21.000" width="4.930" height="4.900" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="16.975" y="21.000" width="4.930" height="4.900" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="19.440" y="21.950"  fill="#000000" text-anchor="middle" font-size="1.00" font-family="sans" font-style="normal" font-weight="700">
+Requires</text>
+<text x="19.440" y="22.725"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+To modelize</text>
+<text x="19.440" y="23.425"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+requires arity,</text>
+<text x="19.440" y="24.125"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+ie. a require</text>
+<text x="19.440" y="24.825"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+can be required</text>
+<text x="19.440" y="25.525"  fill="#000000" text-anchor="middle" font-size="0.70" font-family="sans" font-style="normal" font-weight="400">
+several times.</text>
+<rect x="16.975" y="25.900" width="4.930" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="16.975" y="25.900" width="4.930" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<rect x="16.975" y="26.300" width="4.930" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="16.975" y="26.300" width="4.930" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<rect x="25.575" y="34.300" width="8.970" height="1.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="25.575" y="34.300" width="8.970" height="1.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="30.060" y="35.250"  fill="#000000" text-anchor="middle" font-size="1.00" font-family="sans" font-style="normal" font-weight="700">
+Require</text>
+<rect x="25.575" y="35.700" width="8.970" height="1.000" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="25.575" y="35.700" width="8.970" height="1.000" fill="none" stroke="#000000" stroke-width="0.200" />
+<text x="25.775" y="36.400"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
++variables: [Variable]</text>
+<rect x="25.575" y="36.700" width="8.970" height="0.400" fill="#FFFFFF" stroke="none" stroke-width="0"/>
+<rect x="25.575" y="36.700" width="8.970" height="0.400" fill="none" stroke="#000000" stroke-width="0.200" />
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="19.440,27.959 19.440,30.850 30.060,30.850 30.060,34.300 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="19.440,26.700 19.680,27.400 19.440,28.100 19.200,27.400 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="19.440,26.700 19.680,27.400 19.440,28.100 19.200,27.400 "/>
+<text x="30.260" y="34.100"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
+*</text>
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="16.834,9.950 19.440,9.950 19.440,21.000 "/>
+<polygon fill="#000000" stroke="none" stroke-width="0.100" points="15.575,9.950 16.275,9.710 16.975,9.950 16.275,10.190 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="15.575,9.950 16.275,9.710 16.975,9.950 16.275,10.190 "/>
+<text x="19.640" y="20.800"  fill="#000000" text-anchor="start" font-size="0.80" font-family="monospace" font-style="normal" font-weight="400">
+*</text>
+<polyline fill="none" stroke="#000000" stroke-width="0.100"  points="24.563,35.700 24.625,35.700 19.425,35.700 19.375,35.700 "/>
+<polygon fill="#FFFFFF" stroke="none" stroke-width="0.100" points="24.563,36.100 25.363,35.700 24.563,35.300 "/>
+<polygon fill="none" stroke="#000000" stroke-width="0.100"  points="24.563,36.100 25.363,35.700 24.563,35.300 "/>
+</svg>
