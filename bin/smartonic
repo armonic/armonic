@@ -9,7 +9,6 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.client.utils import read_variable, show_variable
 import armonic.client.utils
-from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
 
 logger = logging.getLogger()
@@ -31,9 +30,9 @@ def user_input_choose_amongst(choices, prefix=''):
     :rtype: True if user confirm, False if not"""
     while True:
         print "%sYou must choose a provide amongst:" % prefix
-        for i, c in enumerate(choices) :
+        for i, c in enumerate(choices):
             print "- %s%d) %s" % (prefix, i, c['xpath'])
-        answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices)-1))
+        answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices) - 1))
         try:
             return choices[int(answer)]['xpath']
         except Exception as e:
@@ -62,8 +61,7 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
             continue
         finally:
             readline.set_startup_hook()
-    return {variable_name:data}
-        
+    return {variable_name: data}
 
 
 if __name__ == "__main__":
@@ -72,7 +70,6 @@ if __name__ == "__main__":
     parser.add_argument('--host', type=str,
                         default=None,
                         help='Host where to call the provide')
-
 
     cli = armonic.client.utils.Cli()
     args = cli.parse_args(parser)
@@ -83,6 +80,7 @@ if __name__ == "__main__":
         dont_call = args.dont_call
 
         lfm = Serialize(os_type=cli.os_type)
+
         class MyProvide(Provide):
             # @lfm.setter
             # def lfm(self, value):
@@ -93,7 +91,7 @@ if __name__ == "__main__":
 
             def on_manage(self, data):
                 return True
-                
+
             def do_call(self):
                 if dont_call:
                     return False
@@ -107,10 +105,12 @@ if __name__ == "__main__":
         # To have colorized agent log
         import sys
         import termcolor
+
         class ColorFormatter(logging.Formatter):
-            def format(self,record):
+            def format(self, record):
                 ret = logging.Formatter.format(self, record)
                 return termcolor.colored(ret, 'blue')
+
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(cli.logging_level)
         format = '%(levelname)5s %(ip)15s - %(message)s'
@@ -126,8 +126,6 @@ if __name__ == "__main__":
             lfm = ClientSocket(host=args.host, handlers=[handler])
             root_provide.lfm = lfm
 
-
-
     generator = smart_call(root_provide)
 
     # Data sent to the generator
@@ -135,7 +133,7 @@ if __name__ == "__main__":
 
     def indent(depth, msg=""):
         prefix = "".join(repeat("  ", depth))
-        return prefix+msg
+        return prefix + msg
 
     while True:
         try:
@@ -146,7 +144,7 @@ if __name__ == "__main__":
                 data = None
         except StopIteration:
             break
-        if provide.tree_id == None:
+        if provide.tree_id is None:
             pass
 #        print "%s [%s %s] " % (provide.generic_xpath.ljust(60+2*provide.depth),
 #                               provide.step.ljust(16), provide.tree_id)
@@ -163,7 +161,7 @@ if __name__ == "__main__":
                 prefill = show_variable(provide.requirer.lfm._host)
             else:
                 prefill = ""
-            host = user_input_variable(variable_name = "location", message = msg, prefix = indent(provide.depth), prefill=prefill)
+            host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
             data = host['location']
 
         elif provide.step == "specialize":
@@ -172,7 +170,6 @@ if __name__ == "__main__":
         elif provide.step == "set_dependencies":
             pass
 
-
         elif provide.step == "validation":
             if provide.variables() != []:
                 logger.info(indent(provide.depth, "Variables are:"))
@@ -180,7 +177,8 @@ if __name__ == "__main__":
                 def xpathOrNone(var):
                     if var is not None:
                         return var.xpath
-                    else: return None
+                    else:
+                        return None
 
                 for v in provide.variables():
                     logger.debug("\tXpath:           %s" % v.xpath)
@@ -212,7 +210,6 @@ if __name__ == "__main__":
                 for v in provide.variables_serialized():
                     logger.debug("\t%s" % str(v))
 
-
         elif provide.step == "multiplicity":
             require = args
             while True:
@@ -224,15 +221,14 @@ if __name__ == "__main__":
                     print e
                     print indent(provide.depth, "Invalid choice. Do it again!")
             data = answer
-            
+
             adresses = []
             if require.skel.type == 'external':
-                for i in range(0,data):
+                for i in range(0, data):
                     tmp_var = "host[%d]" % i
                     adresses.append(user_input_variable(variable_name=tmp_var,
-                                                         message=indent(provide.depth, "What is adress of node %s? " % i))[tmp_var])
+                                                        message=indent(provide.depth, "What is adress of node %s? " % i))[tmp_var])
                 data = adresses
 
         elif provide.step == "call":
             data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
-
