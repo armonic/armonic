@@ -750,11 +750,82 @@ class Provide(ArmonicProvide):
         # pprint(self.provide_ret)
 
 
-def smart_call(root_provide):
+class Deployment(object):
+    _manage = {}
+    _specialize = {}
+    _multiplicity = {}
+    _variables = {}
+
+    def __init__(self, values):
+        for key, values in values.items():
+            try:
+                getattr(self, "_" + key).update(values)
+            except AttributeError:
+                pass
+
+    def _has_value(self, section, key):
+        return key in getattr(self, section)
+
+    def _get_value(self, section, key):
+        return getattr(self, section).get(key)
+
+    def _get(self, section, key):
+        if not self._has_value(section, key):
+            return None
+        return self._get_value(section, key)
+
+    def manage(self, xpath):
+        return self._get("_manage", xpath)
+
+    def specialize(self, xpath):
+        return self._get("_specialize", xpath)
+
+    def multiplicity(self, xpath):
+        return self._get("_multiplicity", xpath)
+
+    def variable(self, xpath):
+        variable_value = self._get("_variables", xpath)
+        # return the first variable value for now
+        if type(variable_value) == dict:
+            for index, value in variable_value.items():
+                return value
+        return variable_value
+
+    def record_manage(self, xpath, value):
+        self._manage[xpath] = value
+
+    def record_specialize(self, xpath, value):
+        self._specialize[xpath] = value
+
+    def record_multiplicity(self, xpath, value):
+        self._multiplicity[xpath] = value
+
+    def record_variable(self, xpath, value):
+        self._variables[xpath] = value
+
+    def record_variables(self, variables):
+        print variables
+        for xpath, value in variables:
+            self.record_variable(xpath, value)
+
+    def to_primitive(self):
+        return {
+            "manage": self._manage,
+            "specialize": self._specialize,
+            "multiplicity": self._multiplicity,
+            "variables": self._variables
+        }
+
+
+def smart_call(root_provide, values={}):
     """Return a generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
 
     scope = root_provide
+    deployment = Deployment(values)
+
+    logger.info("Smart is using prefilled values: %s" % deployment.to_primitive())
+
     while True:
         logger.debug("Step: %s - %s" % (scope.step, scope))
         # Stop and Pop conditions
@@ -774,7 +845,14 @@ def smart_call(root_provide):
         if scope.manage:
             if scope.step == "manage":
                 if scope.do_manage():
-                    data = yield (scope, scope.step, None)
+
+                    data = deployment.manage(scope.generic_xpath)
+                    if data is not None:
+                        logger.debug("Manage %s value is %s" % (scope.generic_xpath, data))
+                    else:
+                        data = yield (scope, scope.step, None)
+                        deployment.record_manage(scope.generic_xpath, data)
+
                     scope.on_manage(data)
                 scope._test_manage()
                 scope._next_step()
@@ -789,17 +867,26 @@ def smart_call(root_provide):
             elif scope.step == "specialize":
                 m = scope.matches()
                 logger.debug("Specialize matches: %s" % m)
-                if len(m) > 1 or scope.do_specialize():
-                    specialized = yield(scope, scope.step, m)
-                elif len(m) == 1:
-                    specialized = m[0]['xpath']
+
+                specialized = deployment.specialize(scope.generic_xpath)
+
+                if specialized is not None:
+                    logger.debug("%s is specialized automatically with %s" % (scope.generic_xpath, specialized))
                 else:
-                    raise Exception('No path to %s found on %s (%s)' % (
-                        scope.generic_xpath,
-                        scope.lfm.info()['os-type'],
-                        scope.lfm.info()['os-release']))
+                    if len(m) > 1 or scope.do_specialize():
+                        specialized = yield(scope, scope.step, m)
+                    elif len(m) == 1:
+                        specialized = m[0]['xpath']
+                    else:
+                        raise Exception('No path to %s found on %s (%s)' % (
+                            scope.generic_xpath,
+                            scope.lfm.info()['os-type'],
+                            scope.lfm.info()['os-release']))
+
+                    deployment.record_specialize(scope.generic_xpath, specialized)
 
                 scope.on_specialize(specialized)
+
                 if scope.manage:
                     scope._build_provide(specialized)
                 scope._next_step()
@@ -818,7 +905,20 @@ def smart_call(root_provide):
                 scope._next_step()
 
             elif scope.step == "validation":
-                yield(scope, scope.step, None)
+                variable_missing = False
+                for v in scope.variables():
+
+                    variable_value = deployment.variable(v.xpath)
+                    if variable_value is not None:
+                        v.value = variable_value
+                        logger.debug("Prefill %s with value %s" % (v.xpath, variable_value))
+                    else:
+                        variable_missing = True
+
+                if variable_missing:
+                    yield(scope, scope.step, None)
+                    deployment.record_variables(scope.variables_serialized()[0])
+
                 scope._next_step()
 
             elif scope.step == "call":
@@ -839,7 +939,12 @@ def smart_call(root_provide):
                         # We are trying to get a next Requires
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
-                            multiplicity = yield (scope, scope.step, req)
+
+                            multiplicity = deployment.multiplicity(scope.xpath)
+
+                            if multiplicity is None:
+                                multiplicity = yield (scope, scope.step, req)
+
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
                                     raise TypeError("Multiplicity step for external requires must send a list!")
@@ -847,6 +952,9 @@ def smart_call(root_provide):
 
                             if type(number) is not int:
                                 raise TypeError("Multiplicity step must send a integer!")
+
+                            deployment.record_multiplicity(scope.xpath, multiplicity)
+
                             for i in range(0, number):
                                 # We build a new Require object from
                                 # the skeleton
@@ -896,3 +1004,6 @@ def smart_call(root_provide):
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()
+
+    yield (None, None, deployment.to_primitive())
+    return
