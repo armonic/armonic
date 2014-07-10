@@ -31,7 +31,7 @@ def user_input_choose_amongst(choices, prefix=''):
     while True:
         print "%sYou must choose a provide amongst:" % prefix
         for i, c in enumerate(choices):
-            print "- %s%d) %s" % (prefix, i, c['xpath'])
+            print "%s  %d) %s" % (prefix, i, c['xpath'])
         answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices) - 1))
         try:
             return choices[int(answer)]['xpath']
@@ -202,7 +202,8 @@ if __name__ == "__main__":
                             print v.from_xpath
                         ret = user_input_variable(variable_name=v.name,
                                                   prefix=indent(provide.depth),
-                                                  message="Fill using JSON format the variable %s" % v.xpath,
+                                                  message="Fill the variable %s (suggested value '%s')" % (
+                                                      v.xpath, v.value_get_one()),
                                                   prefill=show_variable(v.value_get_one()))
                         v.value = ret[v.name]
 
