@@ -74,10 +74,11 @@ if __name__ == "__main__":
     cli = armonic.client.utils.Cli()
     args = cli.parse_args(parser)
 
+    dont_call = args.dont_call
+
     if args.no_remote:
         import armonic.common
         armonic.common.SIMULATION = args.simulation
-        dont_call = args.dont_call
 
         lfm = Serialize(os_type=cli.os_type)
 
@@ -120,6 +121,12 @@ if __name__ == "__main__":
             def on_lfm(self, host):
                 self.host = host
                 self.lfm = ClientSocket(host=host, handlers=[handler])
+
+            def do_call(self):
+                if dont_call:
+                    return False
+                else:
+                    return True
 
         root_provide = MyProvide(generic_xpath=args.xpath)
         if args.host is not None:
