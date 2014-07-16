@@ -25,32 +25,39 @@ import armonic.common
 
 PACKET_INFO_SIZE = 5
 
+
 def my_send(socket, string):
     send_size = len(string)
     sent_size = socket.send(string)
     if sent_size < send_size:
         logger.warning("Packet has not been sent entirely: %d bytes instead of %d bytes." % (sent_size, send_size))
 
-def sendString(socket,string,last=False):
-    packer=struct.Struct("!I?")
-    packet=pickle.dumps(string)
-    p=packer.pack(len(packet),last)
+
+def sendString(socket, string, last=False):
+    packer = struct.Struct("!I?")
+    packet = pickle.dumps(string)
+    p = packer.pack(len(packet), last)
     my_send(socket, p)
     my_send(socket, packet)
 
-class SocketIO(object):
-    def __init__(self,socket):
-        self._socket=socket
 
-    def write(self,string):
+class SocketIO(object):
+    def __init__(self, socket):
+        self._socket = socket
+
+    def write(self, string):
         try:
-            sendString(self._socket,string)
-        except:pass
+            sendString(self._socket, string)
+        except:
+            pass
+
 
 class MyStreamHandler(logging.StreamHandler):
     """To send PROCESS log byte per byte."""
-    def emit(self,record):
+
+    def emit(self, record):
         self.stream.write(record)
+
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -81,9 +88,10 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
     def finish(self):
         try:
             self._logger.removeHandler(self._logHandler)
-        except AttributeError:pass
+        except AttributeError:
+            pass
 
-    def parseRequest(self,data):
+    def parseRequest(self, data):
         """transform unicode to str. FIXME...  Some problems appear
         with augeas when unicode string are used to set it."""
         ret = pickle.loads(data)
@@ -102,8 +110,9 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         else:
             sendString(self.request, {'return': ret}, True)
 
+
 class MyTCPServer(SocketServer.TCPServer):
-    allow_reuse_address=True
+    allow_reuse_address = True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
@@ -146,7 +155,7 @@ if __name__ == "__main__":
         armonic.common.load_lifecycle_repository(
             dir,
             raise_import_error=args.halt_on_error)
-        
+
     save_state = not args.no_save_state
     load_state = not args.no_load_state
 
