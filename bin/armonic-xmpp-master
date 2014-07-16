@@ -17,6 +17,7 @@ from armonic.client.sock import ClientSocket
 
 
 DONT_MANAGE = "None"
+NO_REMOTE = False
 """Describe the value passed to not manage a provide"""
 
 
@@ -34,25 +35,12 @@ class MUCHandler(logging.Handler):
         return True
 
 
-class MyProvide(Provide):
+class BuildProvide(Provide):
 
-    def do_lfm(self):
-        self.lfm = lfm
-        return False
-
-    def do_post_specialize(self):
-        self.suggested_host = ""
-        # host is already set
-        if self.host:
-            return False
-        # suggest the host of the parent provide
-        if self.requirer and self.requirer.host:
-            self.suggested_host = self.requirer.host
-        return self.is_external
-
-    def on_post_specialize(self, host):
+    def on_lfm(self, host):
         self.host = str(host)
-        if host in ("localhost", "127.1", "127.0.0.1"):
+
+        if NO_REMOTE:
             self.lfm = lfm
         else:
             self.lfm = ClientSocket(host=host)
@@ -111,7 +99,6 @@ class Master(ClientXMPP):
     def _handle_command_provides(self, iq, session):
         self.leave_muc_room()
 
-        print "_handle_command_provides"
         form = self['xep_0004'].makeForm('form', 'List of provides')
         form['instructions'] = 'Choose a xpath amongst them'
         form.add_reported("xpath")
@@ -160,17 +147,17 @@ class Master(ClientXMPP):
         if self.smart is None:
             print "Step: Create root_provide"
             xpath = payload['values']['xpath']
-            self.root_provide = MyProvide(generic_xpath=xpath)
+            self.root_provide = BuildProvide(xpath)
             self.smart = smart_call(self.root_provide)
 
         # if self.current_step == "manage":
         #    provide, step, args = self.smart.send(True)
         #
-        if self.current_step == "specialize":
-            provide, step, args = self.smart.send(payload['values']['xpath'])
-
-        elif self.current_step == "post_specialize":
+        if self.current_step == "lfm":
             provide, step, args = self.smart.send(payload['values']['host'])
+
+        elif self.current_step == "specialize":
+            provide, step, args = self.smart.send(payload['values']['xpath'])
 
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(payload['values']['multiplicity'].split(','))
@@ -197,6 +184,15 @@ class Master(ClientXMPP):
                        ftype="fixed",
                        value=str(provide.host or ""))
 
+        if step == 'lfm':
+            provide_label = provide.extra.get('label', provide.generic_xpath)
+            label = provide_label[0].lower() + provide_label[1:]
+            field = form.add_field(var="host",
+                                   ftype="input-single",
+                                   desc="on which host do you want to call the provide",
+                                   label="Where do you want to %s ?" % label,
+                                   value=json.dumps(provide.host))
+
         if step == 'specialize':
             field = form.add_field(var="specialize",
                                    ftype="list-single",
@@ -207,15 +203,6 @@ class Master(ClientXMPP):
             for provide_match in provide.matches():
                 field.add_option(label=str(provide_match['extra'].get('label', provide_match['name'])),
                                  value=str(provide_match['xpath']))
-
-        if step == 'post_specialize':
-            provide_label = provide.extra.get('label', provide.xpath)
-            label = provide_label[0].lower() + provide_label[1:]
-            field = form.add_field(var="host",
-                                   ftype="input-single",
-                                   desc="on which host do you want to call the provide",
-                                   label="Where do you want to %s ?" % label,
-                                   value=json.dumps(provide.suggested_host))
 
         if step == 'multiplicity':
             provide_label = provide.extra.get('label', provide.xpath)
@@ -261,16 +248,16 @@ if __name__ == '__main__':
                         help="XMPP server host")
     parser.add_argument('--muc-domain',
                         type=str,
-                        default="logs.aeolus.org",
+                        default="logs.im.aeolus.org",
                         help="XMPP MUC domain")
     parser.add_argument('--port',
                         default=5222, type=int,
                         help="XMPP server port (default '%(default)s')")
     parser.add_argument('--jid', '-j',
-                        default='mss-master@im.aeolus.org', type=str,
+                        default='master@im.aeolus.org', type=str,
                         help="Jid (default '%(default)s')")
     parser.add_argument('--password', '-p',
-                        default='mss-master', type=str,
+                        default='master', type=str,
                         help="Password (default '%(default)s')")
     parser.add_argument('--input-event-file', '-i',
                         default='-', type=argparse.FileType('r', 0),
@@ -279,6 +266,8 @@ if __name__ == '__main__':
                         help="A lifecycle directory")
     parser.add_argument('--no-default', action='store_true',
                         default=False, help="Don't load default lifecycles")
+    parser.add_argument('--no-remote', action='store_true',
+                        default=False, help="Don't contact any armonic agent")
     args = parser.parse_args()
 
     if not args.no_default:
@@ -288,13 +277,17 @@ if __name__ == '__main__':
         for l in args.lifecycle_dir:
             armonic.common.load_lifecycle(l)
 
+    NO_REMOTE = args.no_remote
+
     lfm = Serialize(os_type=OsTypeAll())
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)-8s %(message)s')
     logger = logging.getLogger()
 
-    xmpp = Master('%s/master' % args.jid, args.password, args.muc_domain, lfm=lfm)
+    # Use /master resource by default
+    xmpp = Master('%s/master' % args.jid, args.password, args.muc_domain,
+                  lfm)
 
     xmpp.register_plugin('xep_0030')  # Service Discovery
     xmpp.register_plugin('xep_0004')  # Data Forms

@@ -464,7 +464,6 @@ class Provide(ArmonicProvide):
     STEPS = ["manage",
              "lfm",
              "specialize",
-             "post_specialize",
              "multiplicity",
              "validation",
              "call",
@@ -658,7 +657,7 @@ class Provide(ArmonicProvide):
 
     def build_child(self, generic_xpath, child_num, require):
         """Build and return a new provide by using the same class. """
-        ret = self.__class__(generic_xpath=generic_xpath,
+        ret = self.__class__(generic_xpath,
                              requirer=self,
                              child_num=child_num,
                              require=require)
@@ -730,13 +729,6 @@ class Provide(ArmonicProvide):
 
         Thus, by returning True, specialization always yields.
         """
-        return False
-
-    def on_post_specialize(self, data):
-        """Actions after specialization"""
-        pass
-
-    def do_post_specialize(self):
         return False
 
     def update_scope_provide_ret(self, provide_ret):
@@ -832,12 +824,6 @@ def smart_call(root_provide):
                 scope.on_specialize(specialized)
                 if scope.manage:
                     scope._build_provide(specialized)
-                scope._next_step()
-
-            elif scope.step == "post_specialize":
-                if scope.do_post_specialize():
-                    data = yield(scope, scope.step, None)
-                    scope.on_post_specialize(data)
                 scope._build_requires()
                 scope._next_step()
 
