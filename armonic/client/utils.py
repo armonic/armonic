@@ -53,12 +53,10 @@ class Cli(object):
                             action="count",
                             help='Can be specified many times (%s)' % [v[1] for v in Cli.VERBOSE_LEVELS])
 
-        
-        parser.add_argument('--version',"-V", action='version', version='%(prog)s ' + "0.1")
-
+        parser.add_argument('--version', "-V", action='version', version='%(prog)s ' + "0.1")
 
         parser.add_argument('--no-remote', action='store_true',
-                            default=False,  help="Directly use Armonic module.")
+                            default=False, help="Directly use Armonic module.")
         parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
                             default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
         parser.add_argument('--lifecycle-dir', type=str, action='append',
@@ -72,8 +70,6 @@ class Cli(object):
                             default=False,
                             help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
 
-
-
     def parse_args(self, parser):
         """A helper to parse arguments. This add several common options such
         as verbosity. It returns the same object than parseargs.parse_args."""
@@ -82,12 +78,11 @@ class Cli(object):
         args = parser.parse_args()
 
         if args.verbose is not None:
-            self.logging_level = Cli.VERBOSE_LEVELS[args.verbose -1][0]
-            print "Verbosity is set to %s" % Cli.VERBOSE_LEVELS[args.verbose -1][1]
+            self.logging_level = Cli.VERBOSE_LEVELS[args.verbose - 1][0]
+            print "Verbosity is set to %s" % Cli.VERBOSE_LEVELS[args.verbose - 1][1]
 
         logging.basicConfig(level=self.logging_level,
-                            format = '%(levelname)7s - %(message)s')
-
+                            format='%(levelname)7s - %(message)s')
 
         if args.no_remote:
             os_type = None
@@ -98,7 +93,6 @@ class Cli(object):
             elif args.os_type == "any":
                 os_type = OsTypeAll()
             self.os_type = os_type
-
 
             if not args.no_default:
                 armonic.common.load_default_lifecycles()
