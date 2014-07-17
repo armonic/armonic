@@ -205,8 +205,6 @@ if __name__ == "__main__":
 
                 for v in provide.variables():
                     if v.value is None:
-                        if v.from_xpath is not None:
-                            print v.from_xpath
                         ret = user_input_variable(variable_name=v.name,
                                                   prefix=indent(provide.depth),
                                                   message="Fill the variable %s (suggested value '%s')" % (
@@ -215,7 +213,9 @@ if __name__ == "__main__":
                         v.value = ret[v.name]
 
                 logger.debug("Serialized variables:")
-                for v in provide.variables_serialized():
+                serialized = provide.variables_serialized()
+                logger.debug("\t%s" % str(serialized[1]))
+                for v in serialized[0]:
                     logger.debug("\t%s" % str(v))
 
         elif provide.step == "multiplicity":
