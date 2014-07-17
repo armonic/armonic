@@ -503,6 +503,10 @@ class Provide(ArmonicProvide):
             self.depth = requirer.depth + 1
             self.tree_id = requirer.tree_id + [child_num]
 
+        # This will replace tree_id. Moreover, we should introduce a
+        # class NodeId to be able to structure and serialize the value
+        self._node_id = str(self.tree_id)
+
         # self.ignore = False
         self._step_current = 0
 
@@ -796,7 +800,7 @@ class Deployment(object):
 
     @property
     def _generic_xpath(self):
-        return self.scope.host + '/' + self.scope.generic_xpath
+        return self.scope._node_id + '/' + self.scope.generic_xpath
 
     @property
     def _xpath(self):
@@ -809,7 +813,7 @@ class Deployment(object):
     @manage.setter
     def manage(self, value):
         self._manage.append((
-            self.scope.generic_xpath,
+            self._generic_xpath,
             {"value": value,
              "used": True})
         )
@@ -837,7 +841,7 @@ class Deployment(object):
     def specialize(self, value):
         self._specialize.append((
             self._generic_xpath,
-            {"value": self.scope.host + '/' + value,
+            {"value": self.scope._node_id + '/' + value,
              "used": True})
         )
 
@@ -853,7 +857,7 @@ class Deployment(object):
         )
 
     def get_variable(self, xpath):
-        variable_value = self._get("_variables", self.scope.host + '/' + xpath)
+        variable_value = self._get("_variables", self.scope._node_id + '/' + xpath)
         if type(variable_value) == dict:
             if len(variable_value) > 1:
                 return [value for index, value in variable_value.items()]
@@ -863,7 +867,7 @@ class Deployment(object):
 
     def set_variables(self, variables):
         for xpath, value in variables:
-            xpath = self.scope.host + '/' + xpath
+            xpath = self.scope._node_id + '/' + xpath
             if not self._has_value("_variables", xpath):
                 self._variables.append((
                     xpath,
