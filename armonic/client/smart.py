@@ -791,12 +791,9 @@ class Deployment(object):
         return self._get_value(section, key)
 
     def _xpath_host(self, xpath):
-        pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
         host = xpath.split('/')[0]
         path = "/".join(xpath.split('/')[1:])
-        if re.match(pattern, host):
-            return (host, path)
-        raise Exception('No host in xpath: %s' % xpath)
+        return (host, path)
 
     @property
     def _generic_xpath(self):
@@ -808,7 +805,7 @@ class Deployment(object):
 
     @property
     def manage(self):
-        return self._get("_manage", self.scope.generic_xpath)
+        return self._get("_manage", self._generic_xpath)
 
     @manage.setter
     def manage(self, value):
