@@ -763,17 +763,23 @@ class Provide(ArmonicProvide):
 
 
 class Deployment(object):
-    _manage = []
-    _lfm = []
-    _specialize = []
-    _multiplicity = []
-    _variables = []
+    _manage_input = []
+    _lfm_input = []
+    _specialize_input = []
+    _multiplicity_input = []
+    _variables_input = []
+
+    _manage_output = []
+    _lfm_output = []
+    _specialize_output = []
+    _multiplicity_output = []
+    _variables_output = []
 
     def __init__(self, scope, sections):
         for section_name, section in sections.items():
             try:
                 for key, value in section:
-                    getattr(self, "_" + section_name).append(
+                    getattr(self, "_" + section_name + "_input").append(
                         (key, {"value": value})
                     )
             except AttributeError:
@@ -812,11 +818,11 @@ class Deployment(object):
 
     @property
     def manage(self):
-        return self._get("_manage", self._generic_xpath)
+        return self._get("_manage_input", self._generic_xpath)
 
     @manage.setter
     def manage(self, value):
-        self._manage.append((
+        self._manage_output.append((
             self._generic_xpath,
             {"value": value,
              "used": True})
@@ -824,11 +830,11 @@ class Deployment(object):
 
     @property
     def lfm(self):
-        return self._get("_lfm", self.scope.generic_xpath)
+        return self._get("_lfm_input", self.scope.generic_xpath)
 
     @lfm.setter
     def lfm(self, value):
-        self._lfm.append((
+        self._lfm_output.append((
             self.scope.generic_xpath,
             {"value": value,
              "used": True})
@@ -836,14 +842,14 @@ class Deployment(object):
 
     @property
     def specialize(self):
-        specialized = self._get("_specialize", self._generic_xpath)
+        specialized = self._get("_specialize_input", self._generic_xpath)
         if specialized is not None:
             return self._xpath_host(specialized)
         return (None, None)
 
     @specialize.setter
     def specialize(self, value):
-        self._specialize.append((
+        self._specialize_output.append((
             self._generic_xpath,
             {"value": self.scope._node_id.__repr__() + '/' + value,
              "used": True})
@@ -851,17 +857,17 @@ class Deployment(object):
 
     @property
     def multiplicity(self):
-        return self._get("_multiplicity", self._xpath)
+        return self._get("_multiplicity_input", self._xpath)
 
     @multiplicity.setter
     def multiplicity(self, hosts):
-        self._multiplicity.append((
+        self._multiplicity_output.append((
             self._xpath,
             {"value": hosts})
         )
 
     def get_variable(self, xpath):
-        variable_value = self._get("_variables", self.scope._node_id.__repr__() + '/' + xpath)
+        variable_value = self._get("_variables_input", self.scope._node_id.__repr__() + '/' + xpath)
         if type(variable_value) == dict:
             if len(variable_value) > 1:
                 return [value for index, value in variable_value.items()]
@@ -872,8 +878,8 @@ class Deployment(object):
     def set_variables(self, variables):
         for xpath, value in variables:
             xpath = self.scope._node_id.__repr__() + '/' + xpath
-            if not self._has_value("_variables", xpath):
-                self._variables.append((
+            if not self._has_value("_variables_output", xpath):
+                self._variables_output.append((
                     xpath,
                     {"value": value,
                      "used": True})
@@ -881,11 +887,11 @@ class Deployment(object):
 
     def to_primitive(self):
         return {
-            "manage": [(k, i["value"]) for k, i in self._manage],
-            "lfm": [(k, i["value"]) for k, i in self._lfm],
-            "specialize": [(k, i["value"]) for k, i in self._specialize],
-            "multiplicity": [(k, i["value"]) for k, i in self._multiplicity],
-            "variables": [(k, i["value"]) for k, i in self._variables]
+            "manage": [(k, i["value"]) for k, i in self._manage_output],
+            "lfm": [(k, i["value"]) for k, i in self._lfm_output],
+            "specialize": [(k, i["value"]) for k, i in self._specialize_output],
+            "multiplicity": [(k, i["value"]) for k, i in self._multiplicity_output],
+            "variables": [(k, i["value"]) for k, i in self._variables_output]
         }
 
 
@@ -927,7 +933,7 @@ def smart_call(root_provide, values={}):
                             logger.debug("%s is NOT managed from deployment data" % scope.generic_xpath)
                     else:
                         data = yield (scope, scope.step, None)
-                        deployment.manage = data
+                    deployment.manage = data
 
                     scope.on_manage(data)
                 scope._test_manage()
@@ -942,7 +948,7 @@ def smart_call(root_provide, values={}):
                         logger.debug("%s lfm on %s from deployment data" % (scope.generic_xpath, data))
                     else:
                         data = yield(scope, scope.step, None)
-                        deployment.lfm = data
+                    deployment.lfm = data
                     scope.on_lfm(data)
 
                 scope._test_lfm()
@@ -968,7 +974,7 @@ def smart_call(root_provide, values={}):
                             scope.lfm.info()['os-type'],
                             scope.lfm.info()['os-release']))
 
-                    deployment.specialize = specialized
+                deployment.specialize = specialized
 
                 scope.on_specialize(specialized)
                 if scope.manage:
@@ -1002,7 +1008,7 @@ def smart_call(root_provide, values={}):
 
                 if variable_missing:
                     yield(scope, scope.step, None)
-                    deployment.set_variables(scope.variables_serialized()[0])
+                deployment.set_variables(scope.variables_serialized()[0])
 
                 scope._next_step()
 
