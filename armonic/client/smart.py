@@ -439,6 +439,14 @@ class ArmonicProvide(object):
         self.extra = dct_json.get('extra', {})
 
 
+class NodeId(object):
+    def __init__(self, node_id):
+        self._node_id = node_id
+
+    def __repr__(self):
+        return "node_" + "_".join([str(n) for n in self._node_id])
+
+
 class Provide(ArmonicProvide):
     """This class describe a provide and its requires and remotes requires
     contains provide. Thus, this object can describe a tree. To build
@@ -503,9 +511,8 @@ class Provide(ArmonicProvide):
             self.depth = requirer.depth + 1
             self.tree_id = requirer.tree_id + [child_num]
 
-        # This will replace tree_id. Moreover, we should introduce a
-        # class NodeId to be able to structure and serialize the value
-        self._node_id = str(self.tree_id)
+        # This will replace tree_id.
+        self._node_id = NodeId(self.tree_id)
 
         # self.ignore = False
         self._step_current = 0
@@ -797,7 +804,7 @@ class Deployment(object):
 
     @property
     def _generic_xpath(self):
-        return self.scope._node_id + '/' + self.scope.generic_xpath
+        return self.scope._node_id.__repr__() + '/' + self.scope.generic_xpath
 
     @property
     def _xpath(self):
@@ -838,7 +845,7 @@ class Deployment(object):
     def specialize(self, value):
         self._specialize.append((
             self._generic_xpath,
-            {"value": self.scope._node_id + '/' + value,
+            {"value": self.scope._node_id.__repr__() + '/' + value,
              "used": True})
         )
 
@@ -854,7 +861,7 @@ class Deployment(object):
         )
 
     def get_variable(self, xpath):
-        variable_value = self._get("_variables", self.scope._node_id + '/' + xpath)
+        variable_value = self._get("_variables", self.scope._node_id.__repr__() + '/' + xpath)
         if type(variable_value) == dict:
             if len(variable_value) > 1:
                 return [value for index, value in variable_value.items()]
@@ -864,7 +871,7 @@ class Deployment(object):
 
     def set_variables(self, variables):
         for xpath, value in variables:
-            xpath = self.scope._node_id + '/' + xpath
+            xpath = self.scope._node_id.__repr__() + '/' + xpath
             if not self._has_value("_variables", xpath):
                 self._variables.append((
                     xpath,
@@ -989,7 +996,7 @@ def smart_call(root_provide, values={}):
                     variable_value = deployment.get_variable(v.xpath)
                     if variable_value is not None:
                         v.value = variable_value
-                        logger.debug("Filling %s with value %s from deployment data" % (v.xpath, variable_value))
+                        logger.debug("Filling '%s' with value '%s' from deployment data" % (v.xpath, variable_value))
                     else:
                         variable_missing = True
 
