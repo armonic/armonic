@@ -443,8 +443,20 @@ class NodeId(object):
     def __init__(self, node_id):
         self._node_id = node_id
 
+        # Old node id can come from a deployment info file
+        self._old_node_id = None
+
     def __repr__(self):
         return "node_" + "_".join([str(n) for n in self._node_id])
+
+    def to_str(self):
+        return "node_" + "_".join([str(n) for n in self._node_id])
+
+    def old_is_set(self):
+        return self._old_node_id is not None
+
+    def old_to_str(self):
+        return str(self._old_node_id)
 
 
 class Provide(ArmonicProvide):
@@ -762,6 +774,10 @@ class Provide(ArmonicProvide):
         # pprint(self.provide_ret)
 
 
+class XpathNotFound(Exception):
+    pass
+
+
 class Deployment(object):
     _manage_input = []
     _lfm_input = []
@@ -786,31 +802,60 @@ class Deployment(object):
                 pass
         self.scope = scope
 
-    def _has_value(self, section, search_key):
+    def _get_value(self, section, node_id, xpath, consume=False):
         for (key, infos) in getattr(self, section):
-            if key == search_key and infos.get("used", False) is False:
-                return True
-        return False
 
-    def _get_value(self, section, search_key):
-        for (key, infos) in getattr(self, section):
-            if key == search_key and infos.get("used", False) is False:
-                infos["used"] = True
-                return infos["value"]
+            key_node_id, key_xpath = self._xpath_host(key)
+            print xpath, key_xpath
+            if xpath == key_xpath:
+                if infos.get("used", False):
+                    break
 
-    def _get(self, section, key):
-        if not self._has_value(section, key):
+                if node_id.to_str() == key_node_id:
+                    if consume:
+                        infos["used"] = True
+                    return infos['value']
+                elif node_id.old_is_set() and node_id.old_to_str() == key_node_id:
+                    if consume:
+                        infos["used"] = True
+                    return infos['value']
+                elif node_id.old_is_set() is False:
+                    logger.debug("Use old node id: '%s' (instead of '%s')", key_node_id, node_id.to_str())
+                    node_id._old_node_id = key_node_id
+                    if consume:
+                        infos["used"] = True
+                    return infos['value']
+
+        if node_id.old_is_set():
+            msg = ("%s/%s or %s/%s not found in section %s" %
+                   (node_id.to_str(), xpath, node_id.old_to_str(), xpath, section))
+        else:
+            msg = ("%s/%s not found in section %s" %
+                   (node_id.to_str(), xpath, section))
+        logger.debug(msg)
+        raise XpathNotFound(msg)
+
+    def _has_value(self, section, node_id, search_key):
+        try:
+            self._get_value(section, node_id, search_key)
+            return True
+        except XpathNotFound:
+            return False
+        
+    def _get(self, section, node_id, key):
+        try:
+            return self._get_value(section, node_id, key, consume=True)
+        except XpathNotFound:
             return None
-        return self._get_value(section, key)
 
     def _xpath_host(self, xpath):
-        host = xpath.split('/')[0]
+        node_id = xpath.split('/')[0]
         path = "/".join(xpath.split('/')[1:])
-        return (host, path)
+        return (node_id, path)
 
     @property
     def _generic_xpath(self):
-        return self.scope._node_id.__repr__() + '/' + self.scope.generic_xpath
+        return self.scope._node_id.to_str() + '/' + self.scope.generic_xpath
 
     @property
     def _xpath(self):
@@ -818,7 +863,8 @@ class Deployment(object):
 
     @property
     def manage(self):
-        return self._get("_manage_input", self._generic_xpath)
+        return self._get("_manage_input",
+                         self.scope._node_id, self.scope.generic_xpath)
 
     @manage.setter
     def manage(self, value):
@@ -830,7 +876,8 @@ class Deployment(object):
 
     @property
     def lfm(self):
-        return self._get("_lfm_input", self.scope.generic_xpath)
+        return self._get("_lfm_input",
+                         self.scope._node_id, self.scope.generic_xpath)
 
     @lfm.setter
     def lfm(self, value):
@@ -842,7 +889,8 @@ class Deployment(object):
 
     @property
     def specialize(self):
-        specialized = self._get("_specialize_input", self._generic_xpath)
+        specialized = self._get("_specialize_input",
+                                self.scope._node_id, self.scope.generic_xpath)
         if specialized is not None:
             return self._xpath_host(specialized)
         return (None, None)
@@ -851,7 +899,7 @@ class Deployment(object):
     def specialize(self, value):
         self._specialize_output.append((
             self._generic_xpath,
-            {"value": self.scope._node_id.__repr__() + '/' + value,
+            {"value": self.scope._node_id.to_str() + '/' + value,
              "used": True})
         )
 
@@ -867,7 +915,7 @@ class Deployment(object):
         )
 
     def get_variable(self, xpath):
-        variable_value = self._get("_variables_input", self.scope._node_id.__repr__() + '/' + xpath)
+        variable_value = self._get("_variables_input", self.scope._node_id, xpath)
         if type(variable_value) == dict:
             if len(variable_value) > 1:
                 return [value for index, value in variable_value.items()]
@@ -877,8 +925,8 @@ class Deployment(object):
 
     def set_variables(self, variables):
         for xpath, value in variables:
-            xpath = self.scope._node_id.__repr__() + '/' + xpath
-            if not self._has_value("_variables_output", xpath):
+            if not self._has_value("_variables_output", self.scope._node_id, xpath):
+                xpath = self.scope._node_id.to_str() + '/' + xpath
                 self._variables_output.append((
                     xpath,
                     {"value": value,
