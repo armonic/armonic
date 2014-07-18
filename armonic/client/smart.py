@@ -779,6 +779,11 @@ class XpathNotFound(Exception):
 
 
 class Deployment(object):
+
+    # Variable are splitted into input and output because we don't try
+    # to update input file to generate the output one. We regenerate
+    # the output file each time smart is called.
+    # This simplifies the process of node_id mapping if node_id have changed.
     _manage_input = []
     _lfm_input = []
     _specialize_input = []
@@ -830,7 +835,18 @@ class Deployment(object):
             if xpath == key_xpath:
                 if infos.get("used", False):
                     continue
-
+                # Section and xpath part have matched.
+                #
+                # Next, to get a value, several cases can occur. If
+                # the node_id from input file matches the node_id of
+                # the current scope, we simply consume the value.
+                #
+                # If node_id don't match, we assign the node_id to the
+                # old_node_id attribute of the current scope node_id
+                # and we consume the value.
+                #
+                # If it doesn't match the node_id, we use old_node_id
+                # if it is set.
                 if node_id.to_str() == key_node_id:
                     return _consume_value(infos)
                 elif node_id.old_is_set() and node_id.old_to_str() == key_node_id:
