@@ -23,42 +23,43 @@ class TestVariable(unittest.TestCase):
         t = VInt("int", default=10)
         self.assertEqual(t.value, 10)
         self.assertEqual(int(t), 10)
-        with self.assertRaises(ValidationError):
-            t.value = "foo"
-        with self.assertRaises(ValidationError):
-            t.fill("foo")
         t.value = 20
         self.assertEqual(t.value, 20)
         t.fill(30)
         self.assertEqual(t.value, 30)
+        with self.assertRaises(ValidationError):
+            t.value = "foo"
+            t.validate()
+        with self.assertRaises(ValidationError):
+            t.validate("bar")
 
     def test_VFloat(self):
         t = VFloat("float", default=10.2)
         self.assertEqual(t.value, 10.2)
         self.assertEqual(float(t), 10.2)
-        with self.assertRaises(ValidationError):
-            t.value = "foo"
-        with self.assertRaises(ValidationError):
-            t.fill("foo")
         t.value = 20.4500
         self.assertEqual(t.value, 20.45)
         t.fill(30.4)
         self.assertEqual(t.value, 30.4)
+        with self.assertRaises(ValidationError):
+            t.value = "foo"
+            t.validate()
+        with self.assertRaises(ValidationError):
+            t.validate("bar")
 
     def test_VBool(self):
         t = VBool("bool1", default=False)
+        for v in ('True', 'y', 'Y'):
+            t.value = v
+            self.assertTrue(t.value)
+        for v in ('False', 'n', 'N'):
+            t.value = v
+            self.assertFalse(t.value)
         with self.assertRaises(ValidationError):
             t.value = "foo"
+            t.validate()
         with self.assertRaises(ValidationError):
-            t.value = 10
-        t.value = True
-        self.assertTrue(t.value)
-        t.value = False
-        self.assertFalse(t.value)
-        t.fill(True)
-        self.assertTrue(t.value)
-        t.fill(False)
-        self.assertFalse(t.value)
+            t.validate(34)
 
     def test_VList(self):
         t = VList("list1", inner=VString)
@@ -79,16 +80,21 @@ class TestVariable(unittest.TestCase):
         class VIntMax(VInt):
             max_val = 5
         t = VList("list1", inner=VIntMax)
+
         with self.assertRaises(ValidationError):
             t.fill(["foo", "bar"])
+            t.validate()
+
         t.fill([1, 2, 3])
-        t._validate()
-        t._validate([1, 2, 3])
-        t.fill([1, 22, 35])
+        t.validate()
+        t.validate([1, 2, 3])
+
         with self.assertRaises(ValidationError):
-            t._validate()
+            t.fill([1, 22, 35])
+            t.validate()
+
         with self.assertRaises(ValidationError):
-            t._validate([1, 22, 35])
+            t.validate([1, 22, 35])
 
     def test_VList_of_VList(self):
         t = VList("Vlist", inner=VList("innerVList", inner=VString))
@@ -107,24 +113,57 @@ class TestVariable(unittest.TestCase):
     def test_required(self):
         t = VString("str")
         with self.assertRaises(ValidationError):
-            t._validate()
+            t.validate()
 
     def test_max_min(self):
         t = Port("port")
-        t.value = 300000
         with self.assertRaises(ValidationError):
-            t._validate()
-        t.value = -20
+            t.value = 300000
+            t.validate()
+
         with self.assertRaises(ValidationError):
-            t._validate()
+            t.value = -20
+            t.validate()
 
     def test_pattern(self):
         t = Hostname("host")
-        t.value = "45"
+
         with self.assertRaises(ValidationError):
-            t._validate()
+            t.value = "45"
+            t.validate()
+
         t.value = "test45"
-        self.assertTrue(t._validate())
+        self.assertTrue(t.validate())
+
+    def test_custom_validation(self):
+        class Custom(VString):
+            def validation(self, value):
+                if not value == "foo":
+                    raise ValidationError("Is not foo")
+
+        t = Custom("custom")
+        with self.assertRaises(ValidationError):
+            t.validate("bar")
+        with self.assertRaises(ValidationError):
+            t.value = "bar"
+            t.validate()
+        t.value = "foo"
+        self.assertTrue(t.validate())
+
+        class Custom(VInt):
+            def validation(self, value):
+                if not value == 5:
+                    raise ValidationError("Is not 5")
+
+        t = Custom("custom")
+        with self.assertRaises(ValidationError):
+            t.validate(2)
+        with self.assertRaises(ValidationError):
+            t.value = 3
+            t.validate()
+        self.assertTrue(t.validate(5))
+        t.value = 5
+        self.assertTrue(t.validate())
 
 
 if __name__ == '__main__':

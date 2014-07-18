@@ -41,7 +41,7 @@ class TestVariableSerialization(unittest.TestCase):
     def test_variable_error(self):
         v = VString('var1')
         try:
-            v._validate()
+            v.validate()
         except:
             pass
         vs = {

@@ -64,47 +64,60 @@ class Variable(XMLRessource, ExtraInfoMixin):
 
     @value.setter
     def value(self, value):
-        self._value = self._validate_type(value)
+        self._value = value
 
     def fill(self, value):
         self.value = value
 
-    def _validate_type(self, value):
-        self.error = None
-        if value is None and self.required:
-            self.error = "%s is required" % self.name
-            raise ValidationError(variable_name=self.name,
-                                  msg="%s value can't be None" % self.name)
-        return value
-
-    def _validate(self, value=None):
-        """Validate value or self.value if value is not set.
-        If values is specified, they are
-        used to validate the require variables. Otherwise, you must
-        already have fill it because filled values will be used.
-        """
-        self.error = None
-        if value is None:
-            value = self.value
-
-        if value is None and self.required:
+    def base_validation(self, value):
+        if self.required and value is None:
             self.error = "%s is required" % self.name
             raise ValidationError(variable_name=self.name,
                                   msg="%s is required" % self.name)
+        elif self.required and value is None:
+            # return early from validation since there is no
+            # value and the variable is not required
+            return
 
-    def _custom_validation(self):
         try:
-            self.validate()
+            length = len(value)
+            if self.required and length == 0:
+                raise ValidationError(variable_name=self.name,
+                                      msg="%s is required" % self.name)
+            elif self.required and length == 0:
+                return
+        except TypeError:
+            # Can't calculate length
+            pass
+
+    def validation(self, value):
+        """Override for custom validation
+        """
+        return True
+
+    def validate(self, value=None):
+        """Run the variable validation
+
+        Validate value or self.value if value is not set.
+        If values is specified, they are used to validate
+        the require variables. Otherwise, you must already
+        have fill it because filled values will be used.
+
+        Set self.error when ValidationError is raised.
+
+        :raises: ValidationError
+        """
+        self.error = None
+
+        if value is None:
+            value = self.value
+
+        try:
+            self.base_validation(value)
+            self.validation(value)
         except ValidationError as e:
             self.error = e.msg
             raise
-        return True
-
-    def validate(self):
-        """Override for custom validation.
-
-        :raises ValidationError: in case of error
-        """
         return True
 
     def has_error(self):
@@ -159,7 +172,6 @@ class VList(Variable):
         self.fill(value)
 
     def fill(self, primitive):
-        self._validate_type(primitive)
         values = []
         for key, val in enumerate(primitive):
             if not self._inner_inner_class:
@@ -171,28 +183,20 @@ class VList(Variable):
         if values:
             self._value = values
 
-    def _validate_type(self, value):
-        Variable._validate_type(self, value)
+    def base_validation(self, value):
+        Variable.base_validation(self, value)
         if not type(value) == list:
             msg = "%s must be a list (instead of %s)" % (self.name, type(value))
-            self.error = msg
             raise ValidationError(msg=msg, variable_name=self.name)
-        return value
-
-    def _validate(self, value=None):
-        if value is None:
-            value = self.value
-        Variable._validate(self, value)
         for key, val in enumerate(value):
             if not isinstance(val, Variable):
                 if not self._inner_inner_class:
                     value[key] = self._inner_class(key)
                 else:
                     value[key] = self._inner_class(key, self._inner_inner_class)
-                value[key]._validate(val)
+                value[key].validate(val)
             else:
-                value[key]._validate()
-        return self._custom_validation()
+                value[key].validate()
 
     def __iter__(self):
         return iter(self.value)
@@ -226,22 +230,14 @@ class VString(Variable):
 
     @value.setter
     def value(self, value):
-        self._value = self._validate_type(value)
+        self._value = value
 
-    def _validate(self, value=None):
-        if value is None:
-            value = self.value
-        Variable._validate(self, value)
+    def base_validation(self, value):
+        Variable.base_validation(self, value)
         if self.pattern and not re.match(self.pattern, value):
-            self.error = self.pattern_error
             msg = "%s (current value is %s)" % (self.pattern_error, value)
             raise ValidationError(variable_name=self.name,
                                   msg=msg)
-        return self._custom_validation()
-
-    def _validate_type(self, value):
-        Variable._validate_type(self, value)
-        return str(value)
 
 
 class VInt(Variable):
@@ -252,10 +248,13 @@ class VInt(Variable):
     max_val = None
     """Maximum value"""
 
-    def _validate(self, value=None):
-        if value is None:
-            value = self.value
-        Variable._validate(self, value)
+    def base_validation(self, value):
+        Variable.base_validation(self, value)
+        try:
+            value = int(value)
+        except ValueError:
+            raise ValidationError(msg="%s must be an int" % self.name,
+                                  variable_name=self.name)
         if self.min_val is not None and value < self.min_val:
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be greater than %s" %
@@ -264,16 +263,6 @@ class VInt(Variable):
             raise ValidationError(variable_name=self.name,
                                   msg="%s value must be lower than %s" %
                                   (self.name, self.max_val))
-        return self._custom_validation()
-
-    def _validate_type(self, value):
-        Variable._validate_type(self, value)
-        try:
-            value = int(value)
-        except ValueError:
-            raise ValidationError(msg="%s must be an int" % self.name,
-                                  variable_name=self.name)
-        return value
 
     def __int__(self):
         return self.value
@@ -283,14 +272,13 @@ class VFloat(VInt):
     """Variable of type float."""
     type = 'float'
 
-    def _validate_type(self, value):
-        Variable._validate_type(self, value)
+    def base_validation(self, value):
+        VInt.base_validation(self, value)
         try:
             value = float(value)
         except ValueError:
             raise ValidationError(msg="%s must be a float" % self.name,
                                   variable_name=self.name)
-        return value
 
     def __float__(self):
         return self.value
@@ -300,25 +288,27 @@ class VBool(Variable):
     """Variable of type boolean."""
     type = 'bool'
 
-    def _validate(self, value=None):
-        if value is None:
-            value = self.value
-        Variable._validate(self, value)
-        if not (value is True or value is False):
-            raise ValidationError(variable_name=self.name,
-                                  msg="%s value must be a boolen" % self.name)
-        return True
+    @property
+    def value(self):
+        return self._value
 
-    def _validate_type(self, value):
-        Variable._validate_type(self, value)
-        if value in ('True',):
+    @value.setter
+    def value(self, value):
+        if value in ('True', 'y', 'Y'):
             value = True
-        if value in ('False',):
+        if value in ('False', 'n', 'N'):
+            value = False
+        self._value = value
+
+    def base_validation(self, value):
+        Variable.base_validation(self, value)
+        if value in ('True', 'y', 'Y'):
+            value = True
+        if value in ('False', 'n', 'N'):
             value = False
         if not type(value) == bool:
-            raise ValidationError(msg="%s must be a boolean" % self.name,
-                                  variable_name=self.name)
-        return value
+            raise ValidationError(variable_name=self.name,
+                                  msg="%s value must be a boolen" % self.name)
 
 
 class ArmonicFirstInstance(VBool):
@@ -390,4 +380,11 @@ class VUrl(VString):
 
 
 class Password(VString):
-    pass
+    min_chars = 6
+
+    def validation(self, value):
+        if len(value) < self.min_chars:
+            raise ValidationError(
+                variable_name=self.name,
+                msg='Password too short. %s chars minimum.' % self.min_chars
+            )

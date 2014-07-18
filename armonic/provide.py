@@ -49,7 +49,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
         func._provide.flags.update(self.flags)
         func._provide.extra.update(self.extra)
         for require in self:
-            if not require in func._provide:
+            if require not in func._provide:
                 func._provide.append(require)
         return func
 

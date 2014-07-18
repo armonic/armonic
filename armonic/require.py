@@ -86,7 +86,7 @@ class Require(XMLRessource, ExtraInfoMixin):
             if not int(nargs) > 0:
                 raise TypeError("nargs must be '1 or more', '?' or '*' (instead of %s)" % nargs)
         except ValueError:
-            if not nargs in ["?", "*"]:
+            if nargs not in ["?", "*"]:
                 raise TypeError("nargs must be '1 or more', '?' or '*' (instead of %s)" % nargs)
         finally:
             self.nargs = str(nargs)
@@ -199,7 +199,7 @@ class Require(XMLRessource, ExtraInfoMixin):
                     value = values[variable.name]
                 except KeyError:
                     msg = "Submitted value doesn't contain key %s" % variable.name
-                    logger.debug("Validation error on require '%s': %s" % 
+                    logger.debug("Validation error on require '%s': %s" %
                                  (self.get_xpath(), msg))
                     raise ValidationError(
                         variable_name=variable.name,
@@ -207,7 +207,7 @@ class Require(XMLRessource, ExtraInfoMixin):
             else:
                 value = variable.value
 
-            variable._validate(variable._validate_type(value))
+            variable.validate(value)
 
         return True
 
@@ -224,7 +224,7 @@ class Require(XMLRessource, ExtraInfoMixin):
                 except IndexError:
                     msg = ("Values must contains as much element"
                            " as variables set elements.")
-                    logger.debug("Validation error on require '%s': %s" % 
+                    logger.debug("Validation error on require '%s': %s" %
                                  (self.get_xpath(), msg))
                     raise ValidationError(msg)
                 self.validate_one_set(vs, v)
