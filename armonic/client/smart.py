@@ -465,7 +465,6 @@ class Provide(ArmonicProvide):
              "lfm",
              "specialize",
              "post_specialize",
-             "set_dependencies",
              "multiplicity",
              "validation",
              "call",
@@ -697,13 +696,6 @@ class Provide(ArmonicProvide):
         if self.call is None:
             raise AttributeError("'call' attribute must not be None. Must be set at 'call' step")
 
-    def do_set_dependencies(self):
-        """Return False by default."""
-        return False
-
-    def on_set_dependencies(self, call):
-        pass
-
     def do_manage(self):
         return True
 
@@ -846,29 +838,7 @@ def smart_call(root_provide):
                 if scope.do_post_specialize():
                     data = yield(scope, scope.step, None)
                     scope.on_post_specialize(data)
-                scope._next_step()
-
-            elif scope.step == "set_dependencies":
-                if scope.do_set_dependencies():
-                    data = yield(scope, scope.step, None)
-                    scope.on_set_dependencies(data)
                 scope._build_requires()
-                scope._next_step()
-
-            elif scope.step == "validation":
-                if not scope.is_validated:
-                    data = yield(scope, scope.step, None)
-                    if scope.validate():
-                        scope._next_step()
-                else:
-                    scope._next_step()
-
-            elif scope.step == "call":
-                if scope.do_call():
-                    data = yield(scope, scope.step, None)
-                    scope.on_call(data)
-                if scope.call:
-                    scope.lfm_call()
                 scope._next_step()
 
             elif scope.step == "multiplicity":
@@ -936,6 +906,23 @@ def smart_call(root_provide):
                             break
                     if done:
                         scope._current_requires = None
+
+            elif scope.step == "validation":
+                if not scope.is_validated:
+                    data = yield(scope, scope.step, None)
+                    if scope.validate():
+                        scope._next_step()
+                else:
+                    scope._next_step()
+
+            elif scope.step == "call":
+                if scope.do_call():
+                    data = yield(scope, scope.step, None)
+                    scope.on_call(data)
+                if scope.call:
+                    scope.lfm_call()
+                scope._next_step()
+
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()

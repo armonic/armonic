@@ -174,9 +174,6 @@ if __name__ == "__main__":
         elif provide.step == "specialize":
             data = user_input_choose_amongst(args, prefix=indent(provide.depth))
 
-        elif provide.step == "set_dependencies":
-            pass
-
         elif provide.step == "validation":
             if provide.variables() != []:
                 logger.info(indent(provide.depth, "Variables are:"))
