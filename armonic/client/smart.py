@@ -809,7 +809,7 @@ class Deployment(object):
             print xpath, key_xpath
             if xpath == key_xpath:
                 if infos.get("used", False):
-                    break
+                    continue
 
                 if node_id.to_str() == key_node_id:
                     if consume:
@@ -905,12 +905,12 @@ class Deployment(object):
 
     @property
     def multiplicity(self):
-        return self._get("_multiplicity_input", self._xpath)
+        return self._get("_multiplicity_input", self.scope._node_id, self.scope.xpath)
 
     @multiplicity.setter
     def multiplicity(self, hosts):
         self._multiplicity_output.append((
-            self._xpath,
+            self.scope._node_id.to_str() + "/" + self.scope.xpath,
             {"value": hosts})
         )
 
