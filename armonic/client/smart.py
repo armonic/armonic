@@ -803,28 +803,42 @@ class Deployment(object):
         self.scope = scope
 
     def _get_value(self, section, node_id, xpath, consume=False):
-        for (key, infos) in getattr(self, section):
+        def _consume_value(infos):
+            # This function return the value from infos and set used
+            # flags to true if consume flag is set.
+            # 
+            # If a vairalbe is asked, it's more complicated to set the
+            # consume flag since a variable can occur several time. We
+            # then also consume the dict of variables.
+            if section == "_variables_input":
+                values = infos['value']
+                idx = min(values)
+                value = values[idx]
+                if consume:
+                    value = values.pop(idx)
+                    infos['value'] = values
+                    if len(values) == 0:
+                        infos["used"] = True
+            else:
+                value = infos['value']
+                if consume:
+                    infos['used'] = True
+            return value
 
+        for (key, infos) in getattr(self, section):
             key_node_id, key_xpath = self._xpath_host(key)
-            print xpath, key_xpath
             if xpath == key_xpath:
                 if infos.get("used", False):
                     continue
 
                 if node_id.to_str() == key_node_id:
-                    if consume:
-                        infos["used"] = True
-                    return infos['value']
+                    return _consume_value(infos)
                 elif node_id.old_is_set() and node_id.old_to_str() == key_node_id:
-                    if consume:
-                        infos["used"] = True
-                    return infos['value']
+                    return _consume_value(infos)
                 elif node_id.old_is_set() is False:
                     logger.debug("Use old node id: '%s' (instead of '%s')", key_node_id, node_id.to_str())
                     node_id._old_node_id = key_node_id
-                    if consume:
-                        infos["used"] = True
-                    return infos['value']
+                    return _consume_value(infos)
 
         if node_id.old_is_set():
             msg = ("%s/%s or %s/%s not found in section %s" %
