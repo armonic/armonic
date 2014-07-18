@@ -56,7 +56,7 @@ class Variable(object):
 
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -65,12 +65,12 @@ class Variable(object):
         self._value = value
         self.required = required
         self.type = type
+        self.error = error
         self.extra = extra
 
         self._is_skel = True
 
         # Capture the variable used to resolve self
-        self._bound_to = None
         self._resolved_by = None
         self._set_by = None
         self._suggested_by = None
@@ -85,6 +85,7 @@ class Variable(object):
             value=self._value,
             required=self.required,
             type=self.type,
+            error=self.error,
             extra=self.extra)
 
         var._is_skel = False
@@ -105,8 +106,16 @@ class Variable(object):
                    value=None,
                    required=dct_json['required'],
                    type=dct_json['type'],
+                   error=dct_json['error'],
                    extra=dct_json['extra'])
         return this
+
+    def update_from_json(self, dct_json):
+        for key, value in dct_json.items():
+            try:
+                setattr(self, key, value)
+            except AttributeError:
+                logger.error("Failed to update attr %s to %s" % (key, value))
 
     @property
     def default(self):
@@ -207,20 +216,17 @@ class Variable(object):
         return {"name": self.name,
                 "xpath": self.xpath,
                 "default": self._default,
-                "value": self.value}
+                "value": self.value,
+                "error": self.error}
 
     def __repr__(self):
-        if self._bound_to is not None:
-            bound_to = self._bound_to.xpath
-        else:
-            bound_to = None
-        return "Variable(skel=%s, %s, name=%s, value=%s, xpath=%s, bound_to=%s)" % (
+        return "Variable(skel=%s, %s, name=%s, xpath=%s, value=%s, error=%s)" % (
             self._is_skel,
             id(self),
             self.name,
-            self._value,
             self.xpath,
-            bound_to)
+            self._value,
+            self.error)
 
 
 class Requires(list):
@@ -430,9 +436,9 @@ class ArmonicProvide(object):
 
     def _build_provide(self, provide_xpath_uri):
         provides = self.lfm.provide(provide_xpath_uri)
-        self.from_json(provides[0])
+        self.update_from_json(provides[0])
 
-    def from_json(self, dct_json):
+    def update_from_json(self, dct_json):
         self.name = dct_json['name']
         self.xpath = dct_json['xpath']
         self.extra = dct_json.get('extra', {})
@@ -536,6 +542,9 @@ class Provide(ArmonicProvide):
         # Attribute host is required for external Provide
         self.host = None
 
+        # True when all variables are validated
+        self.is_validated = False
+
     def __repr__(self):
         return "<Provide(%s)>" % self.generic_xpath
 
@@ -562,6 +571,35 @@ class Provide(ArmonicProvide):
         if self.require is not None:
             return self.require._scope_variables
         return []
+
+    def validate(self):
+        """Validate all variables using values from data.
+
+        :rtype: bool
+        """
+        result = self.lfm.provide_call_validate(self.xpath,
+                                                self.variables_serialized())
+
+        if result['errors'] is False:
+            self.is_validated = True
+            return self.is_validated
+
+        json_variables = []
+        for require in result['requires']:
+            for r in require['requires']:
+                # FIXME: handle nargs
+                if len(r['variables']) > 0:
+                    for v in r['variables'][0]:
+                        json_variables.append(v)
+
+        for variable in self.variables():
+            for json_variable in json_variables:
+                if variable.xpath == json_variable['xpath']:
+                    variable.update_from_json(json_variable)
+
+        self.is_validated = False
+
+        return self.is_validated
 
     def has_requirer(self):
         """To know if it is the root provide."""
@@ -818,8 +856,12 @@ def smart_call(root_provide):
                 scope._next_step()
 
             elif scope.step == "validation":
-                yield(scope, scope.step, None)
-                scope._next_step()
+                if not scope.is_validated:
+                    data = yield(scope, scope.step, None)
+                    if scope.validate():
+                        scope._next_step()
+                else:
+                    scope._next_step()
 
             elif scope.step == "call":
                 if scope.do_call():
@@ -847,6 +889,7 @@ def smart_call(root_provide):
 
                             if type(number) is not int:
                                 raise TypeError("Multiplicity step must send a integer!")
+
                             for i in range(0, number):
                                 # We build a new Require object from
                                 # the skeleton
