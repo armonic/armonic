@@ -9,7 +9,10 @@ def read_variable(string):
 
 
 def show_variable(variable):
-    return json.dumps(variable)
+    var = json.dumps(variable)
+    if var == "null":
+        return ""
+    return var
 
 
 def read_string(string):
