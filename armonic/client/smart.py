@@ -444,6 +444,26 @@ class ArmonicProvide(object):
         self.extra = dct_json.get('extra', {})
 
 
+class NodeId(object):
+    def __init__(self, node_id):
+        self._node_id = node_id
+
+        # Old node id can come from a deployment info file
+        self._old_node_id = None
+
+    def __repr__(self):
+        return "node_" + "_".join([str(n) for n in self._node_id])
+
+    def to_str(self):
+        return "node_" + "_".join([str(n) for n in self._node_id])
+
+    def old_is_set(self):
+        return self._old_node_id is not None
+
+    def old_to_str(self):
+        return str(self._old_node_id)
+
+
 class Provide(ArmonicProvide):
     """This class describe a provide and its requires and remotes requires
     contains provide. Thus, this object can describe a tree. To build
@@ -482,6 +502,7 @@ class Provide(ArmonicProvide):
     def __init__(self, generic_xpath, requirer=None,
                  child_num=None, require=None):
         ArmonicProvide.__init__(self)
+
         self.generic_xpath = generic_xpath
 
         # the provide that need this require
@@ -505,6 +526,9 @@ class Provide(ArmonicProvide):
             self.depth = requirer.depth + 1
             self.tree_id = requirer.tree_id + [child_num]
 
+        # This will replace tree_id.
+        self._node_id = NodeId(self.tree_id)
+
         # self.ignore = False
         self._step_current = 0
 
@@ -520,10 +544,12 @@ class Provide(ArmonicProvide):
         # If this provide comes from a local require, the lfm is taken
         # from the requirer.
         self.lfm = None
+        self.host = None
         self.is_local = False
         if (require is not None and
                 require.type == "local"):
             self.lfm = requirer.lfm
+            self.host = requirer.host
             self.is_local = True
 
         self.is_external = False
@@ -536,9 +562,6 @@ class Provide(ArmonicProvide):
 
         self.manage = True
         self.call = None
-
-        # Attribute host is required for external Provide
-        self.host = None
 
         # True when all variables are validated
         self.is_validated = False
@@ -575,6 +598,7 @@ class Provide(ArmonicProvide):
 
         :rtype: bool
         """
+
         result = self.lfm.provide_call_validate(self.xpath,
                                                 self.variables_serialized())
 
@@ -772,11 +796,214 @@ class Provide(ArmonicProvide):
         # pprint(self.provide_ret)
 
 
-def smart_call(root_provide):
+class XpathNotFound(Exception):
+    pass
+
+
+class Deployment(object):
+
+    # Variable are splitted into input and output because we don't try
+    # to update input file to generate the output one. We regenerate
+    # the output file each time smart is called.
+    # This simplifies the process of node_id mapping if node_id have changed.
+    _manage_input = []
+    _lfm_input = []
+    _specialize_input = []
+    _multiplicity_input = []
+    _variables_input = []
+
+    _manage_output = []
+    _lfm_output = []
+    _specialize_output = []
+    _multiplicity_output = []
+    _variables_output = []
+
+    def __init__(self, scope, sections):
+        for section_name, section in sections.items():
+            try:
+                for key, value in section:
+                    getattr(self, "_" + section_name + "_input").append(
+                        (key, {"value": value})
+                    )
+            except AttributeError:
+                pass
+        self.scope = scope
+
+    def _get_value(self, section, node_id, xpath, consume=False):
+        def _consume_value(infos):
+            # This function return the value from infos and set used
+            # flags to true if consume flag is set.
+            #
+            # If a vairalbe is asked, it's more complicated to set the
+            # consume flag since a variable can occur several time. We
+            # then also consume the dict of variables.
+            if section == "_variables_input":
+                values = infos['value']
+                idx = min(values)
+                value = values[idx]
+                if consume:
+                    value = values.pop(idx)
+                    infos['value'] = values
+                    if len(values) == 0:
+                        infos["used"] = True
+            else:
+                value = infos['value']
+                if consume:
+                    infos['used'] = True
+            return value
+
+        for (key, infos) in getattr(self, section):
+            key_node_id, key_xpath = self._xpath_host(key)
+            if xpath == key_xpath:
+                if infos.get("used", False):
+                    continue
+                # Section and xpath part have matched.
+                #
+                # Next, to get a value, several cases can occur. If
+                # the node_id from input file matches the node_id of
+                # the current scope, we simply consume the value.
+                #
+                # If node_id don't match, we assign the node_id to the
+                # old_node_id attribute of the current scope node_id
+                # and we consume the value.
+                #
+                # If it doesn't match the node_id, we use old_node_id
+                # if it is set.
+                if node_id.to_str() == key_node_id:
+                    return _consume_value(infos)
+                elif node_id.old_is_set() and node_id.old_to_str() == key_node_id:
+                    return _consume_value(infos)
+                elif node_id.old_is_set() is False:
+                    logger.debug("Use old node id: '%s' (instead of '%s')", key_node_id, node_id.to_str())
+                    node_id._old_node_id = key_node_id
+                    return _consume_value(infos)
+
+        if node_id.old_is_set():
+            msg = ("%s/%s or %s/%s not found in section %s" %
+                   (node_id.to_str(), xpath, node_id.old_to_str(), xpath, section))
+        else:
+            msg = ("%s/%s not found in section %s" %
+                   (node_id.to_str(), xpath, section))
+        logger.debug(msg)
+        raise XpathNotFound(msg)
+
+    def _has_value(self, section, node_id, search_key):
+        try:
+            self._get_value(section, node_id, search_key)
+            return True
+        except XpathNotFound:
+            return False
+
+    def _get(self, section, node_id, key):
+        try:
+            return self._get_value(section, node_id, key, consume=True)
+        except XpathNotFound:
+            return None
+
+    def _xpath_host(self, xpath):
+        node_id = xpath.split('/')[0]
+        path = "/".join(xpath.split('/')[1:])
+        return (node_id, path)
+
+    @property
+    def _generic_xpath(self):
+        return self.scope._node_id.to_str() + '/' + self.scope.generic_xpath
+
+    @property
+    def _xpath(self):
+        return self.scope.host + '/' + self.scope.xpath
+
+    @property
+    def manage(self):
+        return self._get("_manage_input",
+                         self.scope._node_id, self.scope.generic_xpath)
+
+    @manage.setter
+    def manage(self, value):
+        self._manage_output.append((
+            self._generic_xpath,
+            {"value": value,
+             "used": True})
+        )
+
+    @property
+    def lfm(self):
+        return self._get("_lfm_input",
+                         self.scope._node_id, self.scope.generic_xpath)
+
+    @lfm.setter
+    def lfm(self, value):
+        self._lfm_output.append((
+            self.scope.generic_xpath,
+            {"value": value,
+             "used": True})
+        )
+
+    @property
+    def specialize(self):
+        specialized = self._get("_specialize_input",
+                                self.scope._node_id, self.scope.generic_xpath)
+        if specialized is not None:
+            return self._xpath_host(specialized)
+        return (None, None)
+
+    @specialize.setter
+    def specialize(self, value):
+        self._specialize_output.append((
+            self._generic_xpath,
+            {"value": self.scope._node_id.to_str() + '/' + value,
+             "used": True})
+        )
+
+    @property
+    def multiplicity(self):
+        return self._get("_multiplicity_input", self.scope._node_id, self.scope.xpath)
+
+    @multiplicity.setter
+    def multiplicity(self, hosts):
+        self._multiplicity_output.append((
+            self.scope._node_id.to_str() + "/" + self.scope.xpath,
+            {"value": hosts})
+        )
+
+    def get_variable(self, xpath):
+        variable_value = self._get("_variables_input", self.scope._node_id, xpath)
+        if type(variable_value) == dict:
+            if len(variable_value) > 1:
+                return [value for index, value in variable_value.items()]
+            else:
+                return variable_value.itervalues().next()
+        return variable_value
+
+    def set_variables(self, variables):
+        for xpath, value in variables:
+            if not self._has_value("_variables_output", self.scope._node_id, xpath):
+                xpath = self.scope._node_id.to_str() + '/' + xpath
+                self._variables_output.append((
+                    xpath,
+                    {"value": value,
+                     "used": True})
+                )
+
+    def to_primitive(self):
+        return {
+            "manage": [(k, i["value"]) for k, i in self._manage_output],
+            "lfm": [(k, i["value"]) for k, i in self._lfm_output],
+            "specialize": [(k, i["value"]) for k, i in self._specialize_output],
+            "multiplicity": [(k, i["value"]) for k, i in self._multiplicity_output],
+            "variables": [(k, i["value"]) for k, i in self._variables_output]
+        }
+
+
+def smart_call(root_provide, values={}):
     """Return a generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
 
     scope = root_provide
+    deployment = Deployment(scope, values)
+
+    logger.info("Smart is using prefilled values: %s" % deployment.to_primitive())
+
     while True:
         logger.debug("Step: %s - %s" % (scope.step, scope))
         # Stop and Pop conditions
@@ -791,39 +1018,68 @@ def smart_call(root_provide):
             # go back to its requirer.
             else:
                 scope = scope.requirer
+                deployment.scope = scope
                 continue
 
         if scope.manage:
             if scope.step == "manage":
                 if scope.do_manage():
-                    data = yield (scope, scope.step, None)
+
+                    data = deployment.manage
+                    if data is not None:
+                        if data:
+                            logger.debug("%s is managed from deployment data" % scope.generic_xpath)
+                        else:
+                            logger.debug("%s is NOT managed from deployment data" % scope.generic_xpath)
+                    else:
+                        data = yield (scope, scope.step, None)
+                    deployment.manage = data
+
                     scope.on_manage(data)
                 scope._test_manage()
                 scope._next_step()
 
             elif scope.step == "lfm":
+                host = deployment.lfm
+
                 if scope.do_lfm():
-                    data = yield(scope, scope.step, None)
+                    if host is not None:
+                        data = host
+                        logger.debug("%s lfm on %s from deployment data" % (scope.generic_xpath, data))
+                    else:
+                        data = yield(scope, scope.step, None)
+                    deployment.lfm = data
                     scope.on_lfm(data)
+
                 scope._test_lfm()
                 scope._next_step()
 
             elif scope.step == "specialize":
                 m = scope.matches()
                 logger.debug("Specialize matches: %s" % m)
-                if len(m) > 1 or scope.do_specialize():
-                    specialized = yield(scope, scope.step, m)
-                elif len(m) == 1:
-                    specialized = m[0]['xpath']
+
+                host, xpath = deployment.specialize
+
+                if xpath is not None:
+                    specialized = xpath
+                    logger.debug("%s is specialized with %s from deployment data" % (scope.generic_xpath, specialized))
                 else:
-                    raise Exception('No path to %s found on %s (%s)' % (
-                        scope.generic_xpath,
-                        scope.lfm.info()['os-type'],
-                        scope.lfm.info()['os-release']))
+                    if len(m) > 1 or scope.do_specialize():
+                        specialized = yield(scope, scope.step, m)
+                    elif len(m) == 1:
+                        specialized = m[0]['xpath']
+                    else:
+                        raise Exception('No path to %s found on %s (%s)' % (
+                            scope.generic_xpath,
+                            scope.lfm.info()['os-type'],
+                            scope.lfm.info()['os-release']))
+
+                deployment.specialize = specialized
 
                 scope.on_specialize(specialized)
                 if scope.manage:
                     scope._build_provide(specialized)
+
                 scope._build_requires()
                 scope._next_step()
 
@@ -837,7 +1093,12 @@ def smart_call(root_provide):
                         # We are trying to get a next Requires
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
-                            multiplicity = yield (scope, scope.step, req)
+
+                            multiplicity = deployment.multiplicity
+
+                            if multiplicity is None:
+                                multiplicity = yield (scope, scope.step, req)
+
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
                                     raise TypeError("Multiplicity step for external requires must send a list!")
@@ -860,6 +1121,8 @@ def smart_call(root_provide):
                                 new.provide = p
                                 if req.skel.type == 'external':
                                     new.provide.host = multiplicity[i]
+
+                            deployment.multiplicity = multiplicity
                         else:
                             new = req.get_new_require()
                             p = scope.build_child(
@@ -867,6 +1130,7 @@ def smart_call(root_provide):
                                 child_num=new.child_num,
                                 require=new)
                             new.provide = p
+
                         scope._current_requires = req
 
                     except StopIteration:
@@ -889,14 +1153,23 @@ def smart_call(root_provide):
                         if r.provide.manage is True and not r.provide.step == "done":
                             done = False
                             scope = r.provide
+                            deployment.scope = scope
                             break
                     if done:
                         scope._current_requires = None
 
             elif scope.step == "validation":
                 if not scope.is_validated:
+                    # Fill variables with replay file values
+                    for variable in scope.variables():
+                        variable_value = deployment.get_variable(variable.xpath)
+                        if variable_value is not None:
+                            variable.value = variable_value
+                            logger.debug("Filling '%s' with value '%s' from deployment data" % (variable.xpath, variable_value))
                     data = yield(scope, scope.step, None)
                     if scope.validate():
+                        # Record variables values
+                        deployment.set_variables(scope.variables_serialized()[0])
                         scope._next_step()
                 else:
                     scope._next_step()
@@ -912,3 +1185,6 @@ def smart_call(root_provide):
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()
+
+    yield (None, None, deployment.to_primitive())
+    return
