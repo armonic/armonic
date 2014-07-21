@@ -43,7 +43,9 @@ def require_validation_error(dct):
 
 class Cli(object):
     """This class encapslutates common stuff for CLI Armonic clients."""
-    VERBOSE_LEVELS = [(logging.INFO, "INFO"), (logging.DEBUG, "DEBUG")]
+    VERBOSE_LEVELS = [(logging.INFO, "INFO"),
+                      (logging.DEBUG+1, "EVENT"),
+                      (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.CRITICAL
 
     def __init__(self):
@@ -84,8 +86,13 @@ class Cli(object):
             self.logging_level = Cli.VERBOSE_LEVELS[args.verbose - 1][0]
             print "Verbosity is set to %s" % Cli.VERBOSE_LEVELS[args.verbose - 1][1]
 
-        logging.basicConfig(level=self.logging_level,
-                            format='%(levelname)7s - %(message)s')
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        format = '%(asctime)s|%(levelname)7s - %(message)s'
+        ch = logging.StreamHandler()
+        ch.setLevel(self.logging_level)
+        ch.setFormatter(logging.Formatter(format))
+        logger.addHandler(ch)
 
         if args.no_remote:
             os_type = None
