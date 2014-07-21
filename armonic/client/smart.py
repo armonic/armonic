@@ -136,8 +136,8 @@ class Variable(object):
 
     def value_get_one(self):
         """Try to get a value from default, or resolved."""
-        return (self.value or
-                self.value_resolved or
+        return (self.value_resolved or
+                self.value or
                 self.default_resolved or
                 self.default)
 
