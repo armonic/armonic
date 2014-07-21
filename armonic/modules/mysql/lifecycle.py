@@ -61,7 +61,7 @@ class Configured(State):
 class SetRootPassword(State):
     """Set initial Mysql root password"""
 
-    @Require('auth', [VString("password", default="root", label="Initial root password for MySQL")])
+    @Require('auth', [Password("password", label="Initial root password for MySQL")])
     def enter(self, requires):
         pwd = requires.auth.variables().password.value  # password.value
         thread_mysqld = ProcessThread("mysql",
@@ -113,7 +113,7 @@ class ResetRootPassword(State):
     password and stop mysqld."""
     supported_os_type = [armonic.utils.OsTypeMBS()]
 
-    @Require("auth", [VString("password", default="root", label="New root password for MySQL")])
+    @Require("auth", [Password("password", label="New root password for MySQL")])
     def enter(self, requires):
         logger.debug("%s.%s changing mysql root password ...",
                      self.lf_name,
@@ -294,7 +294,7 @@ class ActiveAsSlave(MetaState):
     # would have a get_file_in_local method to proceed to downloading.
     implementations = [ActiveOnDebian, ActiveOnMBS]
 
-    @Require('auth_root',
+    @Require('auth',
              variables=[Password(
                  'root_password',
                  from_xpath="Mysql/SetRootPassword/enter/auth/password")])
@@ -307,7 +307,7 @@ class ActiveAsSlave(MetaState):
                                    VString('password', default='repl_pwd')])
     def enter(self, requires):
         root_user = "root"
-        root_password = requires.auth_root.variables().root_password.value
+        root_password = requires.auth.variables().root_password.value
         # We are using VUrl object retrieve the dump.
         filePath = requires.dump.variables().fileUrl.get_file()
         logFile = requires.dump.variables().logFile.value
@@ -338,13 +338,13 @@ class ActiveAsSlave(MetaState):
         cur.execute("slave start;")
 
     @Provide(tags=['internal'])
-    @Require('auth_root',
+    @Require('auth',
              variables=[Password(
                  'root_password',
                  from_xpath="Mysql/SetRootPassword/enter/auth/password")])
     def slave_status(self, requires):
         root_user = "root"
-        root_password = requires.get('auth').variables().get('root_password').value
+        root_password = requires.auth.variables().root_password.value
 
         con = MySQLdb.connect('localhost', root_user, root_password)
         cur = con.cursor()
