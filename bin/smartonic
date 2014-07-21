@@ -244,9 +244,8 @@ if __name__ == "__main__":
                 for v in serialized[0]:
                     logger.debug("\t%s" % str(v))
 
-                # we could send anything since smart use
-                # provide.variables_serialized itself
-                data = serialized
+                # send variables for validation
+                data = serialized[0]
 
         elif provide.step == "multiplicity":
             require = args

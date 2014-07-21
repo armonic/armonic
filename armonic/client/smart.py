@@ -593,14 +593,15 @@ class Provide(ArmonicProvide):
             return self.require._scope_variables
         return []
 
-    def validate(self):
+    def validate(self, values):
         """Validate all variables using values from data.
 
         :rtype: bool
         """
 
+        values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
-                                                self.variables_serialized())
+                                                values)
 
         if result['errors'] is False:
             self.is_validated = True
@@ -1167,9 +1168,9 @@ def smart_call(root_provide, values={}):
                             variable.value = variable_value
                             logger.debug("Filling '%s' with value '%s' from deployment data" % (variable.xpath, variable_value))
                     data = yield(scope, scope.step, None)
-                    if scope.validate():
+                    if scope.validate(data):
                         # Record variables values
-                        deployment.set_variables(scope.variables_serialized()[0])
+                        deployment.set_variables(data)
                         scope._next_step()
                 else:
                     scope._next_step()

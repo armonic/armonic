@@ -162,6 +162,9 @@ class Master(ClientXMPP):
         elif self.current_step == "multiplicity":
             provide, step, args = self.smart.send(payload['values']['multiplicity'].split(','))
 
+        elif self.current_step == "validation":
+            provide, step, args = self.smart.send(json.loads(payload['values']['validation']))
+
         else:
             provide, step, args = self.smart.next()
 
@@ -221,6 +224,7 @@ class Master(ClientXMPP):
                                        options=[
                                            {"label": "value", "value": str(value)},
                                            {"label": "type", "value": str(variable.type)},
+                                           {"label": "error", "value": str(getattr(variable, "error", ""))},
                                            {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
                                            {"label": "suggested_by", "value": str(getattr(variable._suggested_by, "xpath", ""))},
                                            {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))}],
