@@ -118,49 +118,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
     parser.add_argument('--port', '-P', type=int, default=8000, help='Armonic agent port (default: %(default)s))')
     parser.add_argument('--host', '-H', type=str, default="0.0.0.0", help='Armonic agent IP (default: %(default)s))')
-    parser.add_argument('--verbose', '-v', dest="verbose", default=False, action="store_true", help='Verbose mode (default: %(default)s))')
-    parser.add_argument('--lifecycles-dir', '-d', dest="lifecycles_dirs", type=str, default=[], nargs="*", help='Lifecycles directory')
-#    parser.add_argument('--lifecycles-include', '-i', dest="lifecycles_includes", type=str, nargs="*", default=[], help='Lifecycles names to import')
-    parser.add_argument('--no-default-lifecycles', dest="no_default_lifecycles", action="store_true", default=False, help="Don't load provided lifecycles (default: %(default)s))")
+
     parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
     parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
     parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
-    parser.add_argument('--halt-on-error', default=False, action="store_true", help='Halt agent if a module import occurs (default: %(default)s))')
 
+
+    import armonic.client.utils
+    cli = armonic.client.utils.Cli()
+    cli.parse_args(parser)
     args = parser.parse_args()
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    format = '%(asctime)s|%(levelname)7s - %(message)s'
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    ch.setFormatter(logging.Formatter(format))
     format = '%(asctime)s|%(name)20s|%(levelname)6s: %(message)s'
     fh = logging.handlers.RotatingFileHandler("/tmp/armonic.log", maxBytes=10485760, backupCount=5)
     fh.setLevel(logging.INFO)
     fh.setFormatter(logging.Formatter(format))
-    logger.addHandler(ch)
     logger.addHandler(fh)
 
-    if args.verbose:
-        MyTCPHandler.logging_level = logging.DEBUG
-        logger.setLevel(logging.DEBUG)
-        fh.setLevel(logging.DEBUG)
-        ch.setLevel(logging.DEBUG)
+    MyTCPHandler.logging_level = cli.logging_level
+    logger.setLevel(cli.logging_level)
+    fh.setLevel(cli.logging_level)
 
-    if not args.no_default_lifecycles:
-        armonic.common.load_default_lifecycles(
-            raise_import_error=args.halt_on_error)
-    for dir in args.lifecycles_dirs:
-        armonic.common.load_lifecycle_repository(
-            dir,
-            raise_import_error=args.halt_on_error)
 
     save_state = not args.no_save_state
     load_state = not args.no_load_state
 
     persist = Persist(load_state, save_state, args.state_path)
-    lfm = Serialize()
+    lfm = Serialize(os_type=cli.os_type)
 
     print "Server listening on %s:%d" % (args.host, args.port)
     server = MyTCPServer((args.host, args.port), MyTCPHandler)

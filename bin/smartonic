@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     dont_call = args.dont_call
 
-    if args.no_remote:
+    if cli.no_remote:
         import armonic.common
         armonic.common.SIMULATION = args.simulation
 

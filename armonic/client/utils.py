@@ -42,15 +42,22 @@ def require_validation_error(dct):
 
 
 class Cli(object):
-    """This class encapslutates common stuff for CLI Armonic clients."""
+    """This class encapslutates common stuffs for Armonic frontends.
+
+    :param remote: If the frontend can be used in remote mode, set to True.
+    """
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
                       (logging.DEBUG+1, "EVENT"),
                       (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.CRITICAL
 
-    def __init__(self):
+    def __init__(self, remote=False):
         self.logging_level = Cli.VERBOSE_DEFAULT_LEVEL
         self.os_type = None
+        self.remote = remote
+        
+        # Will be set by args.no_remote
+        self.no_remote = False
 
     def add_arguments(self, parser):
         """A helper to add a verbose argument"""
@@ -60,8 +67,9 @@ class Cli(object):
 
         parser.add_argument('--version', "-V", action='version', version='%(prog)s ' + "0.1")
 
-        parser.add_argument('--no-remote', action='store_true',
-                            default=False, help="Directly use Armonic module.")
+        if self.remote:
+            parser.add_argument('--no-remote', action='store_true',
+                                default=False, help="Directly use Armonic module.")
         parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
                             default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
         parser.add_argument('--lifecycle-dir', type=str, action='append',
@@ -74,6 +82,9 @@ class Cli(object):
         parser.add_argument('--dont-call', action='store_true',
                             default=False,
                             help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
+        parser.add_argument('--halt-on-error', action="store_true",
+                            default=False,
+                            help='Halt if a module import occurs (default: %(default)s))')
 
     def parse_args(self, parser):
         """A helper to parse arguments. This add several common options such
@@ -81,6 +92,8 @@ class Cli(object):
 
         self.add_arguments(parser)
         args = parser.parse_args()
+        if self.remote:
+            self.no_remote = args.no_remote
 
         if args.verbose is not None:
             self.logging_level = Cli.VERBOSE_LEVELS[args.verbose - 1][0]
@@ -94,7 +107,7 @@ class Cli(object):
         ch.setFormatter(logging.Formatter(format))
         logger.addHandler(ch)
 
-        if args.no_remote:
+        if self.remote is False or args.no_remote:
             os_type = None
             if args.os_type == "mbs":
                 os_type = OsTypeMBS()
@@ -105,9 +118,13 @@ class Cli(object):
             self.os_type = os_type
 
             if not args.no_default:
-                armonic.common.load_default_lifecycles()
+                armonic.common.load_default_lifecycles(
+                    raise_import_error=args.halt_on_error)
+
             if args.lifecycle_dir is not None:
                 for l in args.lifecycle_dir:
-                    armonic.common.load_lifecycle(l)
+                    armonic.common.load_lifecycle(
+                        l,
+                        raise_import_error=args.halt_on_error)
 
         return args
