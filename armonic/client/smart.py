@@ -159,7 +159,10 @@ class Variable(object):
         :param f_resolved: is a function returing the value resolved by other variables.
         """
         if self._resolving:
-            return f_value(self)
+            # If this variable resolution is started, we stop the
+            # recursion here without returning any value.
+            # The self value can be use at the first iteration.
+            return None
         else:
             self._resolving = True
             self._bind()
@@ -168,6 +171,11 @@ class Variable(object):
                 value = f_value(self)
             else:
                 value = f_resolved(resolved)
+                # If the resolved value is None, we try the self value
+                # which may be not None!
+                if value is None:
+                    value = f_value(self)
+
             self._resolving = False
             return value
 
