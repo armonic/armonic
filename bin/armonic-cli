@@ -33,10 +33,10 @@ def parseArgs(args):
     """take a list of "args:value" strings and return a dict"""
     if args is None:
         return []
-        
+
     # print args
     acc = {}
-    # Take 
+    # Take
     # [[req1, v1:x , v2:x], [req2, ...]]
     # Transform to
     # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
@@ -46,7 +46,7 @@ def parseArgs(args):
         else: acc.update({a[0]:[a[1:]]})
     ret = acc
     # print ret
-    
+
     # Take
     # {req1:[[v1:x, v2:x], [v2:x], ...], req2:[...]}
     # Transform to
@@ -62,7 +62,7 @@ def parseArgs(args):
                     acc[key] = {i:v}
     ret = acc
     # print ret
-    
+
     # Take
     # {req1/v1 : {0:x}, req1/v2 : {1:x}, ...}
     # Transform to
@@ -304,12 +304,10 @@ parser_plot.set_defaults(func=cmd_plot)
 
 argcomplete.autocomplete(parser)
 
-cli = armonic.client.utils.Cli()
+cli = armonic.client.utils.Cli(remote=True)
 args = cli.parse_args(parser)
 
 if args.no_remote is False:
-    from armonic.client.sock import ClientSocket
-
 #    format = '%(asctime)s|%(levelname)6s - %(message)s'
     format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
     sh = logging.StreamHandler()
