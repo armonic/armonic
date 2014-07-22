@@ -1,0 +1,19 @@
+FROM debian:stable
+
+MAINTAINER eon@patapon.info
+
+RUN echo "deb http://ftp.fr.debian.org/debian/ stable main non-free contrib" > /etc/apt/sources.list
+
+RUN (apt-get update && apt-get upgrade -y -q && apt-get dist-upgrade -y -q && apt-get -y -q autoclean && apt-get -y -q autoremove)
+
+RUN apt-get install -y -q python-mysqldb python-augeas python-lxml python-pip python-netifaces python-ipy python-dev
+
+EXPOSE 8000
+
+COPY . /root/armonic
+
+WORKDIR /root/armonic
+
+RUN python setup.py install
+
+ENTRYPOINT ["/root/armonic/bin/armonic-agent-socket"]

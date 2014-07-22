@@ -1,0 +1,17 @@
+#!/bin/bash
+
+nb_instances=$1
+cwd=`pwd`
+
+# Kill running armonic instances
+for id in `docker ps | grep 'armonic:' | awk '{ print $1 }'`
+do
+    docker kill ${id} > /dev/null
+done
+
+# Start new instances
+for nb in `seq 1 $nb_instances`
+do
+    id=`docker run -h server${nb} -v ${cwd}:/root/armonic -P -d armonic:mbs`
+    echo "${id}, hostname: server${nb}, ip: `docker inspect ${id} | grep 'IPAddress' | cut -d':' -f2 | cut -d'"' -f2`"
+done

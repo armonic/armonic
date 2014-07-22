@@ -1,0 +1,25 @@
+FROM mbs
+
+MAINTAINER eon@patapon.info
+
+WORKDIR /root
+
+RUN urpmi.addmedia --distrib http://mirror.mandriva.com/mbs1/x86_64/
+
+RUN (urpmi.update -a && urpmi --auto-select --auto)
+
+RUN urpmi --auto python-mysql augeas augeas-lenses python-lxml python-pip python-netifaces python-IPy lib64python-devel
+
+EXPOSE 8000
+
+ADD https://fedorahosted.org/released/python-augeas/python-augeas-0.4.1.tar.gz /root/python-augeas-0.4.1.tar.gz
+
+RUN (tar zvxf python-augeas-0.4.1.tar.gz && cd python-augeas-0.4.1 && python setup.py install)
+
+COPY . /root/armonic
+
+WORKDIR /root/armonic
+
+RUN python setup.py install
+
+ENTRYPOINT ["/root/armonic/bin/armonic-agent-socket"]
