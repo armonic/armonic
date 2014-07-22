@@ -97,6 +97,7 @@ class ActiveWithNfs(State):
         provide_args=[
             VString(
                 "path",
+                default="test",
                 from_xpath="Wordpress/Active/enter/http_document/root",
                 modifier="%s/wp-content"),
             VString("name", default="wordpress")])

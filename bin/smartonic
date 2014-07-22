@@ -218,7 +218,7 @@ if __name__ == "__main__":
                     logger.debug("\tDefaultResolved: %s" % v.default_resolved)
                     logger.debug("\tResolvedBy     : %s" % xpathOrNone(v._resolved_by))
                     logger.debug("\tSetBy          : %s" % xpathOrNone(v._set_by))
-                    logger.debug("\tSuggestedBy    : %s" % xpathOrNone(v._suggested_by))
+                    logger.debug("\tSuggestedBy    : %s %s" % (xpathOrNone(v._suggested_by), v.value_get_one()))
                     logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 if provide.variables_scope() != []:

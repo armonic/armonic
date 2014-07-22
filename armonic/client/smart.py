@@ -75,6 +75,9 @@ class Variable(object):
         self._set_by = None
         self._suggested_by = None
 
+        # Used as a guard to break cycles during variable resolution
+        self._resolving = False
+
     def copy(self, from_require):
         var = Variable(
             name=self.name,
@@ -123,8 +126,10 @@ class Variable(object):
 
     @property
     def default_resolved(self):
-        self._bind()
-        return self._resolve()._default
+        """Returns the value resolved."""
+        return self._resolved_break_cycles(
+            lambda a: a._default,
+            lambda a: a.default_resolved)
 
     @property
     def value(self):
@@ -144,8 +149,27 @@ class Variable(object):
     @property
     def value_resolved(self):
         """Returns the value resolved."""
-        self._bind()
-        return self._resolve()._value
+        return self._resolved_break_cycles(
+            lambda a: a._value,
+            lambda a: a.value_resolved)
+
+    def _resolved_break_cycles(self, f_value, f_resolved):
+        """Returns the value resolved and breaks potential cycles.
+        :param f_value: is a function returing the local value.
+        :param f_resolved: is a function returing the value resolved by other variables.
+        """
+        if self._resolving:
+            return f_value(self)
+        else:
+            self._resolving = True
+            self._bind()
+            resolved = self._resolve()
+            if resolved is self:
+                value = f_value(self)
+            else:
+                value = f_resolved(resolved)
+            self._resolving = False
+            return value
 
     def _resolve(self):
         """When bindings have been created, this method can be used to get a
