@@ -1,4 +1,4 @@
-FROM mbs
+FROM eonpatapon/mbs
 
 MAINTAINER eon@patapon.info
 
