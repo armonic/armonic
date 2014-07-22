@@ -935,7 +935,7 @@ class Deployment(object):
     @lfm.setter
     def lfm(self, value):
         self._lfm_output.append((
-            self.scope.generic_xpath,
+            self._generic_xpath,
             {"value": value,
              "used": True})
         )
