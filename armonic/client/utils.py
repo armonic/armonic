@@ -2,6 +2,7 @@ import json
 import logging
 import armonic.common
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
+import re
 
 
 def read_variable(string):
@@ -39,6 +40,19 @@ def require_validation_error(dct):
                     if v['error'] is not None:
                         errors.append((v['xpath'], v['error']))
     return errors
+
+
+class Filter(object):
+    """Permit to filter log based on a list of pattern applied on
+    record.name."""
+    def __init__(self, patterns):
+        self.patterns = patterns
+
+    def filter(self, record):
+        for p in self.patterns:
+            if re.match(p, record.name):
+                return True
+        return False
 
 
 class Cli(object):
@@ -85,6 +99,10 @@ class Cli(object):
         parser.add_argument('--halt-on-error', action="store_true",
                             default=False,
                             help='Halt if a module import occurs (default: %(default)s))')
+        parser.add_argument('--log-filter',
+                            default=None,
+                            action='append',
+                            help='To filter logs by specifing a regex which will be applied on the module name. Filters are applied on stdout handler. This option can be specified several times.')
 
     def parse_args(self, parser):
         """A helper to parse arguments. This add several common options such
@@ -101,10 +119,14 @@ class Cli(object):
 
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
-        format = '%(asctime)s|%(levelname)7s - %(message)s'
+        format = '[%(levelname)s|%(name)s] %(message)s'
         ch = logging.StreamHandler()
         ch.setLevel(self.logging_level)
         ch.setFormatter(logging.Formatter(format))
+
+        if args.log_filter:
+            ch.addFilter(Filter(args.log_filter))
+
         logger.addHandler(ch)
 
         if self.remote is False or args.no_remote:
