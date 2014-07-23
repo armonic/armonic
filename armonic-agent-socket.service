@@ -2,7 +2,7 @@
 Description=Armonic Socket Agent
 
 [Service]
-ExecStart=/usr/bin/armonic-agent-socket
+ExecStart=/usr/bin/armonic-agent-socket -vvv
 Restart=on-abort
 
 [Install]
