@@ -45,9 +45,6 @@ class BuildProvide(Provide):
         else:
             self.lfm = ClientSocket(host=host)
 
-    def do_call(self):
-        return False
-
     def do_manage(self):
         self.manage = True
         return False
@@ -165,6 +162,9 @@ class Master(ClientXMPP):
         elif self.current_step == "validation":
             provide, step, args = self.smart.send(json.loads(payload['values']['validation']))
 
+        elif self.current_step == "call":
+            provide, step, args = self.smart.send(payload['values']['call'])
+
         else:
             provide, step, args = self.smart.next()
 
@@ -231,6 +231,11 @@ class Master(ClientXMPP):
                                        required=variable.required)
                 for key, value in variable.extra.items():
                     field.add_option(label=str(key), value=str(value))
+
+        if step == 'call':
+            form.add_field(var="call",
+                           ftype="input-single",
+                           value="1")
 
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
