@@ -635,10 +635,6 @@ class Provide(ArmonicProvide):
         result = self.lfm.provide_call_validate(self.xpath,
                                                 values)
 
-        if result['errors'] is False:
-            self.is_validated = True
-            return self.is_validated
-
         json_variables = []
         for require in result['requires']:
             for r in require['requires']:
@@ -652,7 +648,10 @@ class Provide(ArmonicProvide):
                 if variable.xpath == json_variable['xpath']:
                     variable.update_from_json(json_variable)
 
-        self.is_validated = False
+        if result['errors'] is False:
+            self.is_validated = True
+        else:
+            self.is_validated = False
 
         return self.is_validated
 
