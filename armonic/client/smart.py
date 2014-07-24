@@ -133,7 +133,7 @@ class Variable(object):
 
     @property
     def value(self):
-        return self._value
+        return self.value_resolved
 
     @value.setter
     def value(self, value):
