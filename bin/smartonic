@@ -79,10 +79,14 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, default=None,
                         help="Save values in file")
 
+    parser.add_argument('-a', '--autofill', action='store_true', default=False,
+                        help="Autofill variables with proposed values")
+
     cli = armonic.client.utils.Cli()
     args = cli.parse_args(parser)
 
     dont_call = args.dont_call
+    autofill = args.autofill
 
     if cli.no_remote:
         import armonic.common
@@ -229,14 +233,22 @@ if __name__ == "__main__":
 
                 for v in provide.variables():
                     if v.value is None or v.error is not None:
-                        message = "Fill the variable %s (suggested value '%s')" % (v.xpath, v.value_get_one())
-                        if v.error:
-                            message = "Variable %s doesn't validate: %s" % (v.xpath, v.error)
-                        ret = user_input_variable(variable_name=v.name,
-                                                  prefix=indent(provide.depth),
-                                                  message=message,
-                                                  prefill=show_variable(v.value_get_one()))
-                        v.value = ret[v.name]
+                        # The user has to manually fill the variable
+                        if autofill is False or v.value_get_one() is None or v.error is not None:
+                            message = "Fill the variable %s (suggested value '%s')" % (v.xpath, v.value_get_one())
+                            if v.error:
+                                message = "Variable %s=%s doesn't validate : %s" % (v.xpath, v.value, v.error)
+                            ret = user_input_variable(variable_name=v.name,
+                                                      prefix=indent(provide.depth),
+                                                      message=message,
+                                                      prefill=show_variable(v.value_get_one()))
+                            v.value = ret[v.name]
+                            if v.error:
+                                break
+                        # The value is auto filled.
+                        else:
+                            v.value = v.value_get_one()
+                        logger.info("Variable '%s' set with value '%s'" % (v.xpath, v.value))
 
                 logger.debug("Serialized variables:")
                 serialized = provide.variables_serialized()
