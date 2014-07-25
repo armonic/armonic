@@ -638,15 +638,23 @@ class Provide(ArmonicProvide):
             return self.require._scope_variables
         return []
 
-    def validate(self, values):
+    def validate(self, values, static=False):
         """Validate all variables using values from data.
 
+        The static validation is used to validate variables before
+        deployment is running. In this case, we don't handle error on
+        provide_ret's variables since we don't know value returned by
+        porvide calls.
+
+        :param static: If True, run a static validation.
         :rtype: bool
+
         """
 
         values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
                                                 values)
+        errors = False
 
         json_variables = []
         for require in result['requires']:
@@ -659,12 +667,17 @@ class Provide(ArmonicProvide):
         for variable in self.variables():
             for json_variable in json_variables:
                 if variable.xpath == json_variable['xpath']:
+                    # If a static validation is asked, we don't
+                    # consider the error if the variable belongs to
+                    # the provide_ret of the require.
+                    if json_variable['error'] is not None:
+                        if variable.belongs_provide_ret and static:
+                            pass
+                        else:
+                            errors = True
                     variable.update_from_json(json_variable)
 
-        if result['errors'] is False:
-            self.is_validated = True
-        else:
-            self.is_validated = False
+        self.is_validated = not errors
 
         return self.is_validated
 
@@ -1212,7 +1225,7 @@ def smart_call(root_provide, values={}):
                             variable.value = variable_value
                             logger.debug("Filling '%s' with value '%s' from deployment data" % (variable.xpath, variable_value))
                     data = yield(scope, scope.step, None)
-                    if scope.validate(data):
+                    if scope.validate(data, static=True):
                         # Record variables values
                         deployment.set_variables(data)
                         scope._next_step()
