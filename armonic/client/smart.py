@@ -118,7 +118,7 @@ class Variable(object):
             try:
                 setattr(self, key, value)
             except AttributeError:
-                logger.error("Failed to update attr %s to %s" % (key, value))
+                logger.debug("Error: Failed to update attr %s to %s" % (key, value))
 
     @property
     def default(self):

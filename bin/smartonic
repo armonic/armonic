@@ -82,11 +82,16 @@ if __name__ == "__main__":
     parser.add_argument('-a', '--autofill', action='store_true', default=False,
                         help="Autofill variables with proposed values")
 
+    parser.add_argument('--manage', action='store_true', default=False,
+                        help="Manage all provide without confirmation")
+
+
     cli = armonic.client.utils.Cli()
     args = cli.parse_args(parser)
 
     dont_call = args.dont_call
     autofill = args.autofill
+    manage = args.manage
 
     if cli.no_remote:
         import armonic.common
@@ -187,8 +192,12 @@ if __name__ == "__main__":
 #                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
-            data = user_input_confirm(indent(provide.depth,
-                                             "Do you want to configure and call '%s' [Y/n]? " % provide.generic_xpath))
+            if manage:
+                data = True
+            else:
+                data = user_input_confirm(
+                    indent(provide.depth,
+                           "Do you want to configure and call '%s' [Y/n]? " % provide.generic_xpath))
 
         elif provide.step == "lfm":
             msg = "You have to set a location:"
