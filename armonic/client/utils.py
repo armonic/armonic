@@ -79,26 +79,31 @@ class Cli(object):
                             action="count",
                             help='Can be specified many times (%s)' % [v[1] for v in Cli.VERBOSE_LEVELS])
 
-        parser.add_argument('--version', "-V", action='version', version='%(prog)s ' + "0.1")
+        parser.add_argument('--version', "-V",
+                            action='version', version='%(prog)s ' + "0.1")
 
+        group = parser.add_argument_group(
+            'no remote arguments',
+            'These arguments are used to configure a local lifecycle manager')
         if self.remote:
-            parser.add_argument('--no-remote', action='store_true',
+            group.add_argument('--no-remote', action='store_true',
                                 default=False, help="Directly use Armonic module.")
-        parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
+        group.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
                             default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
-        parser.add_argument('--lifecycle-dir', type=str, action='append',
+        group.add_argument('--lifecycle-dir', type=str, action='append',
                             help="A lifecycle directory. This is only useful on no-remote mode.")
-        parser.add_argument('--no-default', action='store_true',
+        group.add_argument('--no-default', action='store_true',
                             default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
-        parser.add_argument('--simulation', action='store_true',
+        group.add_argument('--simulation', action='store_true',
                             default=False,
                             help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
-        parser.add_argument('--dont-call', action='store_true',
+        group.add_argument('--dont-call', action='store_true',
                             default=False,
                             help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
-        parser.add_argument('--halt-on-error', action="store_true",
+        group.add_argument('--halt-on-error', action="store_true",
                             default=False,
                             help='Halt if a module import occurs (default: %(default)s))')
+
         parser.add_argument('--log-filter',
                             default=None,
                             action='append',
