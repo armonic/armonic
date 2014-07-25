@@ -53,10 +53,10 @@ logger = logging.getLogger(__name__)
 class Variable(object):
     """
     :param from_require: The require that holds this variable.
-
+    :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require.
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, belongs_provide_ret, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -66,6 +66,7 @@ class Variable(object):
         self.required = required
         self.type = type
         self.error = error
+        self.belongs_provide_ret = belongs_provide_ret
         self.extra = extra
 
         self._is_skel = True
@@ -89,6 +90,7 @@ class Variable(object):
             required=self.required,
             type=self.type,
             error=self.error,
+            belongs_provide_ret=self.belongs_provide_ret,
             extra=self.extra)
 
         var._is_skel = False
@@ -99,10 +101,15 @@ class Variable(object):
         return var
 
     @classmethod
-    def from_json(cls, dct_json, **kwargs):
+    def from_json(cls, dct_json, from_require, belongs_provide_ret=False):
+        """
+        :param dct_json: a dict that contains values from agent
+        :param from_require: the require that declares this variables
+        :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require
+        """
         logger.debug("Creating variable %s" % dct_json['xpath'])
         this = cls(dct_json['name'],
-                   from_require=kwargs.pop('from_require', None),
+                   from_require=from_require,
                    xpath=dct_json['xpath'],
                    from_xpath=dct_json['from_xpath'],
                    default=dct_json['default'],
@@ -110,6 +117,7 @@ class Variable(object):
                    required=dct_json['required'],
                    type=dct_json['type'],
                    error=dct_json['error'],
+                   belongs_provide_ret=belongs_provide_ret,
                    extra=dct_json['extra'])
         return this
 
@@ -428,7 +436,8 @@ class Remote(Require):
         # Here, we add provide ret variable.
         this.provide_ret = []
         for v in dct_json['provide_ret']:
-            var = Variable.from_json(v, from_require=this)
+            var = Variable.from_json(v, from_require=this,
+                                     belongs_provide_ret=True)
             this.provide_ret.append(var)
 
             # This variable is added to the scope.
