@@ -16,7 +16,6 @@ from armonic.utils import OsTypeAll
 from armonic.client.sock import ClientSocket
 
 
-DONT_MANAGE = "None"
 NO_REMOTE = False
 """Describe the value passed to not manage a provide"""
 
@@ -44,19 +43,6 @@ class BuildProvide(Provide):
             self.lfm = lfm
         else:
             self.lfm = ClientSocket(host=host)
-
-    def do_manage(self):
-        self.manage = True
-        return False
-
-    def do_specialize(self):
-        return True
-
-    def on_specialize(self, data):
-        """At specialization step, we also want to stop the managmenet of this
-        provide."""
-        if data == DONT_MANAGE:
-            self.manage = False
 
 
 class Master(ClientXMPP):
@@ -142,15 +128,15 @@ class Master(ClientXMPP):
 
     def _handle_command_init_build_next(self, payload, session):
         if self.smart is None:
-            print "Step: Create root_provide"
+            logger.debug("Step: Create root_provide")
             xpath = payload['values']['xpath']
             self.root_provide = BuildProvide(xpath)
             self.smart = smart_call(self.root_provide)
 
-        # if self.current_step == "manage":
-        #    provide, step, args = self.smart.send(True)
-        #
-        if self.current_step == "lfm":
+        if self.current_step == "manage":
+            provide, step, args = self.smart.send(payload['values']['manage'])
+
+        elif self.current_step == "lfm":
             provide, step, args = self.smart.send(payload['values']['host'])
 
         elif self.current_step == "specialize":
@@ -171,7 +157,7 @@ class Master(ClientXMPP):
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step
 
-        print "Current step is now %s" % step
+        logger.debug("Current step is now %s" % step)
 
         form['instructions'] = step
         form.add_field(var="provide",
@@ -187,27 +173,30 @@ class Master(ClientXMPP):
                        ftype="fixed",
                        value=str(provide.host or ""))
 
-        if step == 'lfm':
+        if step == 'manage':
+            provide_label = provide.extra.get('label', provide.generic_xpath)
+            label = provide_label[0].lower() + provide_label[1:]
+            field = form.add_field(var="manage",
+                                   ftype="input-single",
+                                   label="Do you want to %s ?" % label)
+
+        elif step == 'lfm':
             provide_label = provide.extra.get('label', provide.generic_xpath)
             label = provide_label[0].lower() + provide_label[1:]
             field = form.add_field(var="host",
                                    ftype="input-single",
-                                   desc="on which host do you want to call the provide",
                                    label="Where do you want to %s ?" % label,
                                    value=json.dumps(provide.host))
 
-        if step == 'specialize':
+        elif step == 'specialize':
             field = form.add_field(var="specialize",
                                    ftype="list-single",
-                                   desc="specialize the provide or disable it",
-                                   options=[
-                                       {"label": "Manual", "value": DONT_MANAGE}
-                                   ])
+                                   label="Choose")
             for provide_match in provide.matches():
                 field.add_option(label=str(provide_match['extra'].get('label', provide_match['name'])),
                                  value=str(provide_match['xpath']))
 
-        if step == 'multiplicity':
+        elif step == 'multiplicity':
             provide_label = provide.extra.get('label', provide.xpath)
             label = provide_label[0].lower() + provide_label[1:]
             form.add_field(var="multiplicity",
@@ -215,7 +204,7 @@ class Master(ClientXMPP):
                            label="On which hosts do you want to %s ?" % label,
                            value="1")
 
-        if step == 'validation':
+        elif step == 'validation':
             for variable in provide.variables():
                 value = json.dumps(variable.value_get_one())
                 field = form.add_field(var=str(variable.xpath),
@@ -232,7 +221,7 @@ class Master(ClientXMPP):
                 for key, value in variable.extra.items():
                     field.add_option(label=str(key), value=str(value))
 
-        if step == 'call':
+        elif step == 'call':
             form.add_field(var="call",
                            ftype="input-single",
                            value="1")
