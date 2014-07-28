@@ -634,10 +634,16 @@ class Provide(ArmonicProvide):
 
         :rtype: bool
         """
+        # Update scope variables with values
+        for variable in self.variables():
+            for variable_xpath, variable_values in values:
+                if variable.xpath == variable_xpath:
+                    # FIXME - can have multiple values
+                    variable.value = variable_values['0']
 
-        values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
-                                                values)
+                                                self.variables_serialized())
+        self.is_validated = not result['errors']
 
         json_variables = []
         for require in result['requires']:
@@ -651,11 +657,6 @@ class Provide(ArmonicProvide):
             for json_variable in json_variables:
                 if variable.xpath == json_variable['xpath']:
                     variable.update_from_json(json_variable)
-
-        if result['errors'] is False:
-            self.is_validated = True
-        else:
-            self.is_validated = False
 
         return self.is_validated
 
