@@ -791,6 +791,9 @@ class Provide(ArmonicProvide):
         """
         return False
 
+    def do_validation(self):
+        return True
+
     def update_scope_provide_ret(self, provide_ret):
         """When the provide call returns value, we habve to update the scope
         of the require in order to be able to use these value to fill
@@ -1195,7 +1198,7 @@ def smart_call(root_provide, values={}):
                         scope._current_requires = None
 
             elif scope.step == "validation":
-                if not scope.is_validated:
+                if not scope.is_validated and scope.do_validation():
                     # Fill variables with replay file values
                     for variable in scope.variables():
                         variable_value = deployment.get_variable(variable.xpath)
