@@ -13,5 +13,5 @@ done
 for nb in `seq 1 $nb_instances`
 do
     id=`docker run --privileged -h server${nb} -d armonic:mbs`
-    echo "${id}, hostname: server${nb}, ip: `docker inspect ${id} | grep 'IPAddress' | cut -d':' -f2 | cut -d'"' -f2`"
+    echo "hostname: server${nb}, ip: `docker inspect ${id} | grep 'IPAddress' | cut -d':' -f2 | cut -d'"' -f2`"
 done
