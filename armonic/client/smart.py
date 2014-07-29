@@ -657,6 +657,8 @@ class Provide(ArmonicProvide):
             for json_variable in json_variables:
                 if variable.xpath == json_variable['xpath']:
                     variable.update_from_json(json_variable)
+                    if variable.error:
+                        logger.error("Variable %s has error: %s" % (variable.xpath, variable.error))
 
         return self.is_validated
 
