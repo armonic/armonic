@@ -17,7 +17,6 @@ from armonic.client.sock import ClientSocket
 
 
 NO_REMOTE = False
-"""Describe the value passed to not manage a provide"""
 
 
 class MUCHandler(logging.Handler):
@@ -35,6 +34,13 @@ class MUCHandler(logging.Handler):
 
 
 class BuildProvide(Provide):
+
+    def on_manage(self, data):
+        # FIXME: Strophejs doesn't send a false value
+        if data is None:
+            self.manage = False
+        else:
+            self.manage = True
 
     def on_lfm(self, host):
         self.host = str(host)
