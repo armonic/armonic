@@ -177,7 +177,7 @@ class Master(ClientXMPP):
 
         form.add_field(var="host",
                        ftype="fixed",
-                       value=str(provide.host or ""))
+                       value=str(json.dumps(provide.host) or ""))
 
         if step == 'manage':
             provide_label = provide.extra.get('label', provide.generic_xpath)
