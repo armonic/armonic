@@ -20,16 +20,31 @@ from armonic.client.sock import ClientSocket
 
 class MUCHandler(logging.Handler):
 
-    def __init__(self, client=None, *args, **kwargs):
-        logging.Handler.__init__(self, *args, **kwargs)
+    def init_client(self, client):
         self.client = client
 
     def emit(self, record):
+        if not self.client:
+            return
         if self.client.muc_room and record:
             self.client.send_message(mto=self.client.muc_room,
-                                     mbody=record.msg,
+                                     mbody="[%s] %s" % (str(record._ip), str(record.msg)),
                                      mtype='groupchat')
         return True
+
+
+muc_handler = MUCHandler()
+format = '%(ip)-15s %(message)s'
+muc_handler.addFilter(logging.Filter('armonic'))
+muc_handler.setFormatter(logging.Formatter(format))
+agent_handler = logging.StreamHandler()
+format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
+agent_handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
+
+
+logger = logging.getLogger()
+# To redirect master agent log to xmpp clients
+# logger.addHandler(muc_handler)
 
 
 class BuildProvide(Provide):
@@ -43,7 +58,7 @@ class BuildProvide(Provide):
 
     def on_lfm(self, host):
         self.host = str(host)
-        self.lfm = ClientSocket(host=host)
+        self.lfm = ClientSocket(host=host, handlers=[agent_handler, muc_handler])
 
 
 class Master(ClientXMPP):
@@ -57,6 +72,8 @@ class Master(ClientXMPP):
         self.muc_nick = 'master'
         self.muc_domain = muc_domain
         self.muc_room = None
+
+        muc_handler.init_client(self)
 
     def leave_muc_room(self):
         if self.muc_room:
@@ -283,11 +300,6 @@ if __name__ == '__main__':
     xmpp.register_plugin('xep_0050')  # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
     xmpp.register_plugin('xep_0045')  # MUC
-
-    logger = logging.getLogger()
-    muc_handler = MUCHandler(xmpp)
-    muc_handler.addFilter(logging.Filter('armonic'))
-    logger.addHandler(muc_handler)
 
     xmpp.connect(address=(args.host, args.port))
     try:

@@ -54,7 +54,8 @@ COLORS = {
     'EVENT': GREEN,
     'WARNING': YELLOW,
     'CRITICAL': MAGENTA,
-    'ERROR': RED
+    'ERROR': RED,
+    'PROCESS': CYAN
 }
 
 
@@ -66,9 +67,13 @@ class ColoredFormatter(logging.Formatter):
     def format(self, record):
         levelname = record.levelname
         if record.levelname in COLORS:
+            record._levelname = record.levelname
             levelname_color = BOLD_SEQ % (30 + COLORS[levelname]) + levelname + RESET_SEQ
             record.levelname = levelname_color
         record.module = COLOR_SEQ % (30 + WHITE) + "[" + record.module + "]" + RESET_SEQ
+        if getattr(record, 'ip', None):
+            record._ip = record.ip
+            record.ip = COLOR_SEQ % (30 + WHITE) + "[" + record.ip + "]" + RESET_SEQ
         return logging.Formatter.format(self, record)
 
 

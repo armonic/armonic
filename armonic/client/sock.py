@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import socket
 import pickle
 import struct
-import logging
 
 PACKET_INFO_SIZE = 5
 
@@ -55,7 +54,7 @@ class ClientSocket(object):
 
     def info(self):
         return self.call("info")
-        
+
     def lifecycle(self, xpath, long_description=False):
         return self.call("lifecycle", xpath, long_description)
 
