@@ -14,13 +14,8 @@ import armonic.common
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeAll
+import armonic.client.utils
 from armonic.client.sock import ClientSocket
-
-
-NO_REMOTE = False
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(name)-9s %(levelname)-9s %(message)s')
-logger = logging.getLogger()
 
 
 class MUCHandler(logging.Handler):
@@ -48,11 +43,7 @@ class BuildProvide(Provide):
 
     def on_lfm(self, host):
         self.host = str(host)
-
-        if NO_REMOTE:
-            self.lfm = lfm
-        else:
-            self.lfm = ClientSocket(host=host)
+        self.lfm = ClientSocket(host=host)
 
 
 class Master(ClientXMPP):
@@ -273,27 +264,15 @@ if __name__ == '__main__':
     parser.add_argument('--input-event-file', '-i',
                         default='-', type=argparse.FileType('r', 0),
                         help="Input file where events are read")
-    parser.add_argument('--lifecycle-dir', type=str, action='append',
-                        help="A lifecycle directory")
-    parser.add_argument('--no-default', action='store_true',
-                        default=False, help="Don't load default lifecycles")
-    parser.add_argument('--no-remote', action='store_true',
-                        default=False, help="Don't contact any armonic agent")
+
+    cli = armonic.client.utils.Cli()
+    cli.parse_args(parser)
     args = parser.parse_args()
-
-    if not args.no_default:
-        armonic.common.load_default_lifecycles()
-
-    if args.lifecycle_dir is not None:
-        for l in args.lifecycle_dir:
-            armonic.common.load_lifecycle(l)
-
-    NO_REMOTE = args.no_remote
 
     lfm = Serialize(os_type=OsTypeAll())
 
     logging.getLogger('sleekxmpp').setLevel(logging.WARNING)
-    logging.getLogger('armonic').setLevel(logging.DEBUG)
+    logging.getLogger('armonic').setLevel(cli.logging_level)
 
     # Use /master resource by default
     xmpp = Master('%s/master' % args.jid, args.password, args.muc_domain,
@@ -305,6 +284,7 @@ if __name__ == '__main__':
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
     xmpp.register_plugin('xep_0045')  # MUC
 
+    logger = logging.getLogger()
     muc_handler = MUCHandler(xmpp)
     muc_handler.addFilter(logging.Filter('armonic'))
     logger.addHandler(muc_handler)
@@ -313,4 +293,5 @@ if __name__ == '__main__':
     try:
         xmpp.process(block=True)
     except KeyboardInterrupt:
+        logger.info("Disconnecting...")
         pass

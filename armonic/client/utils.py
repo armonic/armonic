@@ -42,6 +42,36 @@ def require_validation_error(dct):
     return errors
 
 
+# Taken from http://stackoverflow.com/questions/384076/how-can-i-make-the-python-logging-output-to-be-colored/384125#384125
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
+# These are the sequences need to get colored ouput
+RESET_SEQ = "\033[0m"
+COLOR_SEQ = "\033[;%dm"
+BOLD_SEQ = "\033[1;%dm"
+COLORS = {
+    'INFO': WHITE,
+    'DEBUG': BLUE,
+    'EVENT': GREEN,
+    'WARNING': YELLOW,
+    'CRITICAL': MAGENTA,
+    'ERROR': RED
+}
+
+
+class ColoredFormatter(logging.Formatter):
+
+    def __init__(self, *args, **kwargs):
+        logging.Formatter.__init__(self, *args, **kwargs)
+
+    def format(self, record):
+        levelname = record.levelname
+        if record.levelname in COLORS:
+            levelname_color = BOLD_SEQ % (30 + COLORS[levelname]) + levelname + RESET_SEQ
+            record.levelname = levelname_color
+        record.module = COLOR_SEQ % (30 + WHITE) + "[" + record.module + "]" + RESET_SEQ
+        return logging.Formatter.format(self, record)
+
+
 class Filter(object):
     """Permit to filter log based on a list of pattern applied on
     record.name."""
@@ -61,7 +91,7 @@ class Cli(object):
     :param remote: If the frontend can be used in remote mode, set to True.
     """
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
-                      (logging.DEBUG+1, "EVENT"),
+                      (logging.DEBUG + 1, "EVENT"),
                       (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.CRITICAL
 
@@ -69,7 +99,7 @@ class Cli(object):
         self.logging_level = Cli.VERBOSE_DEFAULT_LEVEL
         self.os_type = None
         self.remote = remote
-        
+
         # Will be set by args.no_remote
         self.no_remote = False
 
@@ -87,22 +117,22 @@ class Cli(object):
             'These arguments are used to configure a local lifecycle manager')
         if self.remote:
             group.add_argument('--no-remote', action='store_true',
-                                default=False, help="Directly use Armonic module.")
+                               default=False, help="Directly use Armonic module.")
         group.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-                            default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+                           default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
         group.add_argument('--lifecycle-dir', type=str, action='append',
-                            help="A lifecycle directory. This is only useful on no-remote mode.")
+                           help="A lifecycle directory. This is only useful on no-remote mode.")
         group.add_argument('--no-default', action='store_true',
-                            default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+                           default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
         group.add_argument('--simulation', action='store_true',
-                            default=False,
-                            help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
+                           default=False,
+                           help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
         group.add_argument('--dont-call', action='store_true',
-                            default=False,
-                            help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
+                           default=False,
+                           help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
         group.add_argument('--halt-on-error', action="store_true",
-                            default=False,
-                            help='Halt if a module import occurs (default: %(default)s))')
+                           default=False,
+                           help='Halt if a module import occurs (default: %(default)s))')
 
         parser.add_argument('--log-filter',
                             default=None,
@@ -124,10 +154,10 @@ class Cli(object):
 
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
-        format = '[%(levelname)s|%(name)s] %(message)s'
+        format = '%(levelname)-19s %(module)s %(message)s'
         ch = logging.StreamHandler()
         ch.setLevel(self.logging_level)
-        ch.setFormatter(logging.Formatter(format))
+        ch.setFormatter(ColoredFormatter(format))
 
         if args.log_filter:
             ch.addFilter(Filter(args.log_filter))
