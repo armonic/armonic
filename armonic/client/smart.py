@@ -639,7 +639,14 @@ class Provide(ArmonicProvide):
             for variable_xpath, variable_values in values:
                 if variable.xpath == variable_xpath:
                     # FIXME - can have multiple values
-                    variable.value = variable_values['0']
+                    try:
+                        variable.value = variable_values[0]
+                    except KeyError:
+                        # FIXME web interface send string indexes
+                        try:
+                            variable.value = variable_values['0']
+                        except KeyError:
+                            variable.value = None
 
         result = self.lfm.provide_call_validate(self.xpath,
                                                 self.variables_serialized())
