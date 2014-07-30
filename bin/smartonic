@@ -119,20 +119,10 @@ if __name__ == "__main__":
         root_provide = MyProvide(generic_xpath=args.xpath)
     else:
         from armonic.client.sock import ClientSocket
-
-        # To have colorized agent log
-        import sys
-        import termcolor
-
-        class ColorFormatter(logging.Formatter):
-            def format(self, record):
-                ret = logging.Formatter.format(self, record)
-                return termcolor.colored(ret, 'blue')
-
-        handler = logging.StreamHandler(sys.stdout)
+        handler = logging.StreamHandler()
         handler.setLevel(cli.logging_level)
-        format = '%(levelname)5s %(ip)15s - %(message)s'
-        handler.setFormatter(ColorFormatter(format))
+        format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
+        handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
 
         class MyProvide(Provide):
             def on_lfm(self, host):
