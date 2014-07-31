@@ -1025,6 +1025,8 @@ class Deployment(object):
         return variable_value
 
     def set_variables(self, variables):
+        if variables is None:
+            return
         for xpath, value in variables:
             if not self._has_value("_variables_output", self.scope._node_id, xpath):
                 xpath = self.scope._node_id.to_str() + '/' + xpath
