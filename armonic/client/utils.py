@@ -150,6 +150,9 @@ class Cli(object):
 
         self.add_arguments(parser)
         args = parser.parse_args()
+
+        armonic.common.SIMULATION = args.simulation
+
         if self.remote:
             self.no_remote = args.no_remote
 

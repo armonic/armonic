@@ -702,7 +702,10 @@ class Lifecycle(XMLRessource):
         logger.debug("Provide %s returns values %s" % (provide_name, ret))
         logger.debug("Propagate flags %s to upper states" % provide.flags)
         for s in self._stack[state_index:]:
-            s.cross(**(provide.flags))
+            if armonic.common.SIMULATION:
+                logger.warning("Cross state %s is simulated" % s.name)
+            else:
+                s.cross(**(provide.flags))
         return ret
 
     def to_dot(self, cross=False,
