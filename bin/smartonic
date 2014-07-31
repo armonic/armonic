@@ -241,8 +241,7 @@ if __name__ == "__main__":
                     logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 for v in provide.variables():
-                    # We don't show to user variables belonging to provide_ret
-                    if (v.value is None or v.error is not None) and v.belongs_provide_ret is False:
+                    if v.value is None or v.error is not None:
                         # The user has to manually fill the variable
                         if autofill is False or v.value_get_one() is None or v.error is not None:
                             message = "Fill the variable %s (suggested value '%s')" % (v.xpath, v.value_get_one())
@@ -255,7 +254,7 @@ if __name__ == "__main__":
                             v.value = ret[v.name]
                             if v.error:
                                 break
-                        # The value is auto filled
+                        # The value is auto filled.
                         else:
                             v.value = v.value_get_one()
                         logger.info("Variable '%s' set with value '%s'" % (v.xpath, v.value))

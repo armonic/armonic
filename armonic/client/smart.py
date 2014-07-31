@@ -49,6 +49,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The name of the special require name created the xapth that
+# represents provide_ret value.
+SPECIAL_REQUIRE_RETURN_NAME = "return"
 
 class Variable(object):
     """
@@ -66,10 +69,22 @@ class Variable(object):
         self.required = required
         self.type = type
         self.error = error
-        self.belongs_provide_ret = belongs_provide_ret
         self.extra = extra
 
         self._is_skel = True
+
+        self.belongs_provide_ret = belongs_provide_ret
+
+        # Capture the xpath that provides the value for this
+        # variable. The format of this XPath is
+        # <location>/<lifecycle>/<state>/<provide>/return/variable_name
+        #
+        # If its value is None, that means the provide is not managed
+        # by smart and the value has to be manually provided.
+        #
+        # You should use the property provided_by in order to auto
+        # update this field.
+        self._provided_by = None
 
         # Capture the variable used to resolve self
         self._resolved_by = None
@@ -127,6 +142,19 @@ class Variable(object):
                 setattr(self, key, value)
             except AttributeError:
                 logger.error("Error: Failed to update attr %s to %s" % (key, value))
+
+    @property
+    def provided_by(self):
+        if (self.belongs_provide_ret and
+            self.from_require.provide is not None and
+            self.from_require.provide.manage):
+            return "/".join([
+                self.from_require.provide.host,
+                self.from_require.provide.xpath,
+                SPECIAL_REQUIRE_RETURN_NAME,
+                self.name])
+        else:
+            return None
 
     @property
     def default(self):
@@ -459,7 +487,14 @@ class Remote(Require):
 
     def variables(self):
         """:rtype: [:class:`Variable`]"""
-        return self.provide_args + self.provide_ret
+        acc = self.provide_args
+        for v in self.provide_ret:
+            if v.provided_by is None:
+                acc.append(v)
+            else:
+                logger.debug("Variable %s will be provided_by by %s" % (
+                    v.xpath, v.provided_by))
+        return acc
 
     def update_provide_ret(self, provide_ret):
         for (name, value) in provide_ret.items():
