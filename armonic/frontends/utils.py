@@ -3,6 +3,8 @@ import logging
 import armonic.common
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 import re
+import os
+import getpass
 
 
 def read_variable(string):
@@ -210,3 +212,35 @@ class CliLocal():
                     raise_import_error=args.halt_on_error)
 
         return args
+
+""" code escape color console """
+colors = {'grey': 30, 'red': 31, 'green': 32, 'yellow': 33,
+          'blue': 34, 'magenta': 35, 'cyan': 36, 'white': 37}
+
+def colorize(s, color, bold=False):
+    """ color text console """
+    if os.getenv('ANSI_COLORS_DISABLED') is None and color in colors:
+        if bold:
+            return '\033[1m\033[%dm%s\033[0m' % (colors[color], s)
+        else:
+            return '\033[%dm%s\033[0m' % (colors[color], s)
+    else:
+        return s
+
+
+def read_passwd(prompt, default, check=False):
+    """ read password from console """
+    prompt += ' (default: ' + default + ')'
+    match = False
+    while not match:
+        pwd = getpass.getpass('INPUT    - ' + prompt + ': ')
+        if check:
+            pwd2 = getpass.getpass('INPUT    - ' + prompt + ' (confirm): ')
+            match = (pwd == pwd2)
+            if not match:
+                print 'Passwords do not match. Retry.'
+        else:
+            match = True
+    if not pwd:
+        return default
+    return pwd
