@@ -5,6 +5,7 @@ Actions needed to control agent:
 - load a module
 - get information about this module
 """
+
 import argparse
 import os
 import logging
@@ -17,6 +18,18 @@ parser = argparse.ArgumentParser(
     description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
+parser.add_argument("-J","--jid-agent-host", dest="jid_agent_host", help="jid agent xmpp <user>@<host>/<resource>")
+parser.add_argument('--jid', '-j',
+                        type=str,
+                        dest="jid_armonic_cli",
+                        help="Jid client xmpp <user>@<host>[:port]/<resource>")
+parser.add_argument('--password',
+                        type=str,
+                        help="Password client xmpp armonic-cli")
+parser.add_argument('--host-xmpp',
+                    dest="host_xmpp",
+                    type=str,
+                    help='jabberd host different from host uri jid')
 parser.add_argument('--port','-P', type=int, default=8000,help='Armonic agent port (default: %(default)s)')
 parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
@@ -24,7 +37,102 @@ parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGE
 cli_base = armonic.client.utils.CliBase(parser)
 cli = armonic.frontends.cli.Cli(parser)
 
+<<<<<<< HEAD
 args = cli_base.parse_args()
+=======
+
+if args.jid_armonic_cli:
+    logger = logging.getLogger()
+    logger.setLevel(logging.ERROR)
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+    file_handler = RotatingFileHandler("/tmp/armonic.log", 'a', 1000000, 1)
+    if args.verbose:
+        file_handler.setLevel(logging.DEBUG)
+    else:
+        file_handler.setLevel(logging.ERROR)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    # redirect vers console
+    steam_handler = logging.StreamHandler()
+    steam_handler.setLevel(logging.DEBUG)
+    logger.addHandler(steam_handler)
+    try:
+        test1 = re.match("([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+:?([0-9]{1,5})?\/+([a-zA-Z0-9]{1,50})?",  args.jid_armonic_cli)
+        (node,domaine,port,ressource) = test1.groups()
+    except Exception as e:
+        test1 = False
+    try:
+        test = re.match("(\w+)\@(\w+)\/(\w+)", args.jid_agent_host)
+    except Exception as e:
+        test = False
+    if not test:
+        sys.stderr.write(colorize('error option :', 'red', True) + " --jid-agent-host missing ressource (eg: <user>@<host>/<resource>)")
+        sys.exit(1)
+    if not args.jid_agent_host:
+        sys.stderr.write(colorize('error option :', 'red', True) + "--jid-agent-host missing with xmpp")
+        sys.exit(1)
+    if not test1:
+        sys.stderr.write(colorize('error option :', 'red', True) + " --jid (eg: <user>@<host>[:port]/<resource>)")
+        sys.exit(1)
+    else:
+        if port is not None:
+            port_serveur_xmpp=int(port)
+        elif args.port == 8000:
+            port_serveur_xmpp = 5222
+        else:
+            port_serveur_xmpp = int(args.port)
+        if node is None:
+            sys.stderr.write(colorize('error option :', 'red', True) + " --jid see user uri  (eg: <user>@<host>[:port]/<resource>)")
+            sys.exit(1)
+        if domaine is not None and args.host_xmpp is None:
+            args.host_xmpp = domaine
+        if ressource is None :
+            sys.stderr.write(colorize('error option :', 'red', True) + "--jid see resource uri (eg: <user>@<host>[:port]/<resource>)")    
+            sys.exit(1)
+            
+    if not args.password:
+        args.password = read_passwd("password JID xmpp client for armonic-cli", node, check=True)
+        
+    if not args.host_xmpp :
+        sys.stderr.write(colorize('error option :', 'red', True) + " --host-xmpp missing with xmpp")
+        sys.exit(1)
+    #config = ET.parse(os.path.expanduser(args.config_file)).find('xmpp')
+   
+    jid_armonic_cli= node+"@"+domaine+"/"+ressource
+    
+    logger.debug( "jid xmpp  %s "% jid_armonic_cli)
+    logging.debug( "port server jaberd  %s "% port_serveur_xmpp)
+    logger.debug( "jid_agent_host  %s "% args.jid_agent_host)
+    logger.debug( "host server jabberd  %s "% args.host_xmpp)
+    logger.debug( "ressource  %s "% ressource)
+    logger.debug( "user  %s "% node)
+    logger.debug( "domaine  %s "% domaine)
+    logger.debug( "password  %s "% args.password)
+
+
+if args.no_remote is False:    
+    if not args.jid_armonic_cli:
+#    format = '%(asctime)s|%(levelname)6s - %(message)s'
+        format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
+        sh = logging.StreamHandler()
+        sh.setLevel(cli.logging_level)
+        sh.setFormatter(logging.Formatter(format))
+        client = ClientSocket(args.host, args.port)
+        client.add_logging_handler(sh)
+    else:
+        from armonic.client.xmpp import ClientXmppProvider
+        logger.debug("connecting xmpp \
+server %s to %s " % (jid_armonic_cli,args.jid_agent_host))
+        client = ClientXmppProvider( jid_armonic_cli,
+                                    args.password,
+                                    args.jid_agent_host,
+                                    args.host_xmpp,
+                                    port_serveur_xmpp) 
+else:
+    armonic.common.SIMULATION = args.simulation
+>>>>>>> add armonic-cli prise en charge xmpp
 
 format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
 sh = logging.StreamHandler()
@@ -33,4 +141,10 @@ sh.setFormatter(logging.Formatter(format))
 client = ClientSocket(args.host, args.port)
 client.add_logging_handler(sh)
 
+<<<<<<< HEAD
 cli.func(client)
+=======
+args.func(args)
+if args.jid_armonic_cli:
+    client.close()
+>>>>>>> add armonic-cli prise en charge xmpp
