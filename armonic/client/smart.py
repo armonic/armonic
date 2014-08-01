@@ -1065,14 +1065,12 @@ class Deployment(object):
              "used": True})
         )
 
-    @property
-    def multiplicity(self):
-        return self._get("_multiplicity_input", self.scope._node_id, self.scope.xpath)
+    def multiplicity(self, require_xpath):
+        return self._get("_multiplicity_input", self.scope._node_id, require_xpath)
 
-    @multiplicity.setter
-    def multiplicity(self, hosts):
+    def multiplicity_setter(self, require_xpath, hosts):
         self._multiplicity_output.append((
-            self.scope._node_id.to_str() + "/" + self.scope.xpath,
+            self.scope._node_id.to_str() + "/" + require_xpath,
             {"value": hosts})
         )
 
@@ -1174,7 +1172,7 @@ def smart_call(root_provide, values={}):
 
                 if xpath is not None:
                     specialized = xpath
-                    logger.debug("%s is specialized with %s from deployment data" % (scope.generic_xpath, specialized))
+                    logger.info("Replay specializes %s with %s" % (scope.generic_xpath, specialized))
                 else:
                     if len(m) > 1 or scope.do_specialize():
                         specialized = yield(scope, scope.step, m)
@@ -1206,11 +1204,15 @@ def smart_call(root_provide, values={}):
                         req = scope._requirator().next()
                         if req.skel.nargs == "*":
 
-                            multiplicity = deployment.multiplicity
+                            multiplicity = deployment.multiplicity(req.skel.xpath)
+                            if multiplicity is not None:
+                                logger.info("Replay sets multiplicity of '%s' to:" % scope.generic_xpath)
+                                for m in multiplicity:
+                                    logger.info("\t%s" % m)
 
                             if multiplicity is None:
                                 multiplicity = yield (scope, scope.step, req)
-
+                            
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
                                     raise TypeError("Multiplicity step for external requires must send a list!")
@@ -1234,7 +1236,7 @@ def smart_call(root_provide, values={}):
                                 if req.skel.type == 'external':
                                     new.provide.host = multiplicity[i]
 
-                            deployment.multiplicity = multiplicity
+                            deployment.multiplicity_setter(req.skel.xpath, multiplicity)
                         else:
                             new = req.get_new_require()
                             p = scope.build_child(
