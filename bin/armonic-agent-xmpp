@@ -1,0 +1,230 @@
+#!/usr/bin/python
+"""
+Socket agent.
+
+All logger event are send through the socket.
+The return of function call is :
+{"return":value} | {"exception":value}.
+'value' is "picklized".
+
+Protocol:
+1) send a struct ((int) msg_size_in_bytes , (bool) last_msg?)
+2) send message
+
+
+add compte serveur ejabbert
+ejabberdctl register armonictest localhost armonictest 
+
+_____________
+with the option --config_xmpp, you can use a configuration file xml form for xmpp
+<config>
+  <xmpp jid_agent_xmpp='user2@localhost' pass_agent_xmpp='user2' ressource_agent_xmpp='user2' host_server_xmpp='localhost' port_serveur_xmpp="5222" loggin_xmpp='user3@localhost' />
+</config>
+the command line options always override
+
+eg . armonic-agent-xmpp -v --host localhost --port 5222  --jid user2@localhost --ressource user2 --password user2
+
+"""
+import logging
+
+import argparse
+import json
+from armonic.serialize import Serialize
+from armonic.persist import Persist
+import armonic.common
+from armonic.utils import OsTypeAll
+from armonic.iq_xmpp_armonic import ActionProvider
+import os
+from xml.etree import ElementTree as ET
+import sleekxmpp
+from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp.exceptions import  IqTimeout, XMPPError
+from sleekxmpp.xmlstream import register_stanza_plugin
+from sleekxmpp.xmlstream.handler import Callback
+from sleekxmpp.xmlstream.matcher import StanzaPath
+import sys
+from logging.handlers import RotatingFileHandler
+
+PACKET_INFO_SIZE = 5
+
+if sys.version_info < (3, 0):
+    from sleekxmpp.util.misc_ops import setdefaultencoding
+    setdefaultencoding('utf8')
+else:
+    raw_input = input
+
+
+class ActionXmppProvider(ClientXMPP):
+    """
+    A simple SleekXMPP bot that receives a custom stanza
+    from another client.
+    """
+    def __init__(self, jid, password):
+        sleekxmpp.ClientXMPP.__init__(self, jid, password)
+        self.add_event_handler("session_start", self.start)
+        self.registerHandler(
+          Callback('Some custom iq',
+                   StanzaPath('iq@type=set/action'),
+                   self._handle_action))
+        self.add_event_handler('custom_action',
+                               self._handle_action_event,
+                               threaded=True)
+        register_stanza_plugin(Iq, ActionProvider)
+
+    def start(self, event):
+        self.send_presence()
+        self.get_roster()
+
+    def _handle_action(self, iq):
+        """
+        Raise an event for the stanza so that it can be processed in its
+        own thread without blocking the main stanza processing loop.
+        """
+        self.event('custom_action', iq)
+
+
+    def parsejson(self, data):
+        """ transform json en arg  et karg """
+        return json.loads(data)
+
+
+    def _handle_action_event(self, iq):
+        """
+        Respond to the custom action event.
+        Since one of the actions is to disconnect, this
+        event handler needs to be run in threaded mode, by
+        using `threaded=True` in the `add_event_handler` call.
+        """
+        #lstmethod = ['lifecycle', 'uri', 'provide', 'provide_call', 'provide_call_requires','provide_call_validate','call','info']#
+        param = iq['action']['param']
+        method = iq['action']['method']
+        reponse_error_to= iq['from']
+        reponse_error_from=iq['to']
+        #logger.debug("iq : %s" % iq)
+        #logger.info("method %s parametre:%s " % (method,param))
+        try:
+            request = self.parsejson(param)
+            print "dede"
+            ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
+            #logger.info("return %s" % ret)
+            print "dede"
+            iq.reply()
+            iq['action']['status'] = json.dumps(ret)
+            iq.send()
+        except Exception as e:
+            logger.info("method %s not supported : %s"% (method,e))
+            logger.info("%s : Method failure"% (method))
+            iq['action']['status'] = "error"
+            iq.error()
+            iq['error']['code'] = "424"
+            iq['error']['text'] = e
+            iq['error']['type'] = "error"
+            iq['error']['condition'] = 'Method failure'
+            iq['to'] =  reponse_error_to
+            iq['from'] = reponse_error_from
+            iq.send()
+
+def args_option(args_cli,args_xml_config, msg, default_val=None):
+    if not args_cli and not args_xml_config:
+        if default_val is None:
+           logger.critical(msg)
+           sys.exit(1)
+        else:
+           return  default_val
+    else:
+        if not args_cli:
+            return args_xml_config
+        else:
+            return args_cli
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument('--verbose', '-v', dest="verbose", default=False, action="store_true", help='Verbose mode (default: %(default)s))')
+    parser.add_argument('--lifecycles-dir', '-d', dest="lifecycles_dirs", type=str, default=[], nargs="*", help='Lifecycles directory')
+#    parser.add_argument('--lifecycles-include', '-i', dest="lifecycles_includes", type=str, nargs="*", default=[], help='Lifecycles names to import')
+    parser.add_argument('--no-default-lifecycles', dest="no_default_lifecycles", action="store_true", default=False, help="Don't load provided lifecycles (default: %(default)s))")
+    parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
+    parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
+    parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
+    parser.add_argument('--halt-on-error', default=False, action="store_true", help='Halt agent if a module import occurs (default: %(default)s))')
+    parser.add_argument("--config_xmpp",
+                        "-x", type=str,
+                        dest="config_file",
+                        #default=os.path.dirname(__file__)+"/config_xmpp_agent_xmpp.xml",
+                        help="set config file to use smartonic xmpp")
+    parser.add_argument('--host', '-H',
+                        dest="xmpp_host",
+                        type=str,
+                        help="XMPP server host jabbert")
+    parser.add_argument('--port', '-P',
+                        dest="xmpp_port",
+                        type=int,
+                        help="XMPP server port (default '%(default)s')")
+    parser.add_argument('--jid', '-j',
+                        type=str,
+                        help="Jid (default '%(default)s')")
+    parser.add_argument('--ressource', '-r',
+                        type=str,
+                        help="ressource (default '%(default)s')")
+    parser.add_argument('--password', '-p',
+                        type=str,
+                        help="Password (default '%(default)s')")
+    args = parser.parse_args()
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+    file_handler = RotatingFileHandler("/tmp/armonic-agent-xmpp.log", 'a', 1000000, 1)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    # redirect vers console
+    steam_handler = logging.StreamHandler()
+    steam_handler.setLevel(logging.DEBUG)
+    logger.addHandler(steam_handler)
+    if args.config_file :
+        file_name_conf_default=os.path.dirname(__file__) + args.config_file,
+        config = ET.parse(os.path.expanduser(file_name_conf_default)).find('xmpp')
+        ressource = args_option(args.ressource,config.attrib['ressource_agent_xmpp'], "option --ressource missing")
+        jid = args_option(args.jid,config.attrib['jid_agent_xmpp'],  "option --jid missing")+"/"+ressource
+        logging.debug('jid_agent_xmpp : %s' % (jid))
+        xmpp_port = int(args_option(args.xmpp_port, config.attrib['port_serveur_xmpp'], None, 5222))
+        logger.debug('port_server_xmpp : %d' % (xmpp_port))
+        xmpp_host = args_option(args.xmpp_host, config.attrib['host_server_xmpp'],"option --xmpp-host missing")
+        logger.debug('host_server_xmpp : %s' % (xmpp_host))
+        password = args_option(args.password,  config.attrib['pass_agent_xmpp'],"option --password missing")
+    else:
+        ressource = args_option(args.ressource,None, "option --ressource missing")
+        jid = args_option(args.jid,None,  "option --jid missing")+"/"+ressource
+        logging.debug('jid_agent_xmpp : %s' % (jid))
+        xmpp_port = int(args_option(args.xmpp_port, None, None, 5222))
+        logger.debug('port_server_xmpp : %d' % (xmpp_port))
+        xmpp_host = args_option(args.xmpp_host, None,"option --xmpp-host missing")
+        logger.debug('host_server_xmpp : %s' % (xmpp_host))
+        password = args_option(args.password,  None,"option --password missing")
+    
+    if not args.no_default_lifecycles:
+            armonic.common.load_default_lifecycles(
+                raise_import_error=args.halt_on_error)
+    for dir in args.lifecycles_dirs:
+        armonic.common.load_lifecycle_repository(
+            dir,
+            raise_import_error=args.halt_on_error)
+    save_state = not args.no_save_state
+    load_state = not args.no_load_state
+    persist = Persist(load_state, save_state, args.state_path)
+    lfm = Serialize(os_type=OsTypeAll())
+    xmpp = ActionXmppProvider(jid, password)
+    xmpp.register_plugin('xep_0030') # Service Discovery
+    xmpp.register_plugin('xep_0004') # Data Forms
+    xmpp.register_plugin('xep_0050') # Adhoc Commands
+    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+    print xmpp_host
+    print xmpp_port
+    if xmpp.connect(address=(xmpp_host, xmpp_port)):
+        logger.info("connection %s:%s " % (xmpp_host,xmpp_port))
+        xmpp.process(block=True)
+        logger.info("end agent")
+    else:
+        logger.info("Unable to connect.")

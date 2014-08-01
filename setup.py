@@ -35,6 +35,7 @@ setup(
         os.path.join('bin', 'smartonic-local'),
         os.path.join('bin', 'smartonic-socket'),
         os.path.join('bin', 'armonic-xmpp-master'),
+        os.path.join('bin', 'armonic-agent-xmpp'),
     ],
     license="GPLv2",
     classifiers=[
