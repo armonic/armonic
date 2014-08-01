@@ -49,14 +49,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# The name of the special require name created the xapth that
+# represents provide_ret value.
+SPECIAL_REQUIRE_RETURN_NAME = "return"
 
 class Variable(object):
     """
     :param from_require: The require that holds this variable.
-
+    :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require.
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, belongs_provide_ret, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -69,6 +72,19 @@ class Variable(object):
         self.extra = extra
 
         self._is_skel = True
+
+        self.belongs_provide_ret = belongs_provide_ret
+
+        # Capture the xpath that provides the value for this
+        # variable. The format of this XPath is
+        # <location>/<lifecycle>/<state>/<provide>/return/variable_name
+        #
+        # If its value is None, that means the provide is not managed
+        # by smart and the value has to be manually provided.
+        #
+        # You should use the property provided_by in order to auto
+        # update this field.
+        self._provided_by = None
 
         # Capture the variable used to resolve self
         self._resolved_by = None
@@ -89,6 +105,7 @@ class Variable(object):
             required=self.required,
             type=self.type,
             error=self.error,
+            belongs_provide_ret=self.belongs_provide_ret,
             extra=self.extra)
 
         var._is_skel = False
@@ -99,10 +116,15 @@ class Variable(object):
         return var
 
     @classmethod
-    def from_json(cls, dct_json, **kwargs):
+    def from_json(cls, dct_json, from_require, belongs_provide_ret=False):
+        """
+        :param dct_json: a dict that contains values from agent
+        :param from_require: the require that declares this variables
+        :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require
+        """
         logger.debug("Creating variable %s" % dct_json['xpath'])
         this = cls(dct_json['name'],
-                   from_require=kwargs.pop('from_require', None),
+                   from_require=from_require,
                    xpath=dct_json['xpath'],
                    from_xpath=dct_json['from_xpath'],
                    default=dct_json['default'],
@@ -110,6 +132,7 @@ class Variable(object):
                    required=dct_json['required'],
                    type=dct_json['type'],
                    error=dct_json['error'],
+                   belongs_provide_ret=belongs_provide_ret,
                    extra=dct_json['extra'])
         return this
 
@@ -119,6 +142,19 @@ class Variable(object):
                 setattr(self, key, value)
             except AttributeError:
                 logger.error("Error: Failed to update attr %s to %s" % (key, value))
+
+    @property
+    def provided_by(self):
+        if (self.belongs_provide_ret and
+            self.from_require.provide is not None and
+            self.from_require.provide.manage):
+            return "/".join([
+                self.from_require.provide.host,
+                self.from_require.provide.xpath,
+                SPECIAL_REQUIRE_RETURN_NAME,
+                self.name])
+        else:
+            return None
 
     @property
     def default(self):
@@ -428,7 +464,8 @@ class Remote(Require):
         # Here, we add provide ret variable.
         this.provide_ret = []
         for v in dct_json['provide_ret']:
-            var = Variable.from_json(v, from_require=this)
+            var = Variable.from_json(v, from_require=this,
+                                     belongs_provide_ret=True)
             this.provide_ret.append(var)
 
             # This variable is added to the scope.
@@ -450,7 +487,14 @@ class Remote(Require):
 
     def variables(self):
         """:rtype: [:class:`Variable`]"""
-        return self.provide_args + self.provide_ret
+        acc = self.provide_args
+        for v in self.provide_ret:
+            if v.provided_by is None:
+                acc.append(v)
+            else:
+                logger.debug("Variable %s will be provided_by by %s" % (
+                    v.xpath, v.provided_by))
+        return acc
 
     def update_provide_ret(self, provide_ret):
         for (name, value) in provide_ret.items():
@@ -629,9 +673,15 @@ class Provide(ArmonicProvide):
             return self.require._scope_variables
         return []
 
-    def validate(self, values):
+    def validate(self, values, static=False):
         """Validate all variables using values from data.
 
+        The static validation is used to validate variables before
+        deployment is running. In this case, we don't handle error on
+        provide_ret's variables since we don't know value returned by
+        porvide calls.
+
+        :param static: If True, run a static validation.
         :rtype: bool
         """
         # Update scope variables with values
@@ -648,9 +698,10 @@ class Provide(ArmonicProvide):
                         except KeyError:
                             variable.value = None
 
+        values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
                                                 self.variables_serialized())
-        self.is_validated = not result['errors']
+        errors = False
 
         json_variables = []
         for require in result['requires']:
@@ -663,9 +714,19 @@ class Provide(ArmonicProvide):
         for variable in self.variables():
             for json_variable in json_variables:
                 if variable.xpath == json_variable['xpath']:
+                    # If a static validation is asked, we don't
+                    # consider the error if the variable belongs to
+                    # the provide_ret of the require.
+                    if json_variable['error'] is not None:
+                        if variable.belongs_provide_ret and static:
+                            pass
+                        else:
+                            errors = True
                     variable.update_from_json(json_variable)
                     if variable.error:
                         logger.error("Variable %s has error: %s" % (variable.xpath, variable.error))
+
+        self.is_validated = not errors
 
         return self.is_validated
 
@@ -1210,7 +1271,7 @@ def smart_call(root_provide, values={}):
                         scope._current_requires = None
 
             elif scope.step == "validation":
-                if not scope.is_validated and scope.do_validation():
+                if not scope.is_validated:
                     # Fill variables with replay file values
                     for variable in scope.variables():
                         variable_value = deployment.get_variable(variable.xpath)
