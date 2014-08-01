@@ -1,8 +1,11 @@
 #!/usr/bin/python
+
 import argparse
 import os.path
 import sys
 
+
 import armonic.frontends.utils
 
 # For XMPP Protocol
+

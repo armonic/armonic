@@ -11,6 +11,7 @@ Protocol:
 1) send a struct ((int) msg_size_in_bytes , (bool) last_msg?)
 2) send message
 
+xmpp agent
 
 add compte serveur ejabbert
 ejabberdctl register armonictest localhost armonictest 
