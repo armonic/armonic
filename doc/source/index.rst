@@ -54,6 +54,7 @@ Complete documentation
    smart
    api
    howto_orchestration
+   running_modes
 
 Indices and tables
 ==================
