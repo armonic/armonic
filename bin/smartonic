@@ -86,7 +86,7 @@ if __name__ == "__main__":
                         help="Manage all provide without confirmation")
 
 
-    cli = armonic.client.utils.Cli()
+    cli = armonic.client.utils.Cli(remote=True)
     args = cli.parse_args(parser)
 
     dont_call = args.dont_call
@@ -99,13 +99,18 @@ if __name__ == "__main__":
 
         lfm = Serialize(os_type=cli.os_type)
 
+        lfms = {}
+
         class MyProvide(Provide):
             # @lfm.setter
             # def lfm(self, value):
             #     return lfm
-            def do_lfm(self):
-                self.lfm = lfm
-                return False
+
+            def on_lfm(self, host):
+                self.host = host
+                if host not in lfms:
+                    lfms[host] = Serialize(os_type=cli.os_type)
+                self.lfm = lfms[host]
 
             def on_manage(self, data):
                 return True
