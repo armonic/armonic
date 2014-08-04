@@ -17,13 +17,13 @@ logger = logging.getLogger()
 
 
 class ClientXmppProvider():
-    def __init__(self, jid, password,jid_agent,host,port):
-        self.clientxmpp = sleekxmpp.ClientXMPP( jid, password)
+    def __init__(self, jid, password, jid_agent, host, port):
+        self.clientxmpp = sleekxmpp.ClientXMPP(jid, password)
         self.clientxmpp.add_event_handler("session_start", self.start, threaded=True)
         register_stanza_plugin(Iq, ActionProvider)
-        self.action_provider=jid_agent
-        self.clientxmpp.register_plugin('xep_0030') # Service Discovery
-        if self.clientxmpp.connect(address=(host,port)):
+        self.action_provider = jid_agent
+        self.clientxmpp.register_plugin('xep_0030')  # Service Discovery
+        if self.clientxmpp.connect(address=(host, port)):
             self.clientxmpp.process(block=False)
         else:
             sys.stderr.write("Unable to connect.")
