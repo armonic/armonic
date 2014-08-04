@@ -46,12 +46,19 @@ it which returns a generator. We use this generator to walk on provides::
 # It's not able to manage path
 
 import logging
+from armonic.client.utils import require_validation_error
+import armonic.common
 
 logger = logging.getLogger(__name__)
 
 # The name of the special require name created the xapth that
 # represents provide_ret value.
 SPECIAL_REQUIRE_RETURN_NAME = "return"
+
+
+class ValidationError(Exception):
+    pass
+
 
 class Variable(object):
     """
@@ -876,23 +883,16 @@ class Provide(ArmonicProvide):
                 self.require.update_provide_ret(self.provide_ret)
 
     def lfm_call(self):
-        # FIXME. This is a temporary hack!
-        ret = self.lfm.provide_call_validate(
-            provide_xpath_uri=self.xpath,
-            requires=self.variables_serialized())
-        if ret['errors']:
-            import pprint
-            import json
-            print "Variables serialized in JSON"
-            print json.dumps(self.variables_serialized())
-            print "Variables used are"
-            pprint.pprint(self.Variables)
-            print "Variable not validated"
-            # pprint.pprint(ret)
-            import armonic.client.utils
-            pprint.pprint(armonic.client.utils.require_validation_error(ret))
-            print "Error: Some variables have not been validated!"
-            exit(1)
+        if not armonic.common.DONT_VALIDATE_ON_CALL:
+            # FIXME. This is a temporary hack!
+            ret = self.lfm.provide_call_validate(
+                provide_xpath_uri=self.xpath,
+                requires=self.variables_serialized())
+            if ret['errors']:
+                logger.error("Following variables have not been validated:")
+                for v in require_validation_error(ret):
+                    logger.error("\t%s" % str(v))
+                ValidationError("Some variables have not been validated before provide_call!")
 
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.xpath,

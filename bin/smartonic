@@ -96,6 +96,7 @@ if __name__ == "__main__":
     if cli.no_remote:
         import armonic.common
         armonic.common.SIMULATION = args.simulation
+        armonic.common.DONT_VALIDATE_ON_CALL = True
 
         lfm = Serialize(os_type=cli.os_type)
 

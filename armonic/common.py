@@ -16,6 +16,12 @@ is used to design Provide/Require interactions.
 
 """
 
+DONT_VALIDATE_ON_CALL = False
+"""If set to True, provide validation is not realized before provide
+calls. This is mainly use with SIMULATION flag, in order to simulate calls
+that have provide ret which are not available (since provides return None).
+"""
+
 
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be

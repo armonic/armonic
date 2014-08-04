@@ -162,7 +162,8 @@ class State(XMLRessource):
         :param requires: is the list of input requires
         """
         provide.fill(requires)
-        provide.validate()
+        if not armonic.common.DONT_VALIDATE_ON_CALL:
+            provide.validate()
         try:
             if armonic.common.SIMULATION:
                 logger.warning("Provide call %s is simulated" % provide.name)
@@ -1150,12 +1151,13 @@ class LifecycleManager(XMLRessource):
         # be sure that the provide can be validated
         # we don't want to change states
         # if we can't call the provide in the end
-        errors = self.provide_call_validate(provide_xpath_uri, requires)['errors']
-        if errors:
-            msg = ("Provided values doesn't met provide requires." +
-                   " Call provide_call_validate() to know errors.")
-            logger.error(msg)
-            raise ValidationError(msg=msg)
+        if not armonic.common.DONT_VALIDATE_ON_CALL:
+            errors = self.provide_call_validate(provide_xpath_uri, requires)['errors']
+            if errors:
+                msg = ("Provided values doesn't met provide requires." +
+                       " Call provide_call_validate() to know errors.")
+                logger.error(msg)
+                raise ValidationError(msg=msg)
         requires = format_input_variables(requires)
         lf_name = XMLRegistery.get_ressource(provide_xpath_uri, "lifecycle")
         state_name = XMLRegistery.get_ressource(provide_xpath_uri, "state")
