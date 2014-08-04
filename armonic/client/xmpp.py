@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sleekxmpp
 from sleekxmpp import Iq
-from sleekxmpp.exceptions import XMPPError
+from sleekxmpp.exceptions import XMPPError, IqTimeout
 from sleekxmpp.xmlstream import register_stanza_plugin
 from armonic.iq_xmpp_armonic import ActionProvider
 import sys
@@ -21,8 +21,9 @@ class ClientXmppProvider():
         self.clientxmpp = sleekxmpp.ClientXMPP(jid, password)
         self.clientxmpp.add_event_handler("session_start", self.start, threaded=True)
         register_stanza_plugin(Iq, ActionProvider)
-        self.action_provider = jid_agent
+        self._host = jid_agent
         self.clientxmpp.register_plugin('xep_0030')  # Service Discovery
+        self.clientxmpp.auto_reconnect = False
         if self.clientxmpp.connect(address=(host, port)):
             self.clientxmpp.process(block=False)
         else:
@@ -30,18 +31,28 @@ class ClientXmppProvider():
             sys.exit(1)
             
     def get_host(self):
-        return self.action_provider
+        return self._host
     
     def set_host(self, jid_agent_host):
-        self.action_provider = jid_agent_host
+        self._host = jid_agent_host
+        print "self.action_provide " + self._host
     
     def start(self, event):
         self.clientxmpp.send_presence()
         self.clientxmpp.get_roster()
+        #self.clientxmpp.send_presence(pto=self._host, ptype='subscribe')
+        try:
+            information = self.info()
+            # verrification coherence des versions
+            logger.info("Agent Version : "+ information['version'])
+        except KeyError:
+            logger.error("%s is not an Agent" %self._host)
+            self.close()
+            sys.exit(1)
 
     def call(self, method, *args, **kwargs):
         iq = self.clientxmpp.Iq()
-        iq['to'] = self.action_provider
+        iq['to'] = self._host
         iq['type'] = 'set'
         iq['action']['method'] = method
         iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
@@ -102,6 +113,10 @@ class ClientXmppProvider():
     def state_current(self, xpath):
         return self.call("state_current",
                          xpath=xpath)
-    
+
     def close(self):
         self.clientxmpp.disconnect(wait=True)
+
+    def global_timeout(self,timeout):
+        self.clientxmpp.response_timeout = timeout
+

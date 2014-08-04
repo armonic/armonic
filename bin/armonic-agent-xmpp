@@ -17,17 +17,14 @@ add compte serveur ejabbert
 ejabberdctl register armonictest localhost armonictest 
 
 _____________
-with the option --config_xmpp, you can use a configuration file xml form for xmpp
-<config>
-  <xmpp jid_agent_xmpp='user2@localhost' pass_agent_xmpp='user2' ressource_agent_xmpp='user2' host_server_xmpp='localhost' port_serveur_xmpp="5222" loggin_xmpp='user3@localhost' />
-</config>
+
 the command line options always override
 
 eg . armonic-agent-xmpp -v --host localhost --port 5222  --jid user2@localhost --ressource user2 --password user2
 
 """
 import logging
-
+import urlparse
 import argparse
 import json
 from armonic.serialize import Serialize
@@ -35,17 +32,15 @@ from armonic.persist import Persist
 import armonic.common
 from armonic.utils import OsTypeAll
 from armonic.iq_xmpp_armonic import ActionProvider
-import os
-from xml.etree import ElementTree as ET
 import sleekxmpp
 from sleekxmpp import ClientXMPP, Iq
-from sleekxmpp.exceptions import  IqTimeout, XMPPError
+from sleekxmpp.exceptions import   XMPPError
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 import sys
 from logging.handlers import RotatingFileHandler
-
+import re
 from armonic.client.utils import Cli
 
 PACKET_INFO_SIZE = 5
@@ -64,7 +59,19 @@ class ActionXmppProvider(ClientXMPP):
     """
     def __init__(self, jid, password):
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
+        self.name_master = "master"
+        try:
+            test = re.match("^([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+\/([a-zA-Z0-9]{1,50})?$", jid)
+            (node,domaine,ressource) = test.groups()
+        except Exception :
+            logger.error("error : host server xmpp : %s" % (jid))
+            sys.exit(1)
+        self.jid_master = self.name_master + "@" + domaine 
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler("changed_status", self.changed_status)
+        self.add_event_handler("roster_update", self.show_roster)
+        self.add_event_handler("got_online", self.now_online)
+        self.add_event_handler("got_offline", self.now_offline)
         self.registerHandler(
           Callback('Some custom iq',
                    StanzaPath('iq@type=set/action'),
@@ -76,7 +83,40 @@ class ActionXmppProvider(ClientXMPP):
 
     def start(self, event):
         self.send_presence()
-        self.get_roster()
+        self.send_presence(pto=self.jid_master, ptype='subscribe',pstatus="agent armonic",pshow="chat")
+        self.get_roster(callback=self._handle_roster)
+        
+    def show_roster(self, event):
+        """ stanza type
+        <iq to="jfk@localhost/jfk" type="result" id="6002ddd0-1e08-4fe2-84ea-e22d60cf9265-3"><query xmlns="jabber:iq:roster" ver="16"><item ask="subscribe" jid="rt@localhost" name="zero" subscription="none" /><item jid="test@localhost" name="test" subscription="both" /><item ask="subscribe" jid="dede" subscription="none"><group>Contacts</group></item><item jid="master@localhost" subscription="both" /><item jid="dede@localhost" subscription="from" /></query></iq>
+        """
+        #print dir(event)
+        logger.info("ROSTER VERSION %s" % event['roster']['ver'])
+        roster = self.client_roster
+        items = event['roster']['items']
+        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        for jid, item in items.items():
+            if item['subscription'] in valid_subscriptions:
+                logger.info("subcription %s : %s " % (jid , item['subscription'])) 
+
+    def changed_status(self, event):
+        #<presence to="jfk@localhost" type="unavailable" from="master@localhost/home"><status>Disconnected: session closed</status></presence>
+        #etat_client = json.dump("{'xa':'absent longue duree','chat':'pret a discuter','away','absent','dnd':'ne pas derranger')")
+        logger.info("changed status: %s :[%s] %s " % (event['from'],event['status'], event['message']))
+        #print "* %s(%s/%s) %s: %s" % (event['name'], event['jid'], event['resource'], event['type'],)
+        
+        #print event['jid']
+        #print event['message']
+        #print "eeeeee"
+        
+    def _handle_roster(self,iq):
+        logger.debug("ROSTER VERSION %s" % iq['roster']['ver'])
+        roster = self.client_roster
+        items = iq['roster']['items']
+        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        for jid, item in items.items():
+            if item['subscription'] in valid_subscriptions:
+                logger.info("subcription %s : %s " % (jid , item['subscription']))
 
     def _handle_action(self, iq):
         """
@@ -84,12 +124,23 @@ class ActionXmppProvider(ClientXMPP):
         own thread without blocking the main stanza processing loop.
         """
         self.event('custom_action', iq)
+        
+    def now_online(self, event):
+        print "online : %s %s [%s]" % (event['from'],event['type'],event['status'])
+        #print "online"
+        print event
+        #print event['to']
+        #print event['jid']
+        #print "* %s(%s/%s) got online as %s: %s" % (event['name'], event['jid'],  , print print "online : %s" % 
+        #print "gggggggggg"
+        
+    def now_offline(self, event):
+        print "offline : %s %s [%s]" % (event['from'],event['type'],event['status'])
 
 
     def parsejson(self, data):
-        """ transform json en arg  et karg """
+        """ transform json en arg et karg """
         return json.loads(data)
-
 
     def _handle_action_event(self, iq):
         """
@@ -98,19 +149,14 @@ class ActionXmppProvider(ClientXMPP):
         event handler needs to be run in threaded mode, by
         using `threaded=True` in the `add_event_handler` call.
         """
-        #lstmethod = ['lifecycle', 'uri', 'provide', 'provide_call', 'provide_call_requires','provide_call_validate','call','info']#
         param = iq['action']['param']
         method = iq['action']['method']
         reponse_error_to= iq['from']
         reponse_error_from=iq['to']
-        #logger.debug("iq : %s" % iq)
-        #logger.info("method %s parametre:%s " % (method,param))
         try:
             request = self.parsejson(param)
-            print "dede"
             ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
             #logger.info("return %s" % ret)
-            print "dede"
             iq.reply()
             iq['action']['status'] = json.dumps(ret)
             iq.send()
