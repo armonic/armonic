@@ -911,6 +911,10 @@ class XpathNotFound(Exception):
 
 
 class Deployment(object):
+    """ To create a replay file.
+
+    The 'mapping' section store relationship between old and new node id.
+    """
 
     # Variable are splitted into input and output because we don't try
     # to update input file to generate the output one. We regenerate
@@ -927,6 +931,7 @@ class Deployment(object):
     _specialize_output = []
     _multiplicity_output = []
     _variables_output = []
+    _mapping_output = {}
 
     def __init__(self, scope, sections):
         for section_name, section in sections.items():
@@ -986,6 +991,8 @@ class Deployment(object):
                 elif node_id.old_is_set() is False:
                     logger.debug("Use old node id: '%s' (instead of '%s')", key_node_id, node_id.to_str())
                     node_id._old_node_id = key_node_id
+                    # We create the mapping table between old and new node_id
+                    self._mapping_output[node_id.to_str()] = key_node_id
                     return _consume_value(infos)
 
         if node_id.old_is_set():
@@ -1101,7 +1108,8 @@ class Deployment(object):
             "lfm": [(k, i["value"]) for k, i in self._lfm_output],
             "specialize": [(k, i["value"]) for k, i in self._specialize_output],
             "multiplicity": [(k, i["value"]) for k, i in self._multiplicity_output],
-            "variables": [(k, i["value"]) for k, i in self._variables_output]
+            "variables": [(k, i["value"]) for k, i in self._variables_output],
+            "mapping": self._mapping_output
         }
 
 
