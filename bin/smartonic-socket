@@ -3,9 +3,9 @@ import argparse
 import os.path
 import sys
 import logging
-
+import json
 import armonic.frontends.utils
-from armonic.client.smart import Provide, smart_call
+from armonic.client.smart import Provide
 import armonic.frontends.smartonic
 
 
