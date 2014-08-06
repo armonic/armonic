@@ -1,0 +1,34 @@
+#!/usr/bin/python
+"""This is a client implementation module.
+
+Actions needed to control agent:
+- load a module
+- get information about this module
+"""
+import argparse
+import os
+import logging
+
+import armonic.frontends.cli
+
+parser = argparse.ArgumentParser(
+    prog='armonic-client',
+    description=("A simple client to contact a Armonic agent. "
+                 "It is mainly used to get informations "
+                 "but can also do some simple actions."))
+
+cli_base = armonic.client.utils.CliBase(parser)
+cli_client = armonic.client.utils.CliClient(parser)
+cli_local = armonic.client.utils.CliLocal(parser)
+cli = armonic.frontends.cli.Cli(parser)
+
+args = cli_base.parse_args()
+args = cli_client.parse_args()
+args = cli_local.parse_args()
+
+armonic.common.SIMULATION = args.simulation
+
+import armonic.serialize
+client = armonic.serialize.Serialize(cli_local.os_type)
+
+cli.func(client)

@@ -90,75 +90,43 @@ class Filter(object):
         return False
 
 
-class Cli(object):
-    """This class encapslutates common stuffs for Armonic frontends.
+class CliBase(object):
+    """Contains arguments that are common for all frontends.
 
-    :param remote: If the frontend can be used in remote mode, set to True.
+    To use it, you have to instanciate it with a arparse.parser, and
+    call parse_args.
+
     """
+
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
                       (logging.DEBUG + 1, "EVENT"),
                       (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.CRITICAL
 
-    def __init__(self, remote=False):
-        self.logging_level = Cli.VERBOSE_DEFAULT_LEVEL
+    def __init__(self, parser):
+        self.parser = parser
+        self.logging_level = CliBase.VERBOSE_DEFAULT_LEVEL
         self.os_type = None
-        self.remote = remote
 
-        # Will be set by args.no_remote
-        self.no_remote = False
+        self.__add_arguments()
 
-    def add_arguments(self, parser):
-        """A helper to add a verbose argument"""
-        parser.add_argument('--verbose', "-v",
-                            action="count",
-                            help='Can be specified many times (%s)' % [v[1] for v in Cli.VERBOSE_LEVELS])
+    def __add_arguments(self):
+        self.parser.add_argument('--verbose', "-v",
+                                 action="count",
+                                 help='Can be specified many times (%s)' % [v[1] for v in CliBase.VERBOSE_LEVELS])
 
-        parser.add_argument('--version', "-V",
-                            action='version', version='%(prog)s ' + "0.1")
-
-        group = parser.add_argument_group(
-            'no remote arguments',
-            'These arguments are used to configure a local lifecycle manager')
-        if self.remote:
-            group.add_argument('--no-remote', action='store_true',
-                               default=False, help="Directly use Armonic module.")
-        group.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-                           default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
-        group.add_argument('--lifecycle-dir', type=str, action='append',
-                           help="A lifecycle directory. This is only useful on no-remote mode.")
-        group.add_argument('--no-default', action='store_true',
-                           default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
-        group.add_argument('--simulation', action='store_true',
-                           default=False,
-                           help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
-        group.add_argument('--dont-call', action='store_true',
-                           default=False,
-                           help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
-        group.add_argument('--halt-on-error', action="store_true",
-                           default=False,
-                           help='Halt if a module import occurs (default: %(default)s))')
-
-        parser.add_argument('--log-filter',
-                            default=None,
-                            action='append',
-                            help='To filter logs by specifing a regex which will be applied on the module name. Filters are applied on stdout handler. This option can be specified several times.')
-
-    def parse_args(self, parser):
-        """A helper to parse arguments. This add several common options such
-        as verbosity. It returns the same object than parseargs.parse_args."""
-
-        self.add_arguments(parser)
-        args = parser.parse_args()
-
-        armonic.common.SIMULATION = args.simulation
-
-        if self.remote:
-            self.no_remote = args.no_remote
+        self.parser.add_argument('--version', "-V",
+                                 action='version', version='%(prog)s ' + "0.1")
+        self.parser.add_argument('--log-filter',
+                                 default=None,
+                                 action='append',
+                                 help='To filter logs by specifing a regex which will be applied on the module name. Filters are applied on stdout handler. This option can be specified several times.')
+    def parse_args(self):
+        args = self.parser.parse_args()
 
         if args.verbose is not None:
-            self.logging_level = Cli.VERBOSE_LEVELS[args.verbose - 1][0]
-            print "Verbosity is set to %s" % Cli.VERBOSE_LEVELS[args.verbose - 1][1]
+            self.logging_level = CliBase.VERBOSE_LEVELS[args.verbose - 1][0]
+            print "Verbosity is set to %s" % CliBase.VERBOSE_LEVELS[args.verbose - 1][1]
 
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
@@ -171,25 +139,75 @@ class Cli(object):
             ch.addFilter(Filter(args.log_filter))
 
         logger.addHandler(ch)
+        return args
 
-        if self.remote is False or args.no_remote:
-            os_type = None
-            if args.os_type == "mbs":
-                os_type = OsTypeMBS()
-            elif args.os_type == "debian":
-                os_type = OsTypeDebianWheezy()
-            elif args.os_type == "any":
-                os_type = OsTypeAll()
-            self.os_type = os_type
 
-            if not args.no_default:
-                armonic.common.load_default_lifecycles(
+class CliClient():
+    def __init__(self, parser):
+        self.parser = parser
+        self.__add_arguments()
+
+    def __add_arguments(self):
+        self.parser.add_argument('--dont-call', action='store_true',
+                                 default=False,
+                                 help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
+
+    def parse_args(self):
+        """A helper to parse arguments. This add several common options such
+        as verbosity. It returns the same object than parseargs.parse_args."""
+        return self.parser.parse_args()
+
+
+class CliLocal():
+    """This class encapslutates common stuffs for Armonic frontends.
+
+    :param remote: If the frontend can be used in remote mode, set to True.
+    """
+    def __init__(self, parser):
+        self.parser = parser
+        self.__add_arguments()
+
+
+    def __add_arguments(self):
+        """A helper to add a verbose argument"""
+        self.parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
+                           default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+        self.parser.add_argument('--lifecycle-dir', type=str, action='append',
+                           help="A lifecycle directory. This is only useful on no-remote mode.")
+        self.parser.add_argument('--no-default', action='store_true',
+                           default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+        self.parser.add_argument('--simulation', action='store_true',
+                           default=False,
+                           help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
+        self.parser.add_argument('--halt-on-error', action="store_true",
+                           default=False,
+                           help='Halt if a module import occurs (default: %(default)s))')
+
+
+    def parse_args(self):
+        """A helper to parse arguments. This add several common options such
+        as verbosity. It returns the same object than parseargs.parse_args."""
+        args = self.parser.parse_args()
+
+        armonic.common.SIMULATION = args.simulation
+
+        os_type = None
+        if args.os_type == "mbs":
+            os_type = OsTypeMBS()
+        elif args.os_type == "debian":
+            os_type = OsTypeDebianWheezy()
+        elif args.os_type == "any":
+            os_type = OsTypeAll()
+        self.os_type = os_type
+
+        if not args.no_default:
+            armonic.common.load_default_lifecycles(
+                raise_import_error=args.halt_on_error)
+
+        if args.lifecycle_dir is not None:
+            for l in args.lifecycle_dir:
+                armonic.common.load_lifecycle(
+                    l,
                     raise_import_error=args.halt_on_error)
-
-            if args.lifecycle_dir is not None:
-                for l in args.lifecycle_dir:
-                    armonic.common.load_lifecycle(
-                        l,
-                        raise_import_error=args.halt_on_error)
 
         return args
