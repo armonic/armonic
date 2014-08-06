@@ -931,7 +931,7 @@ class Deployment(object):
     _specialize_output = []
     _multiplicity_output = []
     _variables_output = []
-    _mapping_output = {}
+    _mapping_output = []
 
     def __init__(self, scope, sections):
         for section_name, section in sections.items():
@@ -992,7 +992,7 @@ class Deployment(object):
                     logger.debug("Use old node id: '%s' (instead of '%s')", key_node_id, node_id.to_str())
                     node_id._old_node_id = key_node_id
                     # We create the mapping table between old and new node_id
-                    self._mapping_output[node_id.to_str()] = key_node_id
+                    self._mapping_output.append((key_node_id, node_id.to_str()))
                     return _consume_value(infos)
 
         if node_id.old_is_set():
