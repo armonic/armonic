@@ -21,7 +21,7 @@ parser.add_argument('--port','-P', type=int, default=8000,help='Armonic agent po
 parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
                     ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
 
-cli_base = armonic.client.utils.CliBase(parser)
+cli_base = armonic.frontends.utils.CliBase(parser)
 cli = armonic.frontends.cli.Cli(parser)
 
 args = cli_base.parse_args()

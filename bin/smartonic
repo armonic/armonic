@@ -11,8 +11,8 @@ import json
 
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
-from armonic.client.utils import read_variable, show_variable
-import armonic.client.utils
+from armonic.frontends.utils import read_variable, show_variable
+import armonic.frontends.utils
 
 
 logger = logging.getLogger()
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                         help="Manage all provide without confirmation")
 
 
-    cli = armonic.client.utils.Cli(remote=True)
+    cli = armonic.frontends.utils.Cli(remote=True)
     args = cli.parse_args(parser)
 
     dont_call = args.dont_call
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         handler = logging.StreamHandler()
         handler.setLevel(cli.logging_level)
         format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
-        handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
+        handler.setFormatter(armonic.frontends.utils.ColoredFormatter(format))
 
         class MyProvide(Provide):
             def on_lfm(self, host):

@@ -2,7 +2,7 @@ import pprint
 from prettytable import PrettyTable
 import json
 
-import armonic.client.utils
+import armonic.frontends.utils
 
 
 def req_list(args):
@@ -10,7 +10,7 @@ def req_list(args):
     acc = {}
     for a in args:
         s = a.split(":")
-        acc.update({s[0]: armonic.client.utils.read_string(s[1])})
+        acc.update({s[0]: armonic.frontends.utils.read_string(s[1])})
     return acc
 
 
@@ -205,7 +205,7 @@ class Cli(object):
             if ret['errors'] is False:
                 print "Requires are valid."
             else:
-                pprint.pprint(armonic.client.utils.require_validation_error(ret))
+                pprint.pprint(armonic.frontends.utils.require_validation_error(ret))
         else:
             pprint.pprint(self.client.provide_call(args.xpath,  args_require))
 

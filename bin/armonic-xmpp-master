@@ -14,7 +14,7 @@ import armonic.common
 from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeAll
-import armonic.client.utils
+import armonic.frontends.utils
 from armonic.client.sock import ClientSocket
 
 

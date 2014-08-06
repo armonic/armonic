@@ -17,9 +17,9 @@ parser = argparse.ArgumentParser(
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
 
-cli_base = armonic.client.utils.CliBase(parser)
-cli_client = armonic.client.utils.CliClient(parser)
-cli_local = armonic.client.utils.CliLocal(parser)
+cli_base = armonic.frontends.utils.CliBase(parser)
+cli_client = armonic.frontends.utils.CliClient(parser)
+cli_local = armonic.frontends.utils.CliLocal(parser)
 cli = armonic.frontends.cli.Cli(parser)
 
 args = cli_base.parse_args()
