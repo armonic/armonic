@@ -1,0 +1,70 @@
+#!/usr/bin/python
+import argparse
+import os.path
+import sys
+import logging
+
+import armonic.frontends.utils
+from armonic.client.smart import Provide, smart_call
+import armonic.frontends.smartonic
+
+
+parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
+parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
+parser.add_argument('--host', type=str,
+                    default=None,
+                    help='Host where to call the provide')
+parser.add_argument('--input', type=str, default=None,
+                    help="Load values from file")
+parser.add_argument('--output', type=str, default=None,
+                    help="Save values in file")
+
+parser.add_argument('-a', '--autofill', action='store_true', default=False,
+                    help="Autofill variables with proposed values")
+
+parser.add_argument('--manage', action='store_true', default=False,
+                    help="Manage all provide without confirmation")
+
+
+cli_base = armonic.frontends.utils.CliBase(parser)
+cli_client = armonic.frontends.utils.CliClient(parser)
+
+args = cli_base.parse_args()
+args = cli_client.parse_args()
+
+dont_call = args.dont_call
+autofill = args.autofill
+manage = args.manage
+
+from armonic.client.sock import ClientSocket
+handler = logging.StreamHandler()
+handler.setLevel(cli_base.logging_level)
+format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
+handler.setFormatter(armonic.frontends.utils.ColoredFormatter(format))
+
+class MyProvide(Provide):
+    def on_lfm(self, host):
+        self.host = host
+        self.lfm = ClientSocket(host=host, handlers=[handler])
+
+    def do_call(self):
+        if dont_call:
+            return False
+        else:
+            return True
+
+root_provide = MyProvide(generic_xpath=args.xpath)
+if args.host is not None:
+    lfm = ClientSocket(host=args.host, handlers=[handler])
+    root_provide.lfm = lfm
+
+prefill = {}
+if args.input and os.path.exists(args.input):
+    with open(args.input) as fp:
+        prefill = json.load(fp)
+
+output_file = False
+if args.output:
+    output_file = args.output
+
+armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)

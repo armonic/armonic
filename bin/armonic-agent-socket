@@ -124,9 +124,11 @@ if __name__ == "__main__":
     parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
     parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
 
-    cli = armonic.frontends.utils.Cli()
-    cli.parse_args(parser)
-    args = parser.parse_args()
+    cli = armonic.frontends.utils.CliBase(parser)
+    cli_local = armonic.frontends.utils.CliLocal(parser)
+
+    args = cli.parse_args()
+    args = cli_local.parse_args()
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)

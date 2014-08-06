@@ -282,8 +282,8 @@ if __name__ == '__main__':
                         default='-', type=argparse.FileType('r', 0),
                         help="Input file where events are read")
 
-    cli = armonic.client.utils.Cli()
-    cli.parse_args(parser)
+    cli = armonic.frontends.utils.CliBase(parser)
+    cli.parse_args()
     args = parser.parse_args()
 
     lfm = Serialize(os_type=OsTypeAll())
