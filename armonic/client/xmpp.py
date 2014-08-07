@@ -20,50 +20,103 @@ class ClientXmppProvider():
     def __init__(self, jid, password, jid_agent, host, port):
         self.clientxmpp = sleekxmpp.ClientXMPP(jid, password)
         self.clientxmpp.add_event_handler("session_start", self.start, threaded=True)
+        self.clientxmpp.add_event_handler("changed_status", self.changed_status)
+        self.clientxmpp.add_event_handler("roster_update", self.show_roster)
+        self.clientxmpp.add_event_handler("got_online", self.now_online)
+        self.clientxmpp.add_event_handler("got_offline", self.now_offline)
+        self.clientxmpp.add_event_handler('presence_probe', self.handle_probe)
+        self.agent=False
         register_stanza_plugin(Iq, ActionProvider)
         self._host = jid_agent
-        self.clientxmpp.register_plugin('xep_0030')  # Service Discovery
         self.clientxmpp.auto_reconnect = False
         if self.clientxmpp.connect(address=(host, port)):
             self.clientxmpp.process(block=False)
         else:
             sys.stderr.write("Unable to connect.")
             sys.exit(1)
-            
+
     def get_host(self):
         return self._host
-    
+
     def set_host(self, jid_agent_host):
         self._host = jid_agent_host
-        print "self.action_provide " + self._host
-    
-    def start(self, event):
-        self.clientxmpp.send_presence()
-        self.clientxmpp.get_roster()
-        #self.clientxmpp.send_presence(pto=self._host, ptype='subscribe')
-        try:
-            information = self.info()
-            # verrification coherence des versions
-            logger.info("Agent Version : "+ information['version'])
-        except KeyError:
+        if not self.check_agent():
             logger.error("%s is not an Agent" %self._host)
             self.close()
             sys.exit(1)
+            
+    def _handle_roster(self,iq):
+        items = event['roster']['items']
+        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        for jid, item in items.items():
+            if item['subscription'] in valid_subscriptions:
+                logger.info("subcription %s : %s " % (jid , item['subscription']))
+
+    def changed_status(self, event):
+        logger.info("changed status: %s :[%s] %s " % (event['from'],event['status'], event['message']))
+  
+    def show_roster(self, event):
+        logger.info("ROSTER VERSION %s" % event['roster']['ver'])
+        #roster = self.clientxmpp.client_roster
+        items = event['roster']['items']
+        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        for jid, item in items.items():
+            if item['subscription'] in valid_subscriptions:
+                logger.info("subcription %s : %s " % (jid , item['subscription'])) 
+
+    def now_online(self, event):
+        print "online : %s %s [%s]" % (event['from'],event['type'],event['status'])
+
+
+    def now_offline(self, event):
+        print "offline : %s %s [%s]" % (event['from'],event['type'],event['status'])
+        
+    def handle_probe(self, presence):
+        sender = presence['from']
+        self.clientxmpp.sendPresence(pto=sender, pstatus="armonic", pshow="chat")
+
+    def check_agent(self):
+        self.clientxmpp.sendPresence(pto=self._host, ptype='probe')
+        subcribe_armonic=[]
+        presence_armonic=[]
+        self.clientxmpp.get_roster()
+        for subscribe in self.clientxmpp.client_roster:
+            subcribe_armonic.append( str(subscribe))
+        for presence in self.clientxmpp.client_roster:
+            presence_armonic.append( str(presence))
+        hosts1=self._host.split('/')
+        print presence_armonic
+        print subcribe_armonic
+        if hosts1[0] in presence_armonic and hosts1[0] in subcribe_armonic:
+            self.agent=True
+            return True
+        else:
+            self.agent=False
+            return False
+
+    def start(self, event):
+        self.clientxmpp.send_presence()
+
 
     def call(self, method, *args, **kwargs):
-        iq = self.clientxmpp.Iq()
-        iq['to'] = self._host
-        iq['type'] = 'set'
-        iq['action']['method'] = method
-        iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
-        try:
-            resp = iq.send()
-            #self.disconnect(wait=True)
-        except XMPPError:
-            resp='{"return": ["There was an error sending the %s action."]}'%method
-            return json.loads(resp)
-            #return resp
-        return json.loads(resp['action']['status'])
+        if self.check_agent():
+            iq = self.clientxmpp.Iq()
+            iq['to'] = self._host
+            iq['type'] = 'set'
+            iq['action']['method'] = method
+            iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
+            try:
+                resp = iq.send()
+                #self.disconnect(wait=True)
+            except XMPPError:
+                resp='{"return": ["There was an error sending the %s action."]}'%method
+                return json.loads(resp)
+                #return resp
+            return json.loads(resp['action']['status'])
+        else:
+            logger.error("%s is not an Agent" %self._host)
+            self.close()
+            sys.exit(1)
 
     def info(self):
         return self.call("info")

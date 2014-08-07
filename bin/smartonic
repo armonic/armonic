@@ -115,7 +115,7 @@ if not args.host_xmpp :
                       " --host-xmpp missing with xmpp")
     sys.exit(1)
 
-jid_armonic_cli= node+"@"+args.host_xmpp+"/"+ressource
+jid_armonic_cli= node+"@"+domaine+"/"+ressource
 
 logging.debug( "jid xmpp  %s "% jid_armonic_cli)
 logging.debug( "port server jaberd  %s "% port_serveur_xmpp)
