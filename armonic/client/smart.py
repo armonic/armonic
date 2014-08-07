@@ -822,8 +822,12 @@ class Provide(ArmonicProvide):
         self.lfm = lfm
 
     def _test_lfm(self):
+        """Verify that lfm and lfm_host attributes are set."""
         if self.lfm is None:
             raise AttributeError("'lfm' attribute must not be None. Must be set at 'lfm' step")
+        if self.lfm_host is None:
+            raise AttributeError("'lfm_host' attribute must not be None. Must be set at 'lfm' step")
+
 
     def do_call(self):
         return self.call is None
@@ -1174,10 +1178,10 @@ def smart_call(root_provide, values={}):
                         logger.debug("%s lfm on %s from deployment data" % (scope.generic_xpath, data))
                     else:
                         data = yield(scope, scope.step, None)
-                    deployment.lfm = data
                     scope.on_lfm(data)
 
                 scope._test_lfm()
+                deployment.lfm = scope.lfm_host
                 scope._next_step()
 
             elif scope.step == "specialize":
