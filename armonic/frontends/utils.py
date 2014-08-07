@@ -101,7 +101,7 @@ class CliBase(object):
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
                       (logging.DEBUG + 1, "EVENT"),
                       (logging.DEBUG, "DEBUG")]
-    VERBOSE_DEFAULT_LEVEL = logging.CRITICAL
+    VERBOSE_DEFAULT_LEVEL = logging.ERROR
 
     def __init__(self, parser):
         self.parser = parser
