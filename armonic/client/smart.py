@@ -156,7 +156,7 @@ class Variable(object):
             self.from_require.provide is not None and
             self.from_require.provide.manage):
             return "/".join([
-                self.from_require.provide.host,
+                self.from_require.provide.lfm_host,
                 self.from_require.provide.xpath,
                 SPECIAL_REQUIRE_RETURN_NAME,
                 self.name])
@@ -631,12 +631,20 @@ class Provide(ArmonicProvide):
         # If this provide comes from a local require, the lfm is taken
         # from the requirer.
         self.lfm = None
+
+        # the host contains the adress (IP or DNS) used to contact the
+        # service.
         self.host = None
+
+        # lfm_host contain the adress used to contact this agent
+        self.lfm_host = None
+
         self.is_local = False
         if (require is not None and
                 require.type == "local"):
             self.lfm = requirer.lfm
             self.host = requirer.host
+            self.lfm_host = requirer.lfm_host
             self.is_local = True
 
         self.is_external = False
@@ -1028,7 +1036,7 @@ class Deployment(object):
 
     @property
     def _xpath(self):
-        return self.scope.host + '/' + self.scope.xpath
+        return self.scope.lfm_host + '/' + self.scope.xpath
 
     @property
     def manage(self):
@@ -1242,7 +1250,7 @@ def smart_call(root_provide, values={}):
                                     require=new)
                                 new.provide = p
                                 if req.skel.type == 'external':
-                                    new.provide.host = multiplicity[i]
+                                    new.provide.lfm_host = multiplicity[i]
 
                             deployment.multiplicity_setter(req.skel.xpath, multiplicity)
                         else:

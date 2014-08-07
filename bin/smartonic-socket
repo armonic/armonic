@@ -44,6 +44,7 @@ handler.setFormatter(armonic.frontends.utils.ColoredFormatter(format))
 
 class MyProvide(Provide):
     def on_lfm(self, host):
+        self.lfm_host = host
         self.host = host
         self.lfm = ClientSocket(host=host, handlers=[handler])
 

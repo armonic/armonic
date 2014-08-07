@@ -48,6 +48,7 @@ class MyProvide(Provide):
     #     return lfm
 
     def on_lfm(self, host):
+        self.lfm_host = host
         self.host = host
         if host not in lfms:
             lfms[host] = Serialize(os_type=cli_local.os_type)

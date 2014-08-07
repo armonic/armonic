@@ -105,10 +105,10 @@ def run(root_provide, prefill, output_file, manage, autofill):
 
         elif provide.step == "lfm":
             msg = "You have to set a location:"
-            if provide.host is not None:
-                prefill = show_variable(provide.host)
+            if provide.lfm_host is not None:
+                prefill = show_variable(provide.lfm_host)
             elif provide.has_requirer():
-                prefill = show_variable(provide.requirer.lfm._host)
+                prefill = show_variable(provide.requirer.lfm_host)
             else:
                 prefill = ""
             host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
