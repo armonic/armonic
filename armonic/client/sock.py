@@ -97,6 +97,10 @@ class ClientSocket(object):
                          xpath=xpath,
                          requires=requires)
 
+    def state_goto_path(self, state_xpath):
+        return self.call("state_goto_path",
+                         state_xpath=state_xpath)
+
     def state_current(self, xpath):
         return self.call("state_current",
                          xpath=xpath)
