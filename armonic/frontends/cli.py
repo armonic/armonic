@@ -169,7 +169,14 @@ class Cli(object):
             dict_to_table(r)
 
     def cmd_state_goto(self, args):
-        pprint.pprint(self.client.state_goto(args.state_xpath_uri, parse_args(args.require)))
+        args_require = None
+        if args.require is not None:
+            args_require = parse_args(args.require)
+        elif args.json_require is not None:
+            print args.json_require
+            args_require = json.loads(args.json_require)
+
+        pprint.pprint(self.client.state_goto(args.state_xpath_uri, args_require))
 
     def cmd_provide(self, args):
         if args.path:
@@ -258,7 +265,9 @@ class Cli(object):
 
         parser_state_goto = subparsers.add_parser('state-goto', help='go to a state of a module')
         parser_state_goto.add_argument('state_xpath_uri' , type=str, help='a XPath URI corresponding to a State')
-        parser_state_goto.add_argument('-R',dest="require" , type=str,  nargs="*", action='append' , help=help_require)
+        group = parser_state_goto.add_mutually_exclusive_group()
+        group.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help=help_require)
+        group.add_argument('-J',dest="json_require" , type=str, help="Use raw JSON require format (useful for debugging, see provide_call API for more informations)")
         parser_state_goto.set_defaults(func=lambda a : self.cmd_state_goto(a))
 
 
