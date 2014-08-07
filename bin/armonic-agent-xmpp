@@ -68,6 +68,7 @@ class ActionXmppProvider(ClientXMPP):
             sys.exit(1)
         self.jid_master = self.name_master + "@" + domaine 
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler("register", self.register, threaded=True)
         self.registerHandler(
           Callback('Some custom iq',
                    StanzaPath('iq@type=set/action'),
@@ -122,6 +123,38 @@ class ActionXmppProvider(ClientXMPP):
             iq['to'] =  reponse_error_to
             iq['from'] = reponse_error_from
             iq.send()
+
+
+    def register(self, iq):
+        """
+            Fill out and submit a registration form.
+            The form may be composed of basic registration fields, a data form,
+            an out-of-band link, or any combination thereof. Data forms and OOB
+            links can be checked for as so:
+            if iq.match('iq/register/form'):
+            # do stuff with data form
+            # iq['register']['form']['fields']
+            if iq.match('iq/register/oob'):
+            # do stuff with OOB URL
+            # iq['register']['oob']['url']
+            To get the list of basic registration fields, you can use:
+            iq['register']['fields']
+        """
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
+        try:
+            resp.send(now=True)
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" %
+            e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("No response from server.")
+            self.disconnect()
+
 
 def args_option(args_cli,args_xml_config, msg, default_val=None):
     if not args_cli and not args_xml_config:
@@ -189,6 +222,10 @@ if __name__ == "__main__":
     lfm = Serialize(os_type=cli.os_type)
     xmpp = ActionXmppProvider(args.jid + "/" + args.ressource, args.password)
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+    xmpp.register_plugin('xep_0030') # Service Discovery
+    xmpp.register_plugin('xep_0004') # Data forms
+    xmpp.register_plugin('xep_0066') # Out-of-band Data
+    xmpp.register_plugin('xep_0077') # In-band Registration
     if xmpp.connect(address=(args.host, args.port)):
         logger.info("connection %s:%s " % (args.host,args.port))
         xmpp.process(block=True)
