@@ -146,7 +146,7 @@ if __name__ == "__main__":
     load_state = not args.no_load_state
 
     persist = Persist(load_state, save_state, args.state_path)
-    lfm = Serialize(os_type=cli.os_type)
+    lfm = Serialize(os_type=cli_local.os_type)
 
     print "Server listening on %s:%d" % (args.host, args.port)
     server = MyTCPServer((args.host, args.port), MyTCPHandler)

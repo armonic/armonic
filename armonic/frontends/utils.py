@@ -106,7 +106,6 @@ class CliBase(object):
     def __init__(self, parser):
         self.parser = parser
         self.logging_level = CliBase.VERBOSE_DEFAULT_LEVEL
-        self.os_type = None
 
         self.__add_arguments()
 
