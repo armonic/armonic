@@ -12,7 +12,7 @@ import re ,sys
 import logging
 from armonic.client.xmpp import ClientXmppProvider
 import armonic.frontends.cli
-from armonic.client.utils import colorize, read_passwd
+from armonic.frontends.utils import colorize, read_passwd
 
 parser = argparse.ArgumentParser(
     prog='armonic-client',
