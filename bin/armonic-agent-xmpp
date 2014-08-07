@@ -178,7 +178,9 @@ if __name__ == "__main__":
     logger.addHandler(file_handler)
     # redirect vers console
     steam_handler = logging.StreamHandler()
-    steam_handler.setLevel(logging.DEBUG)
+    steam_handler.setLevel(logging.ERROR)
+    if args.verbose:
+        steam_handler.setLevel(logging.DEBUG)
     logger.addHandler(steam_handler)
 
     save_state = not args.no_save_state
