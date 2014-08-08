@@ -20,8 +20,8 @@ _____________
 
 the command line options always override
 
-eg . armonic-agent-xmpp -v --host localhost --port 5222
-       --jid user2@localhost --ressource user2 --password user2
+eg . armonic-agent-xmpp --host localhost --jid user2@localhost
+        --jid-master master@localhost --password user2
 
 """
 import logging
@@ -40,7 +40,6 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 import sys
 from logging.handlers import RotatingFileHandler
-
 import armonic.frontends.utils
 
 if sys.version_info < (3, 0):
@@ -80,9 +79,9 @@ class ActionXmppProvider(ClientXMPP):
 
         # To handle LifecycleManager method calls
         self.registerHandler(
-          Callback('Some custom iq',
-                   StanzaPath('iq@type=set/action'),
-                   self._handle_action))
+            Callback('Some custom iq',
+                     StanzaPath('iq@type=set/action'),
+                     self._handle_action))
         self.add_event_handler('call_method',
                                self._handle_call_method,
                                threaded=True)
@@ -98,13 +97,14 @@ class ActionXmppProvider(ClientXMPP):
     def _handle_failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self.jid)
         self.disconnect()
-        
+
     def start(self, event):
         logger.info("Connected")
         logger.debug("Sending presence...")
         self.send_presence()
         logger.info("Presence sent to '%s'" % self.jid_master)
-        self.send_presence(pto=self.jid_master, ptype='subscribe',pstatus="agent armonic",pshow="chat")
+        self.send_presence(pto=self.jid_master, ptype='subscribe',
+                           pstatus="agent armonic", pshow="chat")
 
     def _handle_action(self, iq):
         """
@@ -126,9 +126,10 @@ class ActionXmppProvider(ClientXMPP):
         """
         param = iq['action']['param']
         method = iq['action']['method']
-        reponse_error_to= iq['from']
-        reponse_error_from=iq['to']
-        logger.info("Executing method '%s' called by '%s'..." % (method, iq['from']))
+        reponse_error_to = iq['from']
+        reponse_error_from = iq['to']
+        logger.info("Executing method '%s' called by '%s'..." % (
+            method, iq['from']))
         try:
             request = self.parsejson(param)
             ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
@@ -136,18 +137,19 @@ class ActionXmppProvider(ClientXMPP):
             iq['action']['status'] = json.dumps(ret)
             iq.send()
         except MethodNotExposed as e:
-            logger.info("method %s not supported : %s"% (method,e))
+            logger.info("method %s not supported : %s" % (method, e))
             iq['action']['status'] = "error"
             iq.error()
             iq['error']['code'] = "424"
             iq['error']['text'] = e
             iq['error']['type'] = "error"
             iq['error']['condition'] = 'Method failure'
-            iq['to'] =  reponse_error_to
+            iq['to'] = reponse_error_to
             iq['from'] = reponse_error_from
             iq.send()
         except IqError as e:
-            logger.error("call method returned an error: %s" % e.iq['error']['condition'])
+            logger.error("call method returned an error: %s" % (
+                e.iq['error']['condition']))
 
     def register(self, iq):
         """
@@ -183,11 +185,16 @@ class ActionXmppProvider(ClientXMPP):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
 
-    parser.add_argument('--no-load-state', '-l', dest="no_load_state", action="store_true", default=False, help='Load Armonic agent state on start (default: %(default)s))')
-    parser.add_argument('--no-save-state', '-s', dest="no_save_state", action="store_true", default=False, help='Save Armonic agent state on exit (default: %(default)s))')
-    parser.add_argument('--state-path', dest="state_path", type=str, default="/tmp/armonic_%s%s_state", help='Armonic state files paths (default: %(default)s))')
-
-    parser.add_argument('--host', '-H', type=str
+    parser.add_argument('--no-load-state', '-l', dest="no_load_state",
+                        action="store_true", default=False,
+                        help='Load Armonic agent state on start (default: %(default)s))')
+    parser.add_argument('--no-save-state', '-s', dest="no_save_state",
+                        action="store_true", default=False,
+                        help='Save Armonic agent state on exit (default: %(default)s))')
+    parser.add_argument('--state-path', dest="state_path", type=str,
+                        default="/tmp/armonic_%s%s_state",
+                        help='Armonic state files paths (default: %(default)s))')
+    parser.add_argument('--host', '-H', type=str,
                         help="XMPP server IP (if DNS is not set correctly)")
     parser.add_argument('--port', '-P',
                         type=int,
@@ -197,7 +204,8 @@ if __name__ == "__main__":
                         required=True,
                         type=str,
                         help="Agent JID <username@fqdn>")
-    parser.add_argument('--jid-master', type=str, default="master@im.aeolus.org",
+    parser.add_argument('--jid-master', type=str,
+                        default="master@im.aeolus.org",
                         help="Jid of the master (default '%(default)s')")
     parser.add_argument('--password', '-p', type=str,
                         help="Password (default '%(default)s')")
@@ -212,8 +220,11 @@ if __name__ == "__main__":
 
     logger = logging.getLogger()
 
-    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
-    file_handler = RotatingFileHandler("/tmp/armonic-agent-xmpp.log", 'a', 1000000, 1)
+    formatter = logging.Formatter(
+        '%(asctime)s :: %(levelname)s :: %(message)s')
+    file_handler = RotatingFileHandler("/tmp/armonic-agent-xmpp.log",
+                                       'a',
+                                       1000000, 1)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -223,8 +234,6 @@ if __name__ == "__main__":
         logging.getLogger("sleekxmpp").setLevel(cli.logging_level)
     else:
         logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
-        
-
     save_state = not args.no_save_state
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
@@ -233,17 +242,17 @@ if __name__ == "__main__":
     try:
         xmpp = ActionXmppProvider(args.jid, args.password, args.jid_master)
     except MalformedJID:
-        exit(1)
+        sys.exit(1)
 
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
-    xmpp.register_plugin('xep_0030') # Service Discovery
-    xmpp.register_plugin('xep_0004') # Data forms
-    xmpp.register_plugin('xep_0066') # Out-of-band Data
-    xmpp.register_plugin('xep_0077') # In-band Registration
+    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
+    xmpp.register_plugin('xep_0030')  # Service Discovery
+    xmpp.register_plugin('xep_0004')  # Data forms
+    xmpp.register_plugin('xep_0066')  # Out-of-band Data
+    xmpp.register_plugin('xep_0077')  # In-band Registration
     xmpp['xep_0077'].force_registration = True
 
     if xmpp.connect(address=(args.host, args.port)):
         xmpp.process(block=True)
     else:
         logger.info("Unable to connect.")
-        
+
