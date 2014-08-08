@@ -26,23 +26,31 @@ class Xmpp():
     def __init__(self, jid, password, jid_agent, host, port):
         self._client_xmpp = sleekxmpp.ClientXMPP(jid, password)
 
-        self._client_xmpp.add_event_handler("session_start", self.start, threaded=True)
+        self._client_xmpp.add_event_handler("session_start", self.start)
         self._client_xmpp.add_event_handler("changed_status", self.changed_status)
         self._client_xmpp.add_event_handler("roster_update", self.show_roster)
         self._client_xmpp.add_event_handler("got_online", self.now_online)
         self._client_xmpp.add_event_handler("got_offline", self.now_offline)
+        self._client_xmpp.add_event_handler("failed_auth", self._handle_failed_auth)
+        self._client_xmpp.add_event_handler("session_end",
+                               lambda e : logger.info("Disconnecting..."))
+
         #self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
 
         self.agent = False
         register_stanza_plugin(Iq, ActionProvider)
         self._host = jid_agent
         self._client_xmpp.auto_reconnect = False
-        logger.info("'%s' is connecting..." % self._client_xmpp.jid)
+        logger.info("Connection with account '%s'..." % self._client_xmpp.jid)
         if self._client_xmpp.connect(address=(host, port)):
             self._client_xmpp.process(block=False)
         else:
             logger.error("%sUnable to connect." % (colorize('error : ', 'red', True)))
             sys.exit(1)
+
+    def _handle_failed_auth(self, event):
+        logger.error("Authentification failed for '%s'" % self._client_xmpp.fulljid)
+        self._client_xmpp.disconnect()
 
     def get_host(self):
         return self._host
@@ -59,23 +67,23 @@ class Xmpp():
                 logger.info("subcription %s : %s " % (jid , item['subscription']))
 
     def changed_status(self, event):
-        logger.info("changed status: %s :[%s] %s " % (event['from'],event['status'], event['message']))
+        logger.debug("changed status: %s :[%s] %s " % (event['from'],event['status'], event['message']))
   
     def show_roster(self, event):
-        logger.info("ROSTER VERSION %s" % event['roster']['ver'])
+        logger.debug("Roster version: %s" % event['roster']['ver'])
         #roster = self._client_xmpp.client_roster
         items = event['roster']['items']
         valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
         for jid, item in items.items():
             if item['subscription'] in valid_subscriptions:
-                logger.info("subcription %s : %s " % (jid, item['subscription'])) 
+                logger.debug("subcription %s : %s " % (jid, item['subscription'])) 
 
     def now_online(self, event):
-        logger.info("online : %s %s [%s]" % (event['from'],event['type'],event['status']))
+        logger.debug("online : %s %s [%s]" % (event['from'],event['type'],event['status']))
 
 
     def now_offline(self, event):
-        logger.info( "offline : %s %s [%s]" % (event['from'],event['type'],event['status']))
+        logger.debug( "offline : %s %s [%s]" % (event['from'],event['type'],event['status']))
         
     #def handle_probe(self, presence):
         #sender = presence['from']
