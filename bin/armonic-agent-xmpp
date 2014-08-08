@@ -20,7 +20,8 @@ _____________
 
 the command line options always override
 
-eg . armonic-agent-xmpp -v --host localhost --port 5222  --jid user2@localhost --ressource user2 --password user2
+eg . armonic-agent-xmpp -v --host localhost --port 5222  
+       --jid user2@localhost --ressource user2 --password user2
 
 """
 import logging
@@ -28,6 +29,7 @@ import urlparse
 import argparse
 import json
 from armonic.serialize import Serialize
+from armonic.serialize import MethodNotExposed
 from armonic.persist import Persist
 import armonic.common
 from armonic.utils import OsTypeAll
@@ -111,7 +113,7 @@ class ActionXmppProvider(ClientXMPP):
             iq.reply()
             iq['action']['status'] = json.dumps(ret)
             iq.send()
-        except Exception as e:
+        except MethodNotExposed as e:
             logger.info("method %s not supported : %s"% (method,e))
             logger.info("%s : Method failure"% (method))
             iq['action']['status'] = "error"
@@ -140,6 +142,8 @@ class ActionXmppProvider(ClientXMPP):
             To get the list of basic registration fields, you can use:
             iq['register']['fields']
         """
+        print "************************************************************"
+        print self.boundjid.user
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user

@@ -4,6 +4,11 @@ from functools import wraps
 from armonic import LifecycleManager
 from armonic.common import expose, is_exposed
 
+class MethodNotExposed(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 class Serialize(object):
     def __init__(self, *args, **kwargs):
@@ -22,7 +27,7 @@ class Serialize(object):
         """
         func = getattr(self, method)
         if not is_exposed(func):
-            raise Exception('Method "%s" is not supported' % method)
+            raise MethodNotExposed('Method "%s" is not supported' % method)
         return func(*args, **kwargs)
 
     @expose
