@@ -9,6 +9,7 @@ import sys
 import json
 import logging
 from armonic.frontends.utils import colorize
+import threading
 
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
@@ -26,6 +27,11 @@ class Xmpp():
     def __init__(self, jid, password, jid_agent, host, port):
         self._client_xmpp = sleekxmpp.ClientXMPP(jid, password)
 
+        # Use to wait until client is connected
+        self.ready = threading.Event()
+        # Set to true when connected
+        self.connected = False
+        
         self._client_xmpp.add_event_handler("session_start", self.start)
         self._client_xmpp.add_event_handler("changed_status", self.changed_status)
         self._client_xmpp.add_event_handler("roster_update", self.show_roster)
@@ -48,9 +54,14 @@ class Xmpp():
             logger.error("%sUnable to connect." % (colorize('error : ', 'red', True)))
             sys.exit(1)
 
+    def disconnect(self):
+        """Disconnect xmpp and release locks"""
+        self._client_xmpp.disconnect()
+        self.ready.set()
+
     def _handle_failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self._client_xmpp.fulljid)
-        self._client_xmpp.disconnect()
+        self.disconnect()
 
     def get_host(self):
         return self._host
@@ -107,21 +118,30 @@ class Xmpp():
     def start(self, event):
         logger.info("Connected")
         self._client_xmpp.send_presence()
+        self.connected = True
+        self.ready.set()
 
     def call(self, method, *args, **kwargs):
-        self.check_agent()
-        iq = self._client_xmpp.Iq()
-        iq['to'] = self._host
-        iq['type'] = 'set'
-        iq['action']['method'] = method
-        iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
-        try:
-            resp = iq.send()
-        except IqError:
-            msg = "Can not communicate with '%s'. Is it connected?" % self._host
-            logger.critical(msg)
-            raise XmppError(msg)
-        return json.loads(resp['action']['status'])
+        logger.debug("Waiting connection...")
+        # We are wainting for threading.Event which is set on
+        # start_session or on error
+        self.ready.wait()
+        if self.connected:
+            self.check_agent()
+            iq = self._client_xmpp.Iq()
+            iq['to'] = self._host
+            iq['type'] = 'set'
+            iq['action']['method'] = method
+            iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
+            try:
+                resp = iq.send()
+            except IqError:
+                msg = "Can not communicate with '%s'. Is it connected?" % self._host
+                logger.critical(msg)
+                raise XmppError(msg)
+            return json.loads(resp['action']['status'])
+
+        return {}
 
     def info(self):
         return self.call("info")
