@@ -219,11 +219,6 @@ if __name__ == "__main__":
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # We just enable sleekxmmp logs if DEBUG mode is set
-    if args.verbose_xmpp:
-        logging.getLogger("sleekxmpp").setLevel(cli.logging_level)
-    else:
-        logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
     save_state = not args.no_save_state
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
