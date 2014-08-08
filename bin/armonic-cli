@@ -11,7 +11,7 @@ import argparse
 import re
 import sys
 import logging
-from armonic.client.xmpp import ClientXmppProvider
+from armonic.client.xmpp import Xmpp, XmppError
 import armonic.frontends.cli
 from armonic.frontends.utils import colorize, read_passwd
 
@@ -113,14 +113,15 @@ logger.debug("ressource  %s " % ressource)
 logger.debug("user  %s " % node)
 logger.debug("domaine  %s " % domaine)
 logger.debug("password  %s " % args.password)
-client = ClientXmppProvider(jid_armonic_cli,
-                            args.password,
-                            args.jid_agent_host,
-                            args.host_xmpp,
-                            port_serveur_xmpp)
+client = Xmpp(jid_armonic_cli,
+              args.password,
+              args.jid_agent_host,
+              args.host_xmpp,
+              port_serveur_xmpp)
 
 try:
     cli.func(client)
-except Exception as e:
-    logger.error(e)
+except XmppError:
+    pass
+
 client.close()

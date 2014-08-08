@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sleekxmpp
 from sleekxmpp import Iq
-from sleekxmpp.exceptions import XMPPError, IqTimeout
+from sleekxmpp.exceptions import IqTimeout, IqError
 from sleekxmpp.xmlstream import register_stanza_plugin
 from armonic.iq_xmpp_armonic import ActionProvider
 import sys
@@ -15,13 +15,14 @@ if sys.version_info < (3, 0):
     setdefaultencoding('utf8')
 else:
     raw_input = input
-logger = logging.getLogger()
- # redirect vers console
-steam_handler = logging.StreamHandler()
-steam_handler.setLevel(logging.ERROR)
-logger.addHandler(steam_handler)
+logger = logging.getLogger(__name__)
 
-class ClientXmppProvider():
+
+class XmppError(Exception):
+    pass
+
+
+class Xmpp():
     def __init__(self, jid, password, jid_agent, host, port):
         self.clientxmpp = sleekxmpp.ClientXMPP(jid, password)
         self.clientxmpp.add_event_handler("session_start", self.start, threaded=True)
@@ -95,7 +96,6 @@ class ClientXmppProvider():
     def start(self, event):
         self.clientxmpp.send_presence()
 
-
     def call(self, method, *args, **kwargs):
         self.check_agent()
         iq = self.clientxmpp.Iq()
@@ -105,11 +105,10 @@ class ClientXmppProvider():
         iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
         try:
             resp = iq.send()
-            #self.disconnect(wait=True)
-        except XMPPError:
-            resp='{"return": ["There was an error sending the %s action."]}'%method
-            return json.loads(resp)
-            #return resp
+        except IqError:
+            msg = "Can not communicate with '%s'. Is it connected?" % self._host
+            logger.critical(msg)
+            raise XmppError(msg)
         return json.loads(resp['action']['status'])
 
     def info(self):
