@@ -176,19 +176,6 @@ class ActionXmppProvider(ClientXMPP):
             self.disconnect()
 
 
-def args_option(args_cli,args_xml_config, msg, default_val=None):
-    if not args_cli and not args_xml_config:
-        if default_val is None:
-           logger.critical(msg)
-           sys.exit(1)
-        else:
-           return  default_val
-    else:
-        if not args_cli:
-            return args_xml_config
-        else:
-            return args_cli
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
 
