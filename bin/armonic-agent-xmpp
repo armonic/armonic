@@ -52,6 +52,10 @@ else:
     raw_input = input
 
 
+class MalformedJID(Exception):
+    pass
+
+
 class ActionXmppProvider(ClientXMPP):
     """
     A simple SleekXMPP bot that receives a custom stanza
@@ -59,6 +63,12 @@ class ActionXmppProvider(ClientXMPP):
     """
     def __init__(self, jid, password, jid_master):
         sleekxmpp.ClientXMPP.__init__(self, jid + "/agent", password)
+        if self.resource != "agent":
+            msg = "The agent JID must not contain ressource"
+            logger.critical(msg)
+            raise MalformedJID(msg)
+        logger.info("Connecting with account '%s'..." % (self.fulljid))
+
         self.jid_master = jid_master
         self.add_event_handler("presence_available",
                                self._handle_presence_available)
@@ -229,7 +239,11 @@ if __name__ == "__main__":
     persist = Persist(load_state, save_state, args.state_path)
     lfm = Serialize(os_type=cli.os_type)
 
-    xmpp = ActionXmppProvider(args.jid, args.password, args.jid_master)
+    try:
+        xmpp = ActionXmppProvider(args.jid, args.password, args.jid_master)
+    except MalformedJID:
+        exit(1)
+
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0004') # Data forms
@@ -238,7 +252,7 @@ if __name__ == "__main__":
     xmpp['xep_0077'].force_registration = True
 
     if xmpp.connect(address=(args.host, args.port)):
-        logger.info("Connecting with account '%s'..." % (args.jid))
         xmpp.process(block=True)
     else:
         logger.info("Unable to connect.")
+        
