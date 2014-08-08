@@ -185,6 +185,7 @@ class ActionXmppProvider(ClientXMPP):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
 
+
     parser.add_argument('--no-load-state', '-l', dest="no_load_state",
                         action="store_true", default=False,
                         help='Load Armonic agent state on start (default: %(default)s))')
@@ -194,27 +195,16 @@ if __name__ == "__main__":
     parser.add_argument('--state-path', dest="state_path", type=str,
                         default="/tmp/armonic_%s%s_state",
                         help='Armonic state files paths (default: %(default)s))')
-    parser.add_argument('--host', '-H', type=str,
-                        help="XMPP server IP (if DNS is not set correctly)")
-    parser.add_argument('--port', '-P',
-                        type=int,
-                        default=5222,
-                        help="XMPP server port (default '%(default)s')")
-    parser.add_argument('--jid', '-j',
-                        required=True,
-                        type=str,
-                        help="Agent JID <username@fqdn>")
+
     parser.add_argument('--jid-master', type=str,
                         default="master@im.aeolus.org",
-                        help="Jid of the master (default '%(default)s')")
-    parser.add_argument('--password', '-p', type=str,
-                        help="Password (default '%(default)s')")
-    parser.add_argument('--verbose-xmpp', action='store_true', default=False,
-                        help="Enable sleekxmpp logging")
+                        help="JID of the master (default '%(default)s')")
 
     cli = armonic.frontends.utils.CliBase(parser)
+    cli_xmpp = armonic.frontends.utils.CliXMPP(parser, confirm_password=True)
     cli_local = armonic.frontends.utils.CliLocal(parser)
-
+    
+    args = cli_xmpp.parse_args()
     args = cli.parse_args()
     args = cli_local.parse_args()
 
@@ -240,7 +230,7 @@ if __name__ == "__main__":
     lfm = Serialize(os_type=cli.os_type)
 
     try:
-        xmpp = ActionXmppProvider(args.jid, args.password, args.jid_master)
+        xmpp = ActionXmppProvider(args.jid, cli_xmpp.password, args.jid_master)
     except MalformedJID:
         sys.exit(1)
 

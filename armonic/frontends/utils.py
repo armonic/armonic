@@ -222,6 +222,7 @@ class CliXMPP(object):
     def __init__(self, parser, confirm_password=False):
         self.parser = parser
         self.confirm_password = confirm_password
+        self.password = None
         self.__add_arguments()
 
     def __add_arguments(self):
@@ -253,7 +254,9 @@ class CliXMPP(object):
             logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
 
         if not args.password:
-            args.password = read_passwd(check=self.confirm_password)
+            self.password = read_passwd(check=self.confirm_password)
+        else:
+            self.password = args.password
 
         return args
 
