@@ -213,6 +213,50 @@ class CliLocal():
 
         return args
 
+
+class CliXMPP(object):
+    """
+    :param confirm_password: Set to true if the password has to be set twice
+
+    """
+    def __init__(self, parser, confirm_password=False):
+        self.parser = parser
+        self.confirm_password = confirm_password
+        self.__add_arguments()
+
+    def __add_arguments(self):
+        self.parser.add_argument('--host', '-H', type=str,
+                                 help="XMPP server IP (if DNS is not set correctly)")
+        self.parser.add_argument('--port', '-P',
+                                 type=int,
+                                 default=5222,
+                                 help="XMPP server port (default '%(default)s')")
+        self.parser.add_argument('--jid', '-j',
+                                 required=True,
+                                 type=str,
+                                 help="Agent JID <username@fqdn>")
+        self.parser.add_argument('--password', '-p', type=str,
+                                 help="Password (default '%(default)s')")
+        self.parser.add_argument('--verbose-xmpp', action='store_true',
+                                 default=False,
+                                 help="Enable sleekxmpp logging")
+
+    def parse_args(self):
+        """A helper to parse arguments. This add several common options such
+        as verbosity. It returns the same object than parseargs.parse_args."""
+        args = self.parser.parse_args()
+
+        # We just enable sleekxmmp logs if DEBUG mode is set
+        if args.verbose_xmpp:
+            logging.getLogger("sleekxmpp").setLevel(cli_base.logging_level)
+        else:
+            logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
+
+        if not args.password:
+            args.password = read_passwd(check=self.confirm_password)
+
+        return args
+
 """ code escape color console """
 colors = {'grey': 30, 'red': 31, 'green': 32, 'yellow': 33,
           'blue': 34, 'magenta': 35, 'cyan': 36, 'white': 37}
@@ -228,19 +272,18 @@ def colorize(s, color, bold=False):
         return s
 
 
-def read_passwd(prompt, default, check=False):
+def read_passwd(check=False):
     """ read password from console """
-    prompt += ' (default: ' + default + ')'
     match = False
+    prompt = "Password"
+    pwd = ""
     while not match:
-        pwd = getpass.getpass('INPUT    - ' + prompt + ': ')
+        pwd = getpass.getpass(prompt + ': ')
         if check:
-            pwd2 = getpass.getpass('INPUT    - ' + prompt + ' (confirm): ')
+            pwd2 = getpass.getpass(prompt + ' (confirm): ')
             match = (pwd == pwd2)
             if not match:
-                print 'Passwords do not match. Retry.'
+                print "Passwords don't match. Retry..."
         else:
             match = True
-    if not pwd:
-        return default
     return pwd
