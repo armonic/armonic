@@ -33,7 +33,7 @@ class Xmpp():
         self._client_xmpp.add_event_handler("got_offline", self.now_offline)
         #self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
 
-        self.agent=False
+        self.agent = False
         register_stanza_plugin(Iq, ActionProvider)
         self._host = jid_agent
         self._client_xmpp.auto_reconnect = False
@@ -65,10 +65,10 @@ class Xmpp():
         logger.info("ROSTER VERSION %s" % event['roster']['ver'])
         #roster = self._client_xmpp.client_roster
         items = event['roster']['items']
-        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
         for jid, item in items.items():
             if item['subscription'] in valid_subscriptions:
-                logger.info("subcription %s : %s " % (jid , item['subscription'])) 
+                logger.info("subcription %s : %s " % (jid, item['subscription'])) 
 
     def now_online(self, event):
         logger.info("online : %s %s [%s]" % (event['from'],event['type'],event['status']))
@@ -167,6 +167,6 @@ class Xmpp():
     def close(self):
         self._client_xmpp.disconnect(wait=True)
 
-    def global_timeout(self,timeout):
+    def global_timeout(self, timeout):
         self._client_xmpp.response_timeout = timeout
 
