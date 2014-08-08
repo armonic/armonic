@@ -61,10 +61,12 @@ class ActionXmppProvider(ClientXMPP):
     from another client.
     """
     def __init__(self, jid, password, jid_master):
-        sleekxmpp.ClientXMPP.__init__(self, jid, password)
+        sleekxmpp.ClientXMPP.__init__(self, jid+"/agent", password)
         self.jid_master = jid_master
-
+        
+        self.add_event_handler("presence_available", self._handle_presence_available)
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler("stream_error", self._handle_stream_error)
         self.add_event_handler("failed_auth", self._handle_failed_auth)
         self.add_event_handler("session_end", 
                                lambda e : logger.info("Disconnecting..."))
@@ -81,6 +83,12 @@ class ActionXmppProvider(ClientXMPP):
                                threaded=True)
         register_stanza_plugin(Iq, ActionProvider)
 
+    def _handle_stream_error(self, event):
+        if event['condition'] == "conflict":
+            logger.warning("This jid is already in use... Reconnecting...")
+
+    def _handle_presence_available(self, event):
+        pass
 
     def _handle_failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self.jid)
@@ -204,10 +212,6 @@ if __name__ == "__main__":
                         type=str,
                         default="master@im.aeolus.org",
                         help="Jid of the master (default '%(default)s')")
-    parser.add_argument('--ressource', '-r',
-                        required=True,
-                        type=str,
-                        help="ressource (default '%(default)s')")
     parser.add_argument('--password', '-p',
                         type=str,
                         help="Password (default '%(default)s')")
@@ -242,7 +246,7 @@ if __name__ == "__main__":
     persist = Persist(load_state, save_state, args.state_path)
     lfm = Serialize(os_type=cli.os_type)
 
-    xmpp = ActionXmppProvider(args.jid + "/" + args.ressource, args.password, args.jid_master)
+    xmpp = ActionXmppProvider(args.jid, args.password, args.jid_master)
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0004') # Data forms
