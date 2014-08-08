@@ -24,19 +24,22 @@ class XmppError(Exception):
 
 class Xmpp():
     def __init__(self, jid, password, jid_agent, host, port):
-        self.clientxmpp = sleekxmpp.ClientXMPP(jid, password)
-        self.clientxmpp.add_event_handler("session_start", self.start, threaded=True)
-        self.clientxmpp.add_event_handler("changed_status", self.changed_status)
-        self.clientxmpp.add_event_handler("roster_update", self.show_roster)
-        self.clientxmpp.add_event_handler("got_online", self.now_online)
-        self.clientxmpp.add_event_handler("got_offline", self.now_offline)
-        #self.clientxmpp.add_event_handler('presence_probe', self.handle_probe)
+        self._client_xmpp = sleekxmpp.ClientXMPP(jid, password)
+
+        self._client_xmpp.add_event_handler("session_start", self.start, threaded=True)
+        self._client_xmpp.add_event_handler("changed_status", self.changed_status)
+        self._client_xmpp.add_event_handler("roster_update", self.show_roster)
+        self._client_xmpp.add_event_handler("got_online", self.now_online)
+        self._client_xmpp.add_event_handler("got_offline", self.now_offline)
+        #self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
+
         self.agent=False
         register_stanza_plugin(Iq, ActionProvider)
         self._host = jid_agent
-        self.clientxmpp.auto_reconnect = False
-        if self.clientxmpp.connect(address=(host, port)):
-            self.clientxmpp.process(block=False)
+        self._client_xmpp.auto_reconnect = False
+        logger.info("'%s' is connecting..." % self._client_xmpp.jid)
+        if self._client_xmpp.connect(address=(host, port)):
+            self._client_xmpp.process(block=False)
         else:
             logger.error("%sUnable to connect." % (colorize('error : ', 'red', True)))
             sys.exit(1)
@@ -60,7 +63,7 @@ class Xmpp():
   
     def show_roster(self, event):
         logger.info("ROSTER VERSION %s" % event['roster']['ver'])
-        #roster = self.clientxmpp.client_roster
+        #roster = self._client_xmpp.client_roster
         items = event['roster']['items']
         valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
         for jid, item in items.items():
@@ -76,16 +79,16 @@ class Xmpp():
         
     #def handle_probe(self, presence):
         #sender = presence['from']
-        #self.clientxmpp.sendPresence(pto=sender, pstatus="armonic", pshow="chat")
+        #self._client_xmpp.sendPresence(pto=sender, pstatus="armonic", pshow="chat")
 
     def check_agent(self):
-        self.clientxmpp.sendPresence(pto=self._host, ptype='probe')
+        self._client_xmpp.sendPresence(pto=self._host, ptype='probe')
         subcribe_armonic=[]
         presence_armonic=[]
-        self.clientxmpp.get_roster()
-        for subscribe in self.clientxmpp.client_roster:
+        self._client_xmpp.get_roster()
+        for subscribe in self._client_xmpp.client_roster:
             subcribe_armonic.append( str(subscribe))
-        for presence in self.clientxmpp.client_roster:
+        for presence in self._client_xmpp.client_roster:
             presence_armonic.append( str(presence))
         hosts1=self._host.split('/')
         if not hosts1[0] in presence_armonic or not hosts1[0] in subcribe_armonic:
@@ -94,11 +97,12 @@ class Xmpp():
             sys.exit(1)
 
     def start(self, event):
-        self.clientxmpp.send_presence()
+        logger.info("Connected")
+        self._client_xmpp.send_presence()
 
     def call(self, method, *args, **kwargs):
         self.check_agent()
-        iq = self.clientxmpp.Iq()
+        iq = self._client_xmpp.Iq()
         iq['to'] = self._host
         iq['type'] = 'set'
         iq['action']['method'] = method
@@ -161,8 +165,8 @@ class Xmpp():
                          xpath=xpath)
 
     def close(self):
-        self.clientxmpp.disconnect(wait=True)
+        self._client_xmpp.disconnect(wait=True)
 
     def global_timeout(self,timeout):
-        self.clientxmpp.response_timeout = timeout
+        self._client_xmpp.response_timeout = timeout
 
