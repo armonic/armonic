@@ -36,7 +36,7 @@ from armonic.utils import OsTypeAll
 from armonic.iq_xmpp_armonic import ActionProvider
 import sleekxmpp
 from sleekxmpp import ClientXMPP, Iq
-from sleekxmpp.exceptions import   XMPPError
+from sleekxmpp.exceptions import XMPPError, IqError, IqTimeout
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
@@ -60,22 +60,18 @@ class ActionXmppProvider(ClientXMPP):
     A simple SleekXMPP bot that receives a custom stanza
     from another client.
     """
-    def __init__(self, jid, password):
+    def __init__(self, jid, password, jid_master):
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
-        self.name_master = "master"
-        try:
-            test = re.match("^([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+\/([a-zA-Z0-9]{1,50})?$", jid)
-            (node,domaine,ressource) = test.groups()
-        except Exception :
-            logger.error("host server xmpp : %s" % (jid))
-            sys.exit(1)
-        self.jid_master = self.name_master + "@" + domaine 
+        self.jid_master = jid_master
+
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("failed_auth", self._handle_failed_auth)
         self.add_event_handler("session_end", 
                                lambda e : logger.info("Disconnecting..."))
 
         self.add_event_handler("register", self.register, threaded=True)
+
+        # To handle LifecycleManager method calls
         self.registerHandler(
           Callback('Some custom iq',
                    StanzaPath('iq@type=set/action'),
@@ -88,13 +84,13 @@ class ActionXmppProvider(ClientXMPP):
 
     def _handle_failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self.jid)
-        self.disconnect()
+        #self.disconnect()
         
     def start(self, event):
         logger.info("Connected")
         logger.debug("Sending presence...")
         self.send_presence()
-        logger.debug("Sending presence to %s..." % self.jid_master)
+        logger.info("Presence sent to '%s'" % self.jid_master)
         self.send_presence(pto=self.jid_master, ptype='subscribe',pstatus="agent armonic",pshow="chat")
 
     def _handle_action(self, iq):
@@ -119,6 +115,7 @@ class ActionXmppProvider(ClientXMPP):
         method = iq['action']['method']
         reponse_error_to= iq['from']
         reponse_error_from=iq['to']
+        logger.info("Executing method '%s' called by '%s'..." % (method, iq['from']))
         try:
             request = self.parsejson(param)
             ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
@@ -155,19 +152,17 @@ class ActionXmppProvider(ClientXMPP):
             To get the list of basic registration fields, you can use:
             iq['register']['fields']
         """
-        print "************************************************************"
-        print self.boundjid.user
+        logger.debug("Registration of '%s'..." % self.jid)
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
         resp['register']['password'] = self.password
         try:
             resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info("Account registered for '%s'" % self.jid)
         except IqError as e:
-            logging.error("Could not register account: %s" %
-            e.iq['error']['text'])
-            self.disconnect()
+            logging.debug("Could not register account '%s'" % self.jid)
+            logging.debug("\t%s" % e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -205,6 +200,10 @@ if __name__ == "__main__":
                         required=True,
                         type=str,
                         help="Jid (default '%(default)s')")
+    parser.add_argument('--jid-master',
+                        type=str,
+                        default="master@im.aeolus.org",
+                        help="Jid of the master (default '%(default)s')")
     parser.add_argument('--ressource', '-r',
                         required=True,
                         type=str,
@@ -242,12 +241,15 @@ if __name__ == "__main__":
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
     lfm = Serialize(os_type=cli.os_type)
-    xmpp = ActionXmppProvider(args.jid + "/" + args.ressource, args.password)
+
+    xmpp = ActionXmppProvider(args.jid + "/" + args.ressource, args.password, args.jid_master)
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0004') # Data forms
     xmpp.register_plugin('xep_0066') # Out-of-band Data
     xmpp.register_plugin('xep_0077') # In-band Registration
+    xmpp['xep_0077'].force_registration = True
+
     if xmpp.connect(address=(args.host, args.port)):
         logger.info("Connecting with account '%s'..." % (args.jid))
         xmpp.process(block=True)
