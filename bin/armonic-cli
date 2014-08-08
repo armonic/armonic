@@ -30,6 +30,10 @@ parser.add_argument('--password', type=str,
                     help="Password client xmpp armonic-cli")
 parser.add_argument('-H', '--host', dest="host_xmpp", type=str,
                     help='jabberd host different from host uri jid')
+parser.add_argument('--verbose-xmpp',
+                    action='store_true',
+                    default=False,
+                    help="Enable sleekxmpp logging")
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli = armonic.frontends.cli.Cli(parser)
@@ -40,6 +44,12 @@ format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
 sh = logging.StreamHandler()
 sh.setLevel(cli_base.logging_level)
 sh.setFormatter(logging.Formatter(format))
+
+# We just enable sleekxmmp logs if DEBUG mode is set
+if args.verbose_xmpp:
+    logging.getLogger("sleekxmpp").setLevel(cli_base.logging_level)
+else:
+    logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
 
 if args.jid_armonic_cli:
     try:
