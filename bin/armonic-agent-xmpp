@@ -43,6 +43,7 @@ from sleekxmpp.xmlstream.matcher import StanzaPath
 import sys
 from logging.handlers import RotatingFileHandler
 import re
+
 #from armonic.client.utils import Cli
 import armonic.frontends.utils
 PACKET_INFO_SIZE = 5
@@ -66,10 +67,14 @@ class ActionXmppProvider(ClientXMPP):
             test = re.match("^([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+\/([a-zA-Z0-9]{1,50})?$", jid)
             (node,domaine,ressource) = test.groups()
         except Exception :
-            logger.error("error : host server xmpp : %s" % (jid))
+            logger.error("host server xmpp : %s" % (jid))
             sys.exit(1)
         self.jid_master = self.name_master + "@" + domaine 
         self.add_event_handler("session_start", self.start)
+        self.add_event_handler("failed_auth", self._handle_failed_auth)
+        self.add_event_handler("session_end", 
+                               lambda e : logger.info("Disconnecting..."))
+
         self.add_event_handler("register", self.register, threaded=True)
         self.registerHandler(
           Callback('Some custom iq',
@@ -80,7 +85,13 @@ class ActionXmppProvider(ClientXMPP):
                                threaded=True)
         register_stanza_plugin(Iq, ActionProvider)
 
+
+    def _handle_failed_auth(self, event):
+        logger.error("Authentification failed for '%s'" % self.jid)
+        self.disconnect()
+        
     def start(self, event):
+        logger.info("Connected")
         logger.debug("Sending presence...")
         self.send_presence()
         logger.debug("Sending presence to %s..." % self.jid_master)
@@ -238,7 +249,7 @@ if __name__ == "__main__":
     xmpp.register_plugin('xep_0066') # Out-of-band Data
     xmpp.register_plugin('xep_0077') # In-band Registration
     if xmpp.connect(address=(args.host, args.port)):
-        logger.info("Connecting with account %s..." % (args.jid))
+        logger.info("Connecting with account '%s'..." % (args.jid))
         xmpp.process(block=True)
     else:
         logger.info("Unable to connect.")
