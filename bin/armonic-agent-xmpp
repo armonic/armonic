@@ -81,7 +81,9 @@ class ActionXmppProvider(ClientXMPP):
         register_stanza_plugin(Iq, ActionProvider)
 
     def start(self, event):
+        logger.debug("Sending presence...")
         self.send_presence()
+        logger.debug("Sending presence to %s..." % self.jid_master)
         self.send_presence(pto=self.jid_master, ptype='subscribe',pstatus="agent armonic",pshow="chat")
 
     def _handle_action(self, iq):
@@ -185,8 +187,8 @@ if __name__ == "__main__":
                         required=True,
                         help="XMPP server host jabbert")
     parser.add_argument('--port', '-P',
-                        required=True,
                         type=int,
+                        default=5222,
                         help="XMPP server port (default '%(default)s')")
     parser.add_argument('--jid', '-j',
                         required=True,
@@ -199,6 +201,10 @@ if __name__ == "__main__":
     parser.add_argument('--password', '-p',
                         type=str,
                         help="Password (default '%(default)s')")
+    parser.add_argument('--verbose-xmpp',
+                        action='store_true',
+                        default=False,
+                        help="Enable sleekxmpp logging")
     cli = armonic.frontends.utils.CliBase(parser)
     cli_local = armonic.frontends.utils.CliLocal(parser)
 
@@ -213,12 +219,13 @@ if __name__ == "__main__":
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    # redirect vers console
-    steam_handler = logging.StreamHandler()
-    steam_handler.setLevel(logging.ERROR)
-    if args.verbose:
-        steam_handler.setLevel(logging.DEBUG)
-    logger.addHandler(steam_handler)
+
+    # We just enable sleekxmmp logs if DEBUG mode is set
+    if args.verbose_xmpp:
+        logging.getLogger("sleekxmpp").setLevel(cli.logging_level)
+    else:
+        logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
+        
 
     save_state = not args.no_save_state
     load_state = not args.no_load_state
@@ -231,8 +238,7 @@ if __name__ == "__main__":
     xmpp.register_plugin('xep_0066') # Out-of-band Data
     xmpp.register_plugin('xep_0077') # In-band Registration
     if xmpp.connect(address=(args.host, args.port)):
-        logger.info("connection %s:%s " % (args.host,args.port))
+        logger.info("Connecting with account %s..." % (args.jid))
         xmpp.process(block=True)
-        logger.info("end agent")
     else:
         logger.info("Unable to connect.")
