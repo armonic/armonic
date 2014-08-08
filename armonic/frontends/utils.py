@@ -260,20 +260,6 @@ class CliXMPP(object):
 
         return args
 
-""" code escape color console """
-colors = {'grey': 30, 'red': 31, 'green': 32, 'yellow': 33,
-          'blue': 34, 'magenta': 35, 'cyan': 36, 'white': 37}
-
-def colorize(s, color, bold=False):
-    """ color text console """
-    if os.getenv('ANSI_COLORS_DISABLED') is None and color in colors:
-        if bold:
-            return '\033[1m\033[%dm%s\033[0m' % (colors[color], s)
-        else:
-            return '\033[%dm%s\033[0m' % (colors[color], s)
-    else:
-        return s
-
 
 def read_passwd(check=False):
     """ read password from console """

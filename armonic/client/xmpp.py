@@ -8,7 +8,6 @@ from armonic.iq_xmpp_armonic import ActionProvider
 import sys
 import json
 import logging
-from armonic.frontends.utils import colorize
 import threading
 
 if sys.version_info < (3, 0):
@@ -51,7 +50,7 @@ class Xmpp():
         if self._client_xmpp.connect(address=(host, port)):
             self._client_xmpp.process(block=False)
         else:
-            logger.error("%sUnable to connect." % (colorize('error : ', 'red', True)))
+            logger.error("Unable to connect")
             sys.exit(1)
 
     def disconnect(self):
@@ -111,7 +110,7 @@ class Xmpp():
             presence_armonic.append( str(presence))
         hosts1=self._host.split('/')
         if not hosts1[0] in presence_armonic or not hosts1[0] in subcribe_armonic:
-            logger.error("%s%s is not an Agent" % (colorize('error : ', 'red', True),self._host))
+            logger.error("%s is not an Agent" % self._host)
             self.close()
             sys.exit(1)
 
