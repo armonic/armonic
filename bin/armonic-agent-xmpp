@@ -14,35 +14,32 @@ Protocol:
 xmpp agent
 
 add compte serveur ejabbert
-ejabberdctl register armonictest localhost armonictest 
+ejabberdctl register armonictest localhost armonictest
 
 _____________
 
 the command line options always override
 
-eg . armonic-agent-xmpp -v --host localhost --port 5222  
+eg . armonic-agent-xmpp -v --host localhost --port 5222
        --jid user2@localhost --ressource user2 --password user2
 
 """
 import logging
-import urlparse
 import argparse
 import json
 from armonic.serialize import Serialize
 from armonic.serialize import MethodNotExposed
 from armonic.persist import Persist
 import armonic.common
-from armonic.utils import OsTypeAll
 from armonic.iq_xmpp_armonic import ActionProvider
 import sleekxmpp
 from sleekxmpp import ClientXMPP, Iq
-from sleekxmpp.exceptions import XMPPError, IqError, IqTimeout
+from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 import sys
 from logging.handlers import RotatingFileHandler
-import re
 
 #from armonic.client.utils import Cli
 import armonic.frontends.utils
@@ -61,15 +58,15 @@ class ActionXmppProvider(ClientXMPP):
     from another client.
     """
     def __init__(self, jid, password, jid_master):
-        sleekxmpp.ClientXMPP.__init__(self, jid+"/agent", password)
+        sleekxmpp.ClientXMPP.__init__(self, jid + "/agent", password)
         self.jid_master = jid_master
-        
-        self.add_event_handler("presence_available", self._handle_presence_available)
+        self.add_event_handler("presence_available",
+                               self._handle_presence_available)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("stream_error", self._handle_stream_error)
         self.add_event_handler("failed_auth", self._handle_failed_auth)
-        self.add_event_handler("session_end", 
-                               lambda e : logger.info("Disconnecting..."))
+        self.add_event_handler("session_end",
+                               lambda e: logger.info("Disconnecting..."))
 
         self.add_event_handler("register", self.register, threaded=True)
 
@@ -78,8 +75,8 @@ class ActionXmppProvider(ClientXMPP):
           Callback('Some custom iq',
                    StanzaPath('iq@type=set/action'),
                    self._handle_action))
-        self.add_event_handler('custom_action',
-                               self._handle_action_event,
+        self.add_event_handler('call_method',
+                               self._handle_call_method,
                                threaded=True)
         register_stanza_plugin(Iq, ActionProvider)
 
@@ -106,13 +103,13 @@ class ActionXmppProvider(ClientXMPP):
         Raise an event for the stanza so that it can be processed in its
         own thread without blocking the main stanza processing loop.
         """
-        self.event('custom_action', iq)
+        self.event('call_method', iq)
 
     def parsejson(self, data):
         """ transform json en arg et karg """
         return json.loads(data)
 
-    def _handle_action_event(self, iq):
+    def _handle_call_method(self, iq):
         """
         Respond to the custom action event.
         Since one of the actions is to disconnect, this
@@ -127,13 +124,11 @@ class ActionXmppProvider(ClientXMPP):
         try:
             request = self.parsejson(param)
             ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
-            #logger.info("return %s" % ret)
             iq.reply()
             iq['action']['status'] = json.dumps(ret)
             iq.send()
         except MethodNotExposed as e:
             logger.info("method %s not supported : %s"% (method,e))
-            logger.info("%s : Method failure"% (method))
             iq['action']['status'] = "error"
             iq.error()
             iq['error']['code'] = "424"
@@ -143,7 +138,8 @@ class ActionXmppProvider(ClientXMPP):
             iq['to'] =  reponse_error_to
             iq['from'] = reponse_error_from
             iq.send()
-
+        except IqError as e:
+            logger.error("call method returned an error: %s" % e.iq['error']['condition'])
 
     def register(self, iq):
         """
