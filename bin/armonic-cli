@@ -36,7 +36,7 @@ sh = logging.StreamHandler()
 sh.setLevel(cli_base.logging_level)
 sh.setFormatter(logging.Formatter(format))
 
-client = Xmpp(args.jid, args.password, args.jid_agent, args.host, args.port)
+client = Xmpp(args.jid, cli_xmpp.password, args.jid_agent, args.host, args.port)
 
 try:
     cli.func(client)

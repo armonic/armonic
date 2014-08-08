@@ -222,7 +222,7 @@ if __name__ == "__main__":
     save_state = not args.no_save_state
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
-    lfm = Serialize(os_type=cli.os_type)
+    lfm = Serialize(os_type=cli_local.os_type)
 
     try:
         xmpp = ActionXmppProvider(args.jid, cli_xmpp.password, args.jid_master)
