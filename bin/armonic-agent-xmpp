@@ -84,7 +84,7 @@ class ActionXmppProvider(ClientXMPP):
 
     def _handle_failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self.jid)
-        #self.disconnect()
+        self.disconnect()
         
     def start(self, event):
         logger.info("Connected")
