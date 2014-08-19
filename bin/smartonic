@@ -2,7 +2,8 @@
 
 import argparse
 import os.path
-import sys, re
+import sys
+import re
 import logging
 import json
 from armonic.client.xmpp import ClientXmppProvider
@@ -28,7 +29,7 @@ parser.add_argument('-a', '--autofill', action='store_true', default=False,
 parser.add_argument('--manage', action='store_true', default=False,
                     help="Manage all provide without confirmation")
 
-parser.add_argument("-J","--jid-agent-host",
+parser.add_argument("-J", "--jid-agent-host",
                     dest="jid_agent_host",
                     help="jid agent xmpp <user>@<host>/<resource>")
 parser.add_argument('--jid',
@@ -86,7 +87,7 @@ else:
     logging.error(colorize('option missing:', 'red', True) +
                       " --jid (eg: <user>@<host>[:port]/<resource>)")
     sys.exit(1)
-    
+
 if port is None:
     port_serveur_xmpp = 5222
 else:
@@ -101,7 +102,7 @@ if args.jid_agent_host:
         logging.error(colorize('error option :', 'red', True) +
                       " --jid-agent-host missing ressource (eg: <user>@<host>/<resource>)")
         sys.exit(1)
-else:        
+else:
     logging.error(colorize('error option :', 'red', True) +
                       "--jid-agent-host missing with xmpp")
     sys.exit(1)

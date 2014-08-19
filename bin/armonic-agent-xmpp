@@ -185,7 +185,6 @@ class ActionXmppProvider(ClientXMPP):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
 
-
     parser.add_argument('--no-load-state', '-l', dest="no_load_state",
                         action="store_true", default=False,
                         help='Load Armonic agent state on start (default: %(default)s))')
@@ -203,7 +202,7 @@ if __name__ == "__main__":
     cli = armonic.frontends.utils.CliBase(parser)
     cli_xmpp = armonic.frontends.utils.CliXMPP(parser, confirm_password=True)
     cli_local = armonic.frontends.utils.CliLocal(parser)
-    
+
     args = cli_xmpp.parse_args()
     args = cli.parse_args()
     args = cli_local.parse_args()
@@ -240,4 +239,3 @@ if __name__ == "__main__":
         xmpp.process(block=True)
     else:
         logger.info("Unable to connect.")
-

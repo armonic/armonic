@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sleekxmpp
 from sleekxmpp import Iq
-from sleekxmpp.exceptions import IqTimeout, IqError
+from sleekxmpp.exceptions import IqError
 from sleekxmpp.xmlstream import register_stanza_plugin
 from armonic.iq_xmpp_armonic import ActionProvider
 import sys
@@ -30,17 +30,16 @@ class Xmpp():
         self.ready = threading.Event()
         # Set to true when connected
         self.connected = False
-        
+
         self._client_xmpp.add_event_handler("session_start", self.start)
         self._client_xmpp.add_event_handler("changed_status", self.changed_status)
         self._client_xmpp.add_event_handler("roster_update", self.show_roster)
         self._client_xmpp.add_event_handler("got_online", self.now_online)
         self._client_xmpp.add_event_handler("got_offline", self.now_offline)
         self._client_xmpp.add_event_handler("failed_auth", self._handle_failed_auth)
-        self._client_xmpp.add_event_handler("session_end",
-                               lambda e : logger.info("Disconnecting..."))
+        self._client_xmpp.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
 
-        #self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
+        # self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
 
         self.agent = False
         register_stanza_plugin(Iq, ActionProvider)
@@ -68,48 +67,47 @@ class Xmpp():
     def set_host(self, jid_agent_host):
         self._host = jid_agent_host
         self.check_agent()
-            
-    def _handle_roster(self,iq):
+
+    def _handle_roster(self, iq):
         items = iq['roster']['items']
-        valid_subscriptions = ('to', 'from', 'both')#, 'none', 'remove'
+        valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
         for jid, item in items.items():
             if item['subscription'] in valid_subscriptions:
-                logger.info("subcription %s : %s " % (jid , item['subscription']))
+                logger.info("subcription %s : %s " % (jid, item['subscription']))
 
     def changed_status(self, event):
-        logger.debug("changed status: %s :[%s] %s " % (event['from'],event['status'], event['message']))
-  
+        logger.debug("changed status: %s :[%s] %s " % (event['from'], event['status'], event['message']))
+
     def show_roster(self, event):
         logger.debug("Roster version: %s" % event['roster']['ver'])
-        #roster = self._client_xmpp.client_roster
+        # roster = self._client_xmpp.client_roster
         items = event['roster']['items']
         valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
         for jid, item in items.items():
             if item['subscription'] in valid_subscriptions:
-                logger.debug("subcription %s : %s " % (jid, item['subscription'])) 
+                logger.debug("subcription %s : %s " % (jid, item['subscription']))
 
     def now_online(self, event):
-        logger.debug("online : %s %s [%s]" % (event['from'],event['type'],event['status']))
-
+        logger.debug("online : %s %s [%s]" % (event['from'], event['type'], event['status']))
 
     def now_offline(self, event):
-        logger.debug( "offline : %s %s [%s]" % (event['from'],event['type'],event['status']))
-        
+        logger.debug("offline : %s %s [%s]" % (event['from'], event['type'], event['status']))
+
     #def handle_probe(self, presence):
         #sender = presence['from']
         #self._client_xmpp.sendPresence(pto=sender, pstatus="armonic", pshow="chat")
 
     def check_agent(self):
         self._client_xmpp.sendPresence(pto=self._host, ptype='probe')
-        subcribe_armonic=[]
-        presence_armonic=[]
+        subcribe_armonic = []
+        presence_armonic = []
         self._client_xmpp.get_roster()
         for subscribe in self._client_xmpp.client_roster:
-            subcribe_armonic.append( str(subscribe))
+            subcribe_armonic.append(str(subscribe))
         for presence in self._client_xmpp.client_roster:
-            presence_armonic.append( str(presence))
-        hosts1=self._host.split('/')
-        if not hosts1[0] in presence_armonic or not hosts1[0] in subcribe_armonic:
+            presence_armonic.append(str(presence))
+        host = self._host.split('/')
+        if not host[0] in presence_armonic or not host[0] in subcribe_armonic:
             logger.error("%s is not an Agent" % self._host)
             self.close()
             sys.exit(1)
@@ -196,4 +194,3 @@ class Xmpp():
 
     def global_timeout(self, timeout):
         self._client_xmpp.response_timeout = timeout
-
