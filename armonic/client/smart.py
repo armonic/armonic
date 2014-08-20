@@ -153,8 +153,8 @@ class Variable(object):
     @property
     def provided_by(self):
         if (self.belongs_provide_ret and
-            self.from_require.provide is not None and
-            self.from_require.provide.manage):
+                self.from_require.provide is not None and
+                self.from_require.provide.manage):
             return "/".join([
                 self.from_require.provide.lfm_host,
                 self.from_require.provide.xpath,
@@ -828,7 +828,6 @@ class Provide(ArmonicProvide):
         if self.lfm_host is None:
             raise AttributeError("'lfm_host' attribute must not be None. Must be set at 'lfm' step")
 
-
     def do_call(self):
         return self.call is None
 
@@ -1232,7 +1231,7 @@ def smart_call(root_provide, values={}):
 
                             if multiplicity is None:
                                 multiplicity = yield (scope, scope.step, req)
-                            
+
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
                                     raise TypeError("Multiplicity step for external requires must send a list!")

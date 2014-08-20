@@ -1,10 +1,10 @@
+import re
 import json
 import logging
+import getpass
+
 import armonic.common
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
-import re
-import os
-import getpass
 
 
 def read_variable(string):
@@ -45,7 +45,7 @@ def require_validation_error(dct):
 
 
 # Taken from http://stackoverflow.com/questions/384076/how-can-i-make-the-python-logging-output-to-be-colored/384125#384125
-BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 # These are the sequences need to get colored ouput
 RESET_SEQ = "\033[0m"
 COLOR_SEQ = "\033[;%dm"
@@ -70,12 +70,12 @@ class ColoredFormatter(logging.Formatter):
         levelname = record.levelname
         if record.levelname in COLORS:
             record._levelname = record.levelname
-            levelname_color = BOLD_SEQ % (30 + COLORS[levelname]) + levelname + RESET_SEQ
+            levelname_color = BOLD_SEQ % (COLORS[levelname]) + levelname + RESET_SEQ
             record.levelname = levelname_color
-        record.module = COLOR_SEQ % (30 + WHITE) + "[" + record.module + "]" + RESET_SEQ
+        record.module = COLOR_SEQ % WHITE + "[" + record.module + "]" + RESET_SEQ
         if getattr(record, 'ip', None):
             record._ip = record.ip
-            record.ip = COLOR_SEQ % (30 + WHITE) + "[" + record.ip + "]" + RESET_SEQ
+            record.ip = COLOR_SEQ % WHITE + "[" + record.ip + "]" + RESET_SEQ
         return logging.Formatter.format(self, record)
 
 
@@ -115,13 +115,14 @@ class CliBase(object):
         self.parser.add_argument('--verbose', "-v",
                                  action="count",
                                  help='Can be specified many times (%s)' % [v[1] for v in CliBase.VERBOSE_LEVELS])
-
         self.parser.add_argument('--version', "-V",
                                  action='version', version='%(prog)s ' + "0.1")
         self.parser.add_argument('--log-filter',
                                  default=None,
                                  action='append',
-                                 help='To filter logs by specifing a regex which will be applied on the module name. Filters are applied on stdout handler. This option can be specified several times.')
+                                 help='To filter logs by specifing a regex which will be applied on the module name.\
+                                       Filters are applied on stdout handler. This option can be specified several times.')
+
     def parse_args(self):
         args = self.parser.parse_args()
 
@@ -143,7 +144,7 @@ class CliBase(object):
         return args
 
 
-class CliClient():
+class CliClient(object):
     def __init__(self, parser):
         self.parser = parser
         self.__add_arguments()
@@ -162,7 +163,7 @@ class CliClient():
         return self.parser.parse_args()
 
 
-class CliLocal():
+class CliLocal(object):
     """This class encapslutates common stuffs for Armonic frontends.
 
     :param remote: If the frontend can be used in remote mode, set to True.
@@ -171,22 +172,21 @@ class CliLocal():
         self.parser = parser
         self.__add_arguments()
 
-
     def __add_arguments(self):
         """A helper to add a verbose argument"""
         self.parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-                           default=None, help="Manually specify an OsType. This is just used when no-remote is also set. If not set, the current OsType is used.")
+                                 default=None, help="Manually specify an OsType.\
+                                 This is just used when no-remote is also set. If not set, the current OsType is used.")
         self.parser.add_argument('--lifecycle-dir', type=str, action='append',
-                           help="A lifecycle directory. This is only useful on no-remote mode.")
+                                 help="A lifecycle directory. This is only useful on no-remote mode.")
         self.parser.add_argument('--no-default', action='store_true',
-                           default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
+                                 default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
         self.parser.add_argument('--simulation', action='store_true',
-                           default=False,
-                           help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
+                                 default=False,
+                                 help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
         self.parser.add_argument('--halt-on-error', action="store_true",
-                           default=False,
-                           help='Halt if a module import occurs (default: %(default)s))')
-
+                                 default=False,
+                                 help='Halt if a module import occurs (default: %(default)s))')
 
     def parse_args(self):
         """A helper to parse arguments. This add several common options such
@@ -252,7 +252,7 @@ class CliXMPP(object):
 
         # We just enable sleekxmmp logs if DEBUG mode is set
         if args.verbose_xmpp:
-            logging.getLogger("sleekxmpp").setLevel(cli_base.logging_level)
+            logging.getLogger("sleekxmpp").setLevel(logging.DEBUG)
         else:
             logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
 

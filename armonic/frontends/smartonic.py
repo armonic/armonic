@@ -4,9 +4,9 @@ import readline
 from itertools import repeat
 import json
 
-from armonic.frontends.utils import read_variable, show_variable
+from armonic.frontends.utils import read_variable, show_variable, \
+    COLOR_SEQ, RESET_SEQ, CYAN
 from armonic.client.smart import smart_call
-import armonic.frontends.utils
 
 
 logger = logging.getLogger()
@@ -29,10 +29,10 @@ def user_input_choose_amongst(choices, prefix=''):
     while True:
         print "%sYou must choose a provide amongst:" % prefix
         for i, c in enumerate(choices):
-            print "%s  %d) %s" % (prefix, i, c['xpath'])
+            print "%s  %d) %s" % (prefix, i, c['label'])
         answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices) - 1))
         try:
-            return choices[int(answer)]['xpath']
+            return choices[int(answer)]['value']
         except Exception as e:
             print e
             print "%sInvalid choice. Do it again!" % (prefix)
@@ -111,11 +111,23 @@ def run(root_provide, prefill, output_file, manage, autofill):
                 prefill = show_variable(provide.requirer.lfm_host)
             else:
                 prefill = ""
-            host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
-            data = host['location']
+            # If the provide can list possible locations
+            if hasattr(provide, "list_locations"):
+                locations = provide.list_locations()
+                data = user_input_choose_amongst(locations, prefix=indent(provide.depth))
+            else:
+                host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
+                data = host['location']
 
         elif provide.step == "specialize":
-            data = user_input_choose_amongst(args, prefix=indent(provide.depth))
+            xpaths = []
+            for arg in args:
+                if 'extra' in arg and 'label' in arg['extra']:
+                    label = '%s %s(%s)%s' % (arg['extra']['label'], COLOR_SEQ % CYAN, arg['xpath'], RESET_SEQ)
+                else:
+                    label = arg['xpath']
+                xpaths.append({'value': arg['xpath'], 'label': label})
+            data = user_input_choose_amongst(xpaths, prefix=indent(provide.depth))
 
         elif provide.step == "validation":
             if provide.variables() != []:
