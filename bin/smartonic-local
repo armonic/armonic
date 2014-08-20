@@ -20,9 +20,6 @@ parser.add_argument('--output', type=str, default=None,
 parser.add_argument('-a', '--autofill', action='store_true', default=False,
                     help="Autofill variables with proposed values")
 
-parser.add_argument('--manage', action='store_true', default=False,
-                    help="Manage all provide without confirmation")
-
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli_local = armonic.frontends.utils.CliLocal(parser)

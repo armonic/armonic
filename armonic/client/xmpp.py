@@ -1,144 +1,115 @@
 from __future__ import absolute_import
 
-import sleekxmpp
-from sleekxmpp import Iq
-from sleekxmpp.exceptions import IqError
-from sleekxmpp.xmlstream import register_stanza_plugin
-from armonic.iq_xmpp_armonic import ActionProvider
 import sys
 import json
 import logging
-import threading
 
+from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp.exceptions import IqError
+from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
     setdefaultencoding('utf8')
 else:
     raw_input = input
+
+
 logger = logging.getLogger(__name__)
 
 
-class XmppError(Exception):
+class XMPPError(Exception):
     pass
 
 
-class Xmpp():
-    def __init__(self, jid, password, jid_agent, host, port):
-        self._client_xmpp = sleekxmpp.ClientXMPP(jid, password)
+class ArmonicProviderCall(ElementBase):
+    """
+    A stanza class for XML content of the form:
+    <call xmlns="armonic:provider:call">
+      <method>X</method>
+      <param>X</param>
+      <status>X</status>
+    </call>
+    """
+    name = 'provider'
+    namespace = 'armonic:provider:call'
+    plugin_attrib = 'call'
+    interfaces = set(('method', 'param', 'status'))
+    sub_interfaces = interfaces
 
-        # Use to wait until client is connected
-        self.ready = threading.Event()
-        # Set to true when connected
-        self.connected = False
 
-        self._client_xmpp.add_event_handler("session_start", self.start)
-        self._client_xmpp.add_event_handler("changed_status", self.changed_status)
-        self._client_xmpp.add_event_handler("roster_update", self.show_roster)
-        self._client_xmpp.add_event_handler("got_online", self.now_online)
-        self._client_xmpp.add_event_handler("got_offline", self.now_offline)
-        self._client_xmpp.add_event_handler("failed_auth", self._handle_failed_auth)
-        self._client_xmpp.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
+class XMPPClientBase(ClientXMPP):
+    base_plugins = [
+        ('xep_0030',),  # Disco
+        ('xep_0004',),  # Dataforms
+        ('xep_0199', {'keepalive': True, 'frequency': 15})
+    ]
+    """Always loaded plugins"""
 
-        # self._client_xmpp.add_event_handler('presence_probe', self.handle_probe)
+    def __init__(self, jid, password, plugins=[]):
+        ClientXMPP.__init__(self, jid, password)
+        self.add_event_handler("session_start", self.session_start)
+        self.add_event_handler("roster_update", self.changed_roster)
+        self.add_event_handler("got_online", self.changed_presence)
+        self.add_event_handler("got_offline", self.changed_presence)
+        self.add_event_handler("stream_error", self.got_stream_error)
+        self.add_event_handler("failed_auth", self.failed_auth)
+        #  self.add_event_handler("presence_available", self._handle_presence_available)
+        self.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
 
-        self.agent = False
-        register_stanza_plugin(Iq, ActionProvider)
-        self._host = jid_agent
-        self._client_xmpp.auto_reconnect = False
-        logger.info("Connection with account '%s'..." % self._client_xmpp.jid)
-        if self._client_xmpp.connect(address=(host, port)):
-            self._client_xmpp.process(block=False)
-        else:
-            logger.error("Unable to connect")
-            sys.exit(1)
+        register_stanza_plugin(Iq, ArmonicProviderCall)
 
-    def disconnect(self):
-        """Disconnect xmpp and release locks"""
-        self._client_xmpp.disconnect()
-        self.ready.set()
+        for plugin in self.base_plugins + plugins:
+            if len(plugin) > 1:
+                config = plugin[1]
+            else:
+                config = {}
+            self.register_plugin(plugin[0], config)
 
-    def _handle_failed_auth(self, event):
-        logger.error("Authentification failed for '%s'" % self._client_xmpp.fulljid)
+    def session_start(self, event):
+        self.send_presence()
+        self.get_roster()
+
+    def got_stream_error(self, event):
+        if event['condition'] == "conflict":
+            logger.error("The JID %s is already in use." % self.boundjid.jid)
+
+    def changed_roster(self, event):
+        valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
+        logger.debug("Updated roster (version %s)" % event['roster']['ver'])
+        items = event['roster']['items']
+        for jid, item in items.items():
+            if item['subscription'] in valid_subscriptions:
+                logger.debug(" - subscription %s : %s " % (jid, item['subscription']))
+
+    def changed_presence(self, event):
+        logger.info("%s is %s" % (event['from'], event['type']))
+
+    def failed_auth(self, event):
+        logger.error("Authentification failed for '%s'" % self.fulljid)
         self.disconnect()
 
-    def get_host(self):
-        return self._host
+    def parse_json(self, data):
+        return json.loads(data)
 
-    def set_host(self, jid_agent_host):
-        self._host = jid_agent_host
-        self.check_agent()
 
-    def _handle_roster(self, iq):
-        items = iq['roster']['items']
-        valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
-        for jid, item in items.items():
-            if item['subscription'] in valid_subscriptions:
-                logger.info("subcription %s : %s " % (jid, item['subscription']))
+class XMPPAgentApi(object):
 
-    def changed_status(self, event):
-        logger.debug("changed status: %s :[%s] %s " % (event['from'], event['status'], event['message']))
-
-    def show_roster(self, event):
-        logger.debug("Roster version: %s" % event['roster']['ver'])
-        # roster = self._client_xmpp.client_roster
-        items = event['roster']['items']
-        valid_subscriptions = ('to', 'from', 'both')  # 'none', 'remove'
-        for jid, item in items.items():
-            if item['subscription'] in valid_subscriptions:
-                logger.debug("subcription %s : %s " % (jid, item['subscription']))
-
-    def now_online(self, event):
-        logger.debug("online : %s %s [%s]" % (event['from'], event['type'], event['status']))
-
-    def now_offline(self, event):
-        logger.debug("offline : %s %s [%s]" % (event['from'], event['type'], event['status']))
-
-    #def handle_probe(self, presence):
-        #sender = presence['from']
-        #self._client_xmpp.sendPresence(pto=sender, pstatus="armonic", pshow="chat")
-
-    def check_agent(self):
-        self._client_xmpp.sendPresence(pto=self._host, ptype='probe')
-        subcribe_armonic = []
-        presence_armonic = []
-        self._client_xmpp.get_roster()
-        for subscribe in self._client_xmpp.client_roster:
-            subcribe_armonic.append(str(subscribe))
-        for presence in self._client_xmpp.client_roster:
-            presence_armonic.append(str(presence))
-        host = self._host.split('/')
-        if not host[0] in presence_armonic or not host[0] in subcribe_armonic:
-            logger.error("%s is not an Agent" % self._host)
-            self.close()
-            sys.exit(1)
-
-    def start(self, event):
-        logger.info("Connected")
-        self._client_xmpp.send_presence()
-        self.connected = True
-        self.ready.set()
+    def __init__(self, client, agent_jid):
+        self.client = client
+        self.jid = agent_jid
 
     def call(self, method, *args, **kwargs):
-        logger.debug("Waiting connection...")
-        # We are wainting for threading.Event which is set on
-        # start_session or on error
-        self.ready.wait()
-        if self.connected:
-            self.check_agent()
-            iq = self._client_xmpp.Iq()
-            iq['to'] = self._host
-            iq['type'] = 'set'
-            iq['action']['method'] = method
-            iq['action']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
-            try:
-                resp = iq.send()
-            except IqError:
-                msg = "Can not communicate with '%s'. Is it connected?" % self._host
-                logger.critical(msg)
-                raise XmppError(msg)
-            return json.loads(resp['action']['status'])
-
-        return {}
+        iq = self.client.Iq()
+        iq['to'] = self.jid
+        iq['type'] = 'set'
+        iq['call']['method'] = method
+        iq['call']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
+        try:
+            resp = iq.send()
+        except IqError:
+            logger.exception("Failed to send message to %s" % self.jid)
+            raise XMPPError("Failed to contact %s" % self.jid)
+        return json.loads(resp['call']['status'])
 
     def info(self):
         return self.call("info")
@@ -188,9 +159,3 @@ class Xmpp():
     def state_current(self, xpath):
         return self.call("state_current",
                          xpath=xpath)
-
-    def close(self):
-        self._client_xmpp.disconnect(wait=True)
-
-    def global_timeout(self, timeout):
-        self._client_xmpp.response_timeout = timeout

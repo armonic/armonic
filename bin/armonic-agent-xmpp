@@ -24,24 +24,21 @@ eg . armonic-agent-xmpp --host localhost --jid user2@localhost
         --jid-master master@localhost --password user2
 
 """
+import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import argparse
 import json
-from armonic.serialize import Serialize
-from armonic.serialize import MethodNotExposed
-from armonic.persist import Persist
+
 import armonic.common
-from armonic.iq_xmpp_armonic import ActionProvider
-import sleekxmpp
-from sleekxmpp import ClientXMPP, Iq
-from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream import register_stanza_plugin
-from sleekxmpp.xmlstream.handler import Callback
-from sleekxmpp.xmlstream.matcher import StanzaPath
-import sys
-from logging.handlers import RotatingFileHandler
+from armonic.serialize import Serialize, MethodNotExposed
+from armonic.persist import Persist
+from armonic.client.xmpp import XMPPClientBase
 import armonic.frontends.utils
 
+from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp.xmlstream.handler import Callback
+from sleekxmpp.xmlstream.matcher import StanzaPath
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
     setdefaultencoding('utf8')
@@ -53,58 +50,31 @@ class MalformedJID(Exception):
     pass
 
 
-class ActionXmppProvider(ClientXMPP):
-    """
-    A simple SleekXMPP bot that receives a custom stanza
-    from another client.
-    """
-    def __init__(self, jid, password, jid_master):
-        sleekxmpp.ClientXMPP.__init__(self, jid + "/agent", password)
-        if self.resource != "agent":
-            msg = "The agent JID must not contain ressource"
-            logger.critical(msg)
-            raise MalformedJID(msg)
-        logger.info("Connecting with account '%s'..." % (self.fulljid))
+class XMPPAgent(XMPPClientBase):
 
-        self.jid_master = jid_master
-        self.add_event_handler("presence_available",
-                               self._handle_presence_available)
-        self.add_event_handler("session_start", self.start)
-        self.add_event_handler("stream_error", self._handle_stream_error)
-        self.add_event_handler("failed_auth", self._handle_failed_auth)
-        self.add_event_handler("session_end",
-                               lambda e: logger.info("Disconnecting..."))
+    def __init__(self, jid, password, lfm, master_jid):
+        XMPPClientBase.__init__(self, jid, password, plugins=[('xep_0066',), ('xep_0077',)])
 
+        self['xep_0077'].force_registration = True
         self.add_event_handler("register", self.register, threaded=True)
+
+        self.master_jid = master_jid
+        self.lfm = lfm
 
         # To handle LifecycleManager method calls
         self.registerHandler(
             Callback('Some custom iq',
-                     StanzaPath('iq@type=set/action'),
-                     self._handle_action))
+                     StanzaPath('iq@type=set/call'),
+                     self._handle_action)
+        )
         self.add_event_handler('call_method',
                                self._handle_call_method,
                                threaded=True)
-        register_stanza_plugin(Iq, ActionProvider)
 
-    def _handle_stream_error(self, event):
-        if event['condition'] == "conflict":
-            logger.warning("This jid is already in use... Reconnecting...")
-
-    def _handle_presence_available(self, event):
-        pass
-
-    def _handle_failed_auth(self, event):
-        logger.error("Authentification failed for '%s'" % self.jid)
-        self.disconnect()
-
-    def start(self, event):
-        logger.info("Connected")
-        logger.debug("Sending presence...")
-        self.send_presence()
-        logger.info("Presence sent to '%s'" % self.jid_master)
-        self.send_presence(pto=self.jid_master, ptype='subscribe',
-                           pstatus="agent armonic", pshow="chat")
+    def session_start(self, event):
+        XMPPClientBase.session_start(self, event)
+        self.send_presence(pto=self.master_jid, ptype='subscribe',
+                           pstatus="New Armonic Agent %s" % self.jid, pshow="chat")
 
     def _handle_action(self, iq):
         """
@@ -113,10 +83,6 @@ class ActionXmppProvider(ClientXMPP):
         """
         self.event('call_method', iq)
 
-    def parsejson(self, data):
-        """ transform json en arg et karg """
-        return json.loads(data)
-
     def _handle_call_method(self, iq):
         """
         Respond to the custom action event.
@@ -124,21 +90,23 @@ class ActionXmppProvider(ClientXMPP):
         event handler needs to be run in threaded mode, by
         using `threaded=True` in the `add_event_handler` call.
         """
-        param = iq['action']['param']
-        method = iq['action']['method']
+        param = iq['call']['param']
+        method = iq['call']['method']
         reponse_error_to = iq['from']
         reponse_error_from = iq['to']
+
         logger.info("Executing method '%s' called by '%s'..." % (
             method, iq['from']))
+
         try:
-            request = self.parsejson(param)
-            ret = lfm._dispatch(method, *request['args'], **request['kwargs'])
+            request = self.parse_json(param)
+            ret = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
             iq.reply()
-            iq['action']['status'] = json.dumps(ret)
+            iq['call']['status'] = json.dumps(ret)
             iq.send()
         except MethodNotExposed as e:
-            logger.info("method %s not supported : %s" % (method, e))
-            iq['action']['status'] = "error"
+            logger.info("Method %s not supported : %s" % (method, e))
+            iq['call']['status'] = "error"
             iq.error()
             iq['error']['code'] = "424"
             iq['error']['text'] = e
@@ -148,8 +116,10 @@ class ActionXmppProvider(ClientXMPP):
             iq['from'] = reponse_error_from
             iq.send()
         except IqError as e:
-            logger.error("call method returned an error: %s" % (
-                e.iq['error']['condition']))
+            logger.error("Call method %s returned an error: %s" % (
+                method,
+                e.iq['error']['condition'])
+            )
 
     def register(self, iq):
         """
@@ -175,8 +145,8 @@ class ActionXmppProvider(ClientXMPP):
             resp.send(now=True)
             logging.info("Account registered for '%s'" % self.jid)
         except IqError as e:
-            logging.debug("Could not register account '%s'" % self.jid)
-            logging.debug("\t%s" % e.iq['error']['text'])
+            logging.error("Could not register account '%s':" % self.jid)
+            logging.error("\t%s" % e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -224,18 +194,13 @@ if __name__ == "__main__":
     lfm = Serialize(os_type=cli_local.os_type)
 
     try:
-        xmpp = ActionXmppProvider(args.jid, cli_xmpp.password, args.jid_master)
+        xmpp_client = XMPPAgent("%s/agent" % args.jid, cli_xmpp.password, lfm, args.jid_master)
     except MalformedJID:
         sys.exit(1)
 
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
-    xmpp.register_plugin('xep_0030')  # Service Discovery
-    xmpp.register_plugin('xep_0004')  # Data forms
-    xmpp.register_plugin('xep_0066')  # Out-of-band Data
-    xmpp.register_plugin('xep_0077')  # In-band Registration
-    xmpp['xep_0077'].force_registration = True
-
-    if xmpp.connect(address=(args.host, args.port)):
-        xmpp.process(block=True)
+    if args.host:
+        xmpp_client.connect(address=(args.host, args.port))
     else:
-        logger.info("Unable to connect.")
+        xmpp_client.connect()
+
+    xmpp_client.process(block=True)

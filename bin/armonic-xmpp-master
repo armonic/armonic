@@ -7,7 +7,6 @@ from uuid import uuid4
 import json
 import os.path
 
-from sleekxmpp import ClientXMPP
 from sleekxmpp.thirdparty import OrderedDict
 
 import armonic.common
@@ -15,7 +14,7 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call
 from armonic.utils import OsTypeAll
 import armonic.frontends.utils
-from armonic.client.sock import ClientSocket
+from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase
 
 
 class MUCHandler(logging.Handler):
@@ -40,6 +39,7 @@ muc_handler.setFormatter(logging.Formatter(format))
 agent_handler = logging.StreamHandler()
 format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
 agent_handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
+xmpp_client = None
 
 
 logger = logging.getLogger()
@@ -57,15 +57,15 @@ class BuildProvide(Provide):
             self.manage = True
 
     def on_lfm(self, host):
-        self.host = str(host)
-        self.lfm = ClientSocket(host=host, handlers=[agent_handler, muc_handler])
+        self.lfm_host = host
+        self.lfm = XMPPAgentApi(xmpp_client, host)
 
 
-class Master(ClientXMPP):
+class XMPPMaster(XMPPClientBase):
 
-    def __init__(self, jid, password, muc_domain, lfm):
-        ClientXMPP.__init__(self, jid, password)
-        self.add_event_handler("session_start", self.session_start)
+    def __init__(self, jid, password, plugins=[], muc_domain=None, lfm=None):
+        XMPPClientBase.__init__(self, jid, password, plugins)
+
         self.lfm = lfm
         self.smart = None
 
@@ -87,8 +87,7 @@ class Master(ClientXMPP):
                                  self.muc_nick)
 
     def session_start(self, event):
-        self.send_presence()
-        self.get_roster()
+        XMPPClientBase.session_start(self, event)
 
         self['xep_0050'].add_command(node='provides',
                                      name='Get the list of provides',
@@ -292,18 +291,14 @@ if __name__ == '__main__':
     logging.getLogger('armonic').setLevel(cli.logging_level)
 
     # Use /master resource by default
-    xmpp = Master('%s/master' % args.jid, args.password, args.muc_domain,
-                  lfm)
-
-    xmpp.register_plugin('xep_0030')  # Service Discovery
-    xmpp.register_plugin('xep_0004')  # Data Forms
-    xmpp.register_plugin('xep_0050')  # Adhoc Commands
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency': 15})
-    xmpp.register_plugin('xep_0045')  # MUC
-
-    xmpp.connect(address=(args.host, args.port))
+    xmpp_client = XMPPMaster('%s/master' % args.jid,
+                             args.password,
+                             plugins=[('xep_0050',), ('xep_0045',)],
+                             muc_domain=args.muc_domain,
+                             lfm=lfm)
+    xmpp_client.connect(address=(args.host, args.port))
     try:
-        xmpp.process(block=True)
+        xmpp_client.process(block=True)
     except KeyboardInterrupt:
         logger.info("Disconnecting...")
         pass

@@ -1,150 +1,43 @@
 #!/usr/bin/python
 
+import sys
 import argparse
 import os.path
-import sys
-import re
 import logging
 import json
-from armonic.client.xmpp import ClientXmppProvider
-import armonic.frontends.utils
+from threading import Event
+
+from armonic.frontends.utils import CliBase, CliClient, CliXMPP
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED
+from armonic.client.xmpp import XMPPClientBase, XMPPAgentApi
 from armonic.client.smart import Provide
-import armonic.frontends.smartonic
-from armonic.client.utils import colorize, read_passwd
-# For XMPP Protocol
+from armonic.frontends.smartonic import run
 
-parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
-parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
-#parser.add_argument('--host', type=str,
-                    #default=None,
-                    #help='Host where to call the provide')
-parser.add_argument('--input', type=str, default=None,
-                    help="Load values from file")
-parser.add_argument('--output', type=str, default=None,
-                    help="Save values in file")
 
-parser.add_argument('-a', '--autofill', action='store_true', default=False,
-                    help="Autofill variables with proposed values")
+xmpp_client = None
+xmpp_client_ready = Event()
+dont_call = False
 
-parser.add_argument('--manage', action='store_true', default=False,
-                    help="Manage all provide without confirmation")
 
-parser.add_argument("-J", "--jid-agent-host",
-                    dest="jid_agent_host",
-                    help="jid agent xmpp <user>@<host>/<resource>")
-parser.add_argument('--jid',
-                    '-j',
-                    type=str,
-                    dest="jid_armonic_cli",
-                    help="Jid client xmpp <user>@<host>[:port]/<resource>")
-parser.add_argument('--password',
-                    type=str,
-                    help="Password client xmpp armonic-cli")
-parser.add_argument('--host-xmpp',
-                    '-H',
-                    dest="host_xmpp",
-                    type=str,
-                    help='jabberd host different from host uri jid')
+class SmartonicProvide(Provide):
 
-cli_base = armonic.frontends.utils.CliBase(parser)
-cli_client = armonic.frontends.utils.CliClient(parser)
+    def list_locations(self):
+        locations = []
+        for jid in xmpp_client.client_roster:
+            item = xmpp_client.client_roster[jid]
+            if 'agent' not in item.resources:
+                continue
+            status = "%soffline%s" % (COLOR_SEQ % RED, RESET_SEQ)
+            if item.resources:
+                status = "%sonline%s" % (COLOR_SEQ % GREEN, RESET_SEQ)
+            locations.append({'value': '%s/%s' % (jid, item.resources.keys()[0]),
+                              'label': "%s [%s]" % (jid, status)})
+        return locations
 
-args = cli_base.parse_args()
-args = cli_client.parse_args()
+    def on_lfm(self, host):
+        self.lfm_host = host
+        self.lfm = XMPPAgentApi(xmpp_client, host)
 
-if args.jid_armonic_cli:
-    try:
-        test1 = re.match("^([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+:?([0-9]{1,5})?\/([a-zA-Z0-9]{1,50})?$",
-                         args.jid_armonic_cli)
-        (node,domaine,port,ressource) = test1.groups()
-    except Exception as e:
-        test1 = False
-    if not test1:
-        if not ressource:
-            logging.error(colorize('error ressource missing :', 'red', True) +
-                      " --jid (eg: <user>@<host>[:port]/<resource>)")
-        elif not node:
-            logging.error(colorize('error user missing :', 'red', True) +
-                      " --jid (eg: <user>@<host>[:port]/<resource>)")
-        elif not domaine:
-            logging.error(colorize('error host missing :', 'red', True) +
-                      " --jid (eg: <user>@<host>[:port]/<resource>)")
-        sys.exit(1)
-    else:
-        if node is None:
-            logging.error(colorize('error option :', 'red', True) +
-                          " --jid see user uri \
-            (eg: <user>@<host>[:port]/<resource>)")
-            sys.exit(1)
-        if domaine is not None and args.host_xmpp is None:
-            args.host_xmpp = domaine
-        if ressource is None :
-            logging.error(colorize('error option :', 'red', True) +
-                          "--jid see resource uri \
-            (eg: <user>@<host>[:port]/<resource>)")
-            sys.exit(1)
-else:
-    logging.error(colorize('option missing:', 'red', True) +
-                      " --jid (eg: <user>@<host>[:port]/<resource>)")
-    sys.exit(1)
-
-if port is None:
-    port_serveur_xmpp = 5222
-else:
-     port_serveur_xmpp = port
-if args.jid_agent_host:
-    try:
-        test = re.match("^([a-zA-Z0-9\.]{1,50})+\@([a-zA-Z0-9\.]{1,50})+\/([a-zA-Z0-9]{1,50})?$",
-                        args.jid_agent_host)
-    except Exception as e:
-        test = False
-    if not test:
-        logging.error(colorize('error option :', 'red', True) +
-                      " --jid-agent-host missing ressource (eg: <user>@<host>/<resource>)")
-        sys.exit(1)
-else:
-    logging.error(colorize('error option :', 'red', True) +
-                      "--jid-agent-host missing with xmpp")
-    sys.exit(1)
-
-if not args.password:
-    args.password = read_passwd("password JID xmpp client for armonic-cli",
-                                    node, check=True)
-
-if not args.host_xmpp :
-    logging.error(colorize('error option :', 'red', True) +
-                      " --host-xmpp missing with xmpp")
-    sys.exit(1)
-
-jid_armonic_cli= node+"@"+domaine+"/"+ressource
-
-logging.debug( "jid xmpp  %s "% jid_armonic_cli)
-logging.debug( "port server jaberd  %s "% port_serveur_xmpp)
-logging.debug( "jid_agent_host  %s "% args.jid_agent_host)
-logging.debug( "host server jabberd  %s "% args.host_xmpp)
-logging.debug( "ressource  %s "% ressource)
-logging.debug( "user  %s "% node)
-logging.debug( "domaine  %s "% domaine)
-logging.debug( "password  %s "% args.password)
-client = ClientXmppProvider( jid_armonic_cli,
-                            args.password,
-                            args.jid_agent_host,
-                            args.host_xmpp,
-                            port_serveur_xmpp)
-
-dont_call = args.dont_call
-autofill = args.autofill
-manage = args.manage
-
-dont_call = args.dont_call
-autofill = args.autofill
-manage = args.manage
-class MyProvide(Provide):
-    def on_lfm(self, jid_agent):
-        self.lfm = client
-        self.lfm.set_host(jid_agent)
-        self.host = self.lfm.get_host()
-        logging.debug("to xmpp agent : %s"%jid_agent)
     def do_call(self):
         if dont_call:
             return False
@@ -152,22 +45,65 @@ class MyProvide(Provide):
             return True
 
 
-root_provide = MyProvide(generic_xpath=args.xpath)
-if args.jid_agent_host is not None:
-    client.set_host(args.jid_agent_host)
-    lfm = client
-    root_provide.lfm = lfm
-    logging.debug("to xmpp agent : %s" % args.jid_agent_host)
+class XMPPSmartonic(XMPPClientBase):
+    pass
 
 
-prefill = {}
-if args.input and os.path.exists(args.input):
-    with open(args.input) as fp:
-        prefill = json.load(fp)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
+    parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
 
-output_file = False
-if args.output:
-    output_file = args.output
+    parser.add_argument('--input', type=str, default=None,
+                        help="Load values from file")
+    parser.add_argument('--output', type=str, default=None,
+                        help="Save values in file")
 
-armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
-lfm.close()
+    parser.add_argument('-a', '--autofill', action='store_true', default=False,
+                        help="Autofill variables with proposed values")
+
+    parser.add_argument("-J", "--jid-agent-host",
+                        dest="jid_agent_host",
+                        help="jid agent xmpp <user>@<host>/<resource>")
+
+    cli_base = CliBase(parser)
+    cli_client = CliClient(parser)
+    cli_xmpp = CliXMPP(parser)
+
+    args = cli_base.parse_args()
+    args = cli_client.parse_args()
+    args = cli_xmpp.parse_args()
+
+    dont_call = args.dont_call
+    autofill = args.autofill
+    manage = args.manage
+
+    prefill = {}
+    if args.input and os.path.exists(args.input):
+        with open(args.input) as fp:
+            prefill = json.load(fp)
+
+    output_file = False
+    if args.output:
+        output_file = args.output
+
+    root_provide = SmartonicProvide(generic_xpath=args.xpath)
+    xmpp_client = XMPPClientBase(args.jid, args.password)
+
+    def run_smart():
+        try:
+            run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
+        except KeyboardInterrupt:
+            pass
+        except:
+            logging.exception("Exception in smart:")
+        xmpp_client.disconnect()
+        sys.exit(0)
+
+    xmpp_client.add_event_handler('roster_update', lambda e: xmpp_client_ready.set())
+    if args.host:
+        xmpp_client.connect(address=(args.host, args.port))
+    else:
+        xmpp_client.connect()
+    xmpp_client.process(block=False)
+    xmpp_client_ready.wait()
+    run_smart()

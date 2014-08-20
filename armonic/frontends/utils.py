@@ -151,7 +151,10 @@ class CliClient():
     def __add_arguments(self):
         self.parser.add_argument('--dont-call', action='store_true',
                                  default=False,
-                                 help="Don't execute provide calls. States are not applied. This is only useful on no-remote mode.")
+                                 help="Don't execute provide calls.\
+                                 States are not applied. This is only useful on no-remote mode.")
+        self.parser.add_argument('--manage', action='store_true', default=False,
+                                 help="Manage all provides without confirmation")
 
     def parse_args(self):
         """A helper to parse arguments. This add several common options such
