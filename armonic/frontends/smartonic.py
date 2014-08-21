@@ -22,15 +22,15 @@ def user_input_confirm(msg, prefix=''):
     return True
 
 
-def user_input_choose_amongst(choices, prefix=''):
+def user_input_choose_amongst(choices, message, prefix=''):
     """Ask the user if he confirm the msg question.
 
     :rtype: True if user confirm, False if not"""
     while True:
-        print "%sYou must choose a provide amongst:" % prefix
+        print "%s%s:" % (prefix, message)
         for i, c in enumerate(choices):
             print "%s  %d) %s" % (prefix, i, c['label'])
-        answer = raw_input("%sChoose a provide [0-%d]: " % (prefix, len(choices) - 1))
+        answer = raw_input("%sChoose [0-%d]: " % (prefix, len(choices) - 1))
         try:
             return choices[int(answer)]['value']
         except Exception as e:
@@ -114,7 +114,9 @@ def run(root_provide, prefill, output_file, manage, autofill):
             # If the provide can list possible locations
             if hasattr(provide, "list_locations"):
                 locations = provide.list_locations()
-                data = user_input_choose_amongst(locations, prefix=indent(provide.depth))
+                data = user_input_choose_amongst(locations,
+                                                 "Choose between available locations",
+                                                 prefix=indent(provide.depth))
             else:
                 host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
                 data = host['location']
@@ -127,7 +129,9 @@ def run(root_provide, prefill, output_file, manage, autofill):
                 else:
                     label = arg['xpath']
                 xpaths.append({'value': arg['xpath'], 'label': label})
-            data = user_input_choose_amongst(xpaths, prefix=indent(provide.depth))
+            data = user_input_choose_amongst(xpaths,
+                                             "Which provide do you want to call",
+                                             prefix=indent(provide.depth))
 
         elif provide.step == "validation":
             if provide.variables() != []:
