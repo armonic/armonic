@@ -74,7 +74,7 @@ class XMPPAgent(XMPPClientBase):
     def session_start(self, event):
         XMPPClientBase.session_start(self, event)
         self.send_presence(pto=self.master_jid, ptype='subscribe',
-                           pstatus="New Armonic Agent %s" % self.jid, pshow="chat")
+                           pstatus="New Armonic Agent %s" % self.boundjid.jid, pshow="chat")
 
     def _handle_action(self, iq):
         """
@@ -136,17 +136,17 @@ class XMPPAgent(XMPPClientBase):
             To get the list of basic registration fields, you can use:
             iq['register']['fields']
         """
-        logger.debug("Registration of '%s'..." % self.jid)
+        logger.debug("Registration of '%s'..." % self.boundjid.bare)
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
         resp['register']['password'] = self.password
         try:
             resp.send(now=True)
-            logging.info("Account registered for '%s'" % self.jid)
+            logging.info("Account registered for '%s'" % self.boundjid.bare)
         except IqError as e:
-            logging.error("Could not register account '%s':" % self.jid)
-            logging.error("\t%s" % e.iq['error']['text'])
+            logging.warning("Could not register account: %s" %
+                            e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -173,8 +173,8 @@ if __name__ == "__main__":
     cli_xmpp = armonic.frontends.utils.CliXMPP(parser, confirm_password=True)
     cli_local = armonic.frontends.utils.CliLocal(parser)
 
-    args = cli_xmpp.parse_args()
     args = cli.parse_args()
+    args = cli_xmpp.parse_args()
     args = cli_local.parse_args()
 
     logger = logging.getLogger()
