@@ -25,6 +25,7 @@ class SmartonicProvide(Provide):
         locations = []
         for jid in xmpp_client.client_roster:
             item = xmpp_client.client_roster[jid]
+            # don't show offline agents or other accounts
             if 'agent' not in item.resources:
                 continue
             status = "%soffline%s" % (COLOR_SEQ % RED, RESET_SEQ)
@@ -60,10 +61,6 @@ if __name__ == '__main__':
 
     parser.add_argument('-a', '--autofill', action='store_true', default=False,
                         help="Autofill variables with proposed values")
-
-    parser.add_argument("-J", "--jid-agent-host",
-                        dest="jid_agent_host",
-                        help="jid agent xmpp <user>@<host>/<resource>")
 
     cli_base = CliBase(parser)
     cli_client = CliClient(parser)
