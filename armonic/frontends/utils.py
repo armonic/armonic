@@ -92,7 +92,36 @@ class Filter(object):
         return False
 
 
-class CliBase(object):
+class CliArg(object):
+
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def add_to_parser(self, parser):
+        parser.add_argument(*self.args, **self.kwargs)
+
+
+class Cli(object):
+
+    def __init__(self, parser, disable_options=[]):
+        self.disabled_options = disable_options
+        self.parser = parser
+        self.__add_arguments()
+
+    def __add_arguments(self):
+        for cli_arg in self.ARGUMENTS:
+            if cli_arg.args[0] not in self.disabled_options:
+                cli_arg.add_to_parser(self.parser)
+
+    def has_arg(self, name):
+        return name not in self.disabled_options
+
+    def parse_args(self):
+        return self.parser.parse_args()
+
+
+class CliBase(Cli):
     """Contains arguments that are common for all frontends.
 
     To use it, you have to instanciate it with a arparse.parser, and
@@ -105,28 +134,27 @@ class CliBase(object):
                       (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.ERROR
 
-    def __init__(self, parser):
-        self.parser = parser
+    ARGUMENTS = [
+        CliArg('--verbose', "-v",
+               action="count",
+               help='Can be specified many times (%s)' % [v[1] for v in VERBOSE_LEVELS]),
+        CliArg('--version', "-V",
+               action='version', version='%(prog)s ' + "0.1"),
+        CliArg('--log-filter',
+               default=None,
+               action='append',
+               help='To filter logs by specifing a regex which will be applied on the module name.\
+                    Filters are applied on stdout handler. This option can be specified several times.')
+    ]
+
+    def __init__(self, *args, **kwargs):
+        Cli.__init__(self, *args, **kwargs)
         self.logging_level = CliBase.VERBOSE_DEFAULT_LEVEL
 
-        self.__add_arguments()
-
-    def __add_arguments(self):
-        self.parser.add_argument('--verbose', "-v",
-                                 action="count",
-                                 help='Can be specified many times (%s)' % [v[1] for v in CliBase.VERBOSE_LEVELS])
-        self.parser.add_argument('--version', "-V",
-                                 action='version', version='%(prog)s ' + "0.1")
-        self.parser.add_argument('--log-filter',
-                                 default=None,
-                                 action='append',
-                                 help='To filter logs by specifing a regex which will be applied on the module name.\
-                                       Filters are applied on stdout handler. This option can be specified several times.')
-
     def parse_args(self):
-        args = self.parser.parse_args()
+        args = Cli.parse_args(self)
 
-        if args.verbose is not None:
+        if self.has_arg('--verbose') and args.verbose is not None:
             self.logging_level = CliBase.VERBOSE_LEVELS[args.verbose - 1][0]
             print "Verbosity is set to %s" % CliBase.VERBOSE_LEVELS[args.verbose - 1][1]
 
@@ -137,78 +165,61 @@ class CliBase(object):
         ch.setLevel(self.logging_level)
         ch.setFormatter(ColoredFormatter(format))
 
-        if args.log_filter:
+        if self.has_arg('--log-filter') and args.log_filter:
             ch.addFilter(Filter(args.log_filter))
 
         logger.addHandler(ch)
         return args
 
 
-class CliClient(object):
-    def __init__(self, parser):
-        self.parser = parser
-        self.__add_arguments()
-
-    def __add_arguments(self):
-        self.parser.add_argument('--dont-call', action='store_true',
-                                 default=False,
-                                 help="Don't execute provide calls.\
-                                 States are not applied. This is only useful on no-remote mode.")
-        self.parser.add_argument('--manage', action='store_true', default=False,
-                                 help="Manage all provides without confirmation")
-
-    def parse_args(self):
-        """A helper to parse arguments. This add several common options such
-        as verbosity. It returns the same object than parseargs.parse_args."""
-        return self.parser.parse_args()
+class CliClient(Cli):
+    ARGUMENTS = [
+        CliArg('--dont-call', action='store_true',
+               default=False,
+               help="Don't execute provide calls.\
+               States are not applied. This is only useful on no-remote mode."),
+        CliArg('--manage', action='store_true', default=False,
+               help="Manage all provides without confirmation")
+    ]
 
 
-class CliLocal(object):
-    """This class encapslutates common stuffs for Armonic frontends.
-
-    :param remote: If the frontend can be used in remote mode, set to True.
-    """
-    def __init__(self, parser):
-        self.parser = parser
-        self.__add_arguments()
-
-    def __add_arguments(self):
-        """A helper to add a verbose argument"""
-        self.parser.add_argument('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-                                 default=None, help="Manually specify an OsType.\
-                                 This is just used when no-remote is also set. If not set, the current OsType is used.")
-        self.parser.add_argument('--lifecycle-dir', type=str, action='append',
-                                 help="A lifecycle directory. This is only useful on no-remote mode.")
-        self.parser.add_argument('--no-default', action='store_true',
-                                 default=False, help="Don't load default lifecycles. This is only useful on no-remote mode.")
-        self.parser.add_argument('--simulation', action='store_true',
-                                 default=False,
-                                 help="Simulate provide calls. States are applied. This is only useful on no-remote mode.")
-        self.parser.add_argument('--halt-on-error', action="store_true",
-                                 default=False,
-                                 help='Halt if a module import occurs (default: %(default)s))')
+class CliLocal(Cli):
+    ARGUMENTS = [
+        CliArg('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
+               default=None, help="Manually specify an OsType."),
+        CliArg('--lifecycle-dir', type=str, action='append',
+               help="Load a lifecycle directory."),
+        CliArg('--no-default', action='store_true',
+               default=False, help="Don't load default lifecycles."),
+        CliArg('--simulation', action='store_true',
+               default=False,
+               help="Simulate provide calls. States are applied."),
+        CliArg('--halt-on-error', action="store_true",
+               default=False,
+               help='Halt if a module import occurs (default: %(default)s))'),
+    ]
 
     def parse_args(self):
-        """A helper to parse arguments. This add several common options such
-        as verbosity. It returns the same object than parseargs.parse_args."""
-        args = self.parser.parse_args()
+        args = Cli.parse_args(self)
 
-        armonic.common.SIMULATION = args.simulation
+        if self.has_arg('--simulation'):
+            armonic.common.SIMULATION = args.simulation
 
-        os_type = None
-        if args.os_type == "mbs":
-            os_type = OsTypeMBS()
-        elif args.os_type == "debian":
-            os_type = OsTypeDebianWheezy()
-        elif args.os_type == "any":
-            os_type = OsTypeAll()
-        self.os_type = os_type
+        if self.has_arg('--os-type'):
+            os_type = None
+            if args.os_type == "mbs":
+                os_type = OsTypeMBS()
+            elif args.os_type == "debian":
+                os_type = OsTypeDebianWheezy()
+            elif args.os_type == "any":
+                os_type = OsTypeAll()
+            self.os_type = os_type
 
-        if not args.no_default:
+        if self.has_arg('--no-default') and not args.no_default:
             armonic.common.load_default_lifecycles(
                 raise_import_error=args.halt_on_error)
 
-        if args.lifecycle_dir is not None:
+        if self.has_arg('--lifecycle-dir') and args.lifecycle_dir is not None:
             for l in args.lifecycle_dir:
                 armonic.common.load_lifecycle(
                     l,
@@ -217,44 +228,50 @@ class CliLocal(object):
         return args
 
 
-class CliXMPP(object):
-    """
-    :param confirm_password: Set to true if the password has to be set twice
+class CliXMPP(Cli):
+    ARGUMENTS = [
+        CliArg('--host', '-H', type=str,
+               help="XMPP server IP (if DNS is not set correctly)"),
+        CliArg('--port', '-P',
+               type=int,
+               default=5222,
+               help="XMPP server port (default '%(default)s')"),
+        CliArg('--jid', '-j',
+               required=True,
+               type=str,
+               help="Agent JID <username@fqdn>"),
+        CliArg('--password', '-p', type=str,
+               help="Password (default '%(default)s')"),
+        CliArg('--muc-domain',
+               type=str,
+               default="logs.im.aeolus.org",
+               help="XMPP MUC domain"),
+        CliArg('--verbose-xmpp', action='store_true',
+               default=False,
+               help="Enable sleekxmpp logging")
+    ]
 
-    """
-    def __init__(self, parser, confirm_password=False):
-        self.parser = parser
+    def __init__(self, parser, disable_options=[], confirm_password=False):
+        """
+        :param confirm_password: Set to true if the password has to be set twice
+        """
+        Cli.__init__(self, parser, disable_options)
         self.confirm_password = confirm_password
         self.password = None
-        self.__add_arguments()
-
-    def __add_arguments(self):
-        self.parser.add_argument('--host', '-H', type=str,
-                                 help="XMPP server IP (if DNS is not set correctly)")
-        self.parser.add_argument('--port', '-P',
-                                 type=int,
-                                 default=5222,
-                                 help="XMPP server port (default '%(default)s')")
-        self.parser.add_argument('--jid', '-j',
-                                 required=True,
-                                 type=str,
-                                 help="Agent JID <username@fqdn>")
-        self.parser.add_argument('--password', '-p', type=str,
-                                 help="Password (default '%(default)s')")
-        self.parser.add_argument('--verbose-xmpp', action='store_true',
-                                 default=False,
-                                 help="Enable sleekxmpp logging")
 
     def parse_args(self):
         """A helper to parse arguments. This add several common options such
         as verbosity. It returns the same object than parseargs.parse_args."""
-        args = self.parser.parse_args()
+        args = Cli.parse_args(self)
 
         # We just enable sleekxmmp logs if DEBUG mode is set
-        if args.verbose_xmpp:
+        if self.has_arg('--verbose-xmpp') and args.verbose_xmpp:
             logging.getLogger("sleekxmpp").setLevel(logging.DEBUG)
         else:
-            logging.getLogger("sleekxmpp").setLevel(logging.ERROR)
+            logging.getLogger("sleekxmpp").setLevel(logging.WARNING)
+
+        if not self.has_arg('--password'):
+            raise Exception('--password is mandatory.')
 
         if not args.password:
             self.password = read_passwd(check=self.confirm_password)
