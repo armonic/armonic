@@ -260,43 +260,27 @@ if __name__ == '__main__':
     prog = os.path.basename(sys.argv[0])
 
     parser = argparse.ArgumentParser(prog=prog)
-    parser.add_argument('--host',
-                        type=str,
-                        default="im.aeolus.org",
-                        help="XMPP server host")
-    parser.add_argument('--muc-domain',
-                        type=str,
-                        default="logs.im.aeolus.org",
-                        help="XMPP MUC domain")
-    parser.add_argument('--port',
-                        default=5222, type=int,
-                        help="XMPP server port (default '%(default)s')")
-    parser.add_argument('--jid', '-j',
-                        default='master@im.aeolus.org', type=str,
-                        help="Jid (default '%(default)s')")
-    parser.add_argument('--password', '-p',
-                        default='master', type=str,
-                        help="Password (default '%(default)s')")
-    parser.add_argument('--input-event-file', '-i',
-                        default='-', type=argparse.FileType('r', 0),
-                        help="Input file where events are read")
 
-    cli = armonic.frontends.utils.CliBase(parser)
-    cli.parse_args()
-    args = parser.parse_args()
+    cli_base = armonic.frontends.utils.CliBase(parser)
+    cli_local = armonic.frontends.utils.CliLocal(parser, disable_options=["--os-type", "--simulation"])
+    cli_xmpp = armonic.frontends.utils.CliXMPP(parser)
+    args = cli_base.parse_args()
+    args = cli_local.parse_args()
+    args = cli_xmpp.parse_args()
 
     lfm = Serialize(os_type=OsTypeAll())
-
-    logging.getLogger('sleekxmpp').setLevel(logging.WARNING)
-    logging.getLogger('armonic').setLevel(cli.logging_level)
+    logging.getLogger('armonic').setLevel(cli_base.logging_level)
 
     # Use /master resource by default
     xmpp_client = XMPPMaster('%s/master' % args.jid,
-                             args.password,
+                             cli_xmpp.password,
                              plugins=[('xep_0050',), ('xep_0045',)],
                              muc_domain=args.muc_domain,
                              lfm=lfm)
-    xmpp_client.connect(address=(args.host, args.port))
+    if not args.host:
+        xmpp_client.connect()
+    else:
+        xmpp_client.connect(address=(args.host, args.port))
     try:
         xmpp_client.process(block=True)
     except KeyboardInterrupt:
