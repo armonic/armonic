@@ -62,10 +62,6 @@ class ValidationError(Exception):
 
 class SmartException(Exception):
 
-    def __init__(self, message, scope):
-        self.message = message
-        self.scope = scope
-
     @property
     def name(self):
         return self.__class__.__name__
@@ -1230,12 +1226,15 @@ def smart_call(root_provide, values={}):
                         specialized = m[0]['xpath']
                         specialize()
                     else:
+                        os_type = scope.lfm.info()['os-type']
+                        os_release = scope.lfm.info()['os-release']
                         # Go back to the lfm step if specialize doesn't match anything
                         scope._previous_step()
-                        specialized = yield(scope, scope.step, PathNotFound('No path to %s found on %s (%s)' % (
-                                                                            scope.generic_xpath,
-                                                                            scope.lfm.info()['os-type'],
-                                                                            scope.lfm.info()['os-release']), scope))
+                        # Reset the lfm since we need to choose another one
+                        scope.lfm = None
+                        yield (scope, scope.step, PathNotFound('No path to %s found on %s (%s %s)' % (
+                                                               scope.generic_xpath, scope.lfm_host,
+                                                               os_type, os_release)))
 
             elif scope.step == "multiplicity":
                 # If no requires are currently managed, we will try to
