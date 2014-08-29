@@ -60,6 +60,21 @@ class ValidationError(Exception):
     pass
 
 
+class SmartException(Exception):
+
+    def __init__(self, message, scope):
+        self.message = message
+        self.scope = scope
+
+    @property
+    def name(self):
+        return self.__class__.__name__
+
+
+class PathNotFound(SmartException):
+    pass
+
+
 class Variable(object):
     """
     :param from_require: The require that holds this variable.
@@ -758,6 +773,13 @@ class Provide(ArmonicProvide):
             raise IndexError
         self._step_current += 1
 
+    def _previous_step(self):
+        try:
+            if Provide.STEPS[self._step_current - 1]:
+                self._step_current -= 1
+        except IndexError:
+            pass
+
     def _build_require_from_call_require(self, dct_json):
         """From a json dict, build Require and Remote require."""
         self.remotes = []
@@ -1161,7 +1183,7 @@ def smart_call(root_provide, values={}):
                         else:
                             logger.debug("%s is NOT managed from deployment data" % scope.generic_xpath)
                     else:
-                        data = yield (scope, scope.step, None)
+                        data = yield(scope, scope.step, None)
                     deployment.manage = data
 
                     scope.on_manage(data)
@@ -1193,24 +1215,27 @@ def smart_call(root_provide, values={}):
                     specialized = xpath
                     logger.info("Replay specializes %s with %s" % (scope.generic_xpath, specialized))
                 else:
+                    def specialize():
+                        deployment.specialize = specialized
+                        scope.on_specialize(specialized)
+                        if scope.manage:
+                            scope._build_provide(specialized)
+                        scope._build_requires()
+                        scope._next_step()
+
                     if len(m) > 1 or scope.do_specialize():
                         specialized = yield(scope, scope.step, m)
+                        specialize()
                     elif len(m) == 1:
                         specialized = m[0]['xpath']
+                        specialize()
                     else:
-                        raise Exception('No path to %s found on %s (%s)' % (
-                            scope.generic_xpath,
-                            scope.lfm.info()['os-type'],
-                            scope.lfm.info()['os-release']))
-
-                deployment.specialize = specialized
-
-                scope.on_specialize(specialized)
-                if scope.manage:
-                    scope._build_provide(specialized)
-
-                scope._build_requires()
-                scope._next_step()
+                        # Go back to the lfm step if specialize doesn't match anything
+                        scope._previous_step()
+                        specialized = yield(scope, scope.step, PathNotFound('No path to %s found on %s (%s)' % (
+                                                                            scope.generic_xpath,
+                                                                            scope.lfm.info()['os-type'],
+                                                                            scope.lfm.info()['os-release']), scope))
 
             elif scope.step == "multiplicity":
                 # If no requires are currently managed, we will try to

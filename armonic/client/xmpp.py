@@ -4,7 +4,7 @@ import sys
 import json
 import logging
 
-from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp import ClientXMPP, Iq, Message
 from sleekxmpp.exceptions import IqError
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
 if sys.version_info < (3, 0):
@@ -21,19 +21,30 @@ class XMPPError(Exception):
     pass
 
 
-class ArmonicProviderCall(ElementBase):
+class ArmonicCall(ElementBase):
     """
     A stanza class for XML content of the form:
-    <call xmlns="armonic:provider:call">
+    <call xmlns="armonic">
       <method>X</method>
-      <param>X</param>
+      <params>X</params>
       <status>X</status>
     </call>
     """
-    name = 'provider'
-    namespace = 'armonic:provider:call'
+    name = 'call'
+    namespace = 'armonic'
     plugin_attrib = 'call'
-    interfaces = set(('method', 'param', 'status'))
+    interfaces = set(('method', 'params', 'status'))
+    sub_interfaces = interfaces
+
+
+class ArmonicError(ElementBase):
+    """
+    A stanza class to send armonic exception over XMPP
+    """
+    name = 'exception'
+    namespace = 'armonic'
+    plugin_attrib = 'exception'
+    interfaces = set(('code', 'message'))
     sub_interfaces = interfaces
 
 
@@ -56,7 +67,8 @@ class XMPPClientBase(ClientXMPP):
         #  self.add_event_handler("presence_available", self._handle_presence_available)
         self.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
 
-        register_stanza_plugin(Iq, ArmonicProviderCall)
+        register_stanza_plugin(Iq, ArmonicCall)
+        register_stanza_plugin(Message, ArmonicError)
 
         for plugin in self.base_plugins + plugins:
             if len(plugin) > 1:
@@ -91,6 +103,15 @@ class XMPPClientBase(ClientXMPP):
     def parse_json(self, data):
         return json.loads(data)
 
+    def report_error(self, code, message, jid):
+        msg = self.Message()
+        msg['to'] = jid
+        msg['type'] = 'error'
+        msg['subject'] = 'An error has occured.'
+        msg['exception']['code'] = code
+        msg['exception']['message'] = message
+        msg.send()
+
 
 class XMPPAgentApi(object):
 
@@ -103,7 +124,7 @@ class XMPPAgentApi(object):
         iq['to'] = self.jid
         iq['type'] = 'set'
         iq['call']['method'] = method
-        iq['call']['param'] = json.dumps({'args': args, 'kwargs': kwargs})
+        iq['call']['params'] = json.dumps({'args': args, 'kwargs': kwargs})
         try:
             resp = iq.send()
         except IqError:

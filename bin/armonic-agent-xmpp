@@ -90,7 +90,7 @@ class XMPPAgent(XMPPClientBase):
         event handler needs to be run in threaded mode, by
         using `threaded=True` in the `add_event_handler` call.
         """
-        param = iq['call']['param']
+        params = iq['call']['params']
         method = iq['call']['method']
         reponse_error_to = iq['from']
         reponse_error_from = iq['to']
@@ -99,7 +99,7 @@ class XMPPAgent(XMPPClientBase):
             method, iq['from']))
 
         try:
-            request = self.parse_json(param)
+            request = self.parse_json(params)
             ret = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
             iq.reply()
             iq['call']['status'] = json.dumps(ret)

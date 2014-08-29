@@ -11,7 +11,7 @@ from sleekxmpp.thirdparty import OrderedDict
 
 import armonic.common
 from armonic.serialize import Serialize
-from armonic.client.smart import Provide, smart_call
+from armonic.client.smart import Provide, smart_call, SmartException
 from armonic.utils import OsTypeAll
 import armonic.frontends.utils
 from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase
@@ -170,6 +170,9 @@ class XMPPMaster(XMPPClientBase):
 
         else:
             provide, step, args = self.smart.next()
+
+        if isinstance(args, SmartException):
+            self.report_error(args.name, args.message, session['from'])
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step

@@ -6,7 +6,7 @@ import json
 
 from armonic.frontends.utils import read_variable, show_variable, \
     COLOR_SEQ, RESET_SEQ, CYAN
-from armonic.client.smart import smart_call
+from armonic.client.smart import smart_call, SmartException
 
 
 logger = logging.getLogger()
@@ -80,6 +80,8 @@ def run(root_provide, prefill, output_file, manage, autofill):
             else:
                 (provide, step, args) = generator.send(data)
                 data = None
+            if isinstance(args, SmartException):
+                logger.error("%s: %s" % (args.name, args.message))
         except StopIteration:
             break
 
