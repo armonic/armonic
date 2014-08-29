@@ -173,6 +173,7 @@ class XMPPMaster(XMPPClientBase):
 
         if isinstance(args, SmartException):
             self.report_error(args.name, args.message, session['from'])
+            self.smart.next()
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')
         self.current_step = step

@@ -82,6 +82,7 @@ def run(root_provide, prefill, output_file, manage, autofill):
                 data = None
             if isinstance(args, SmartException):
                 logger.error("%s: %s" % (args.name, args.message))
+                generator.next()
         except StopIteration:
             break
 
