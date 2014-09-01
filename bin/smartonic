@@ -5,10 +5,11 @@ import argparse
 import os.path
 import logging
 import json
+from uuid import uuid4
 from threading import Event
 
 from armonic.frontends.utils import CliBase, CliClient, CliXMPP
-from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED, MAGENTA
 from armonic.client.xmpp import XMPPClientBase, XMPPAgentApi
 from armonic.client.smart import Provide
 from armonic.frontends.smartonic import run
@@ -17,6 +18,9 @@ from armonic.frontends.smartonic import run
 xmpp_client = None
 xmpp_client_ready = Event()
 dont_call = False
+logger = logging.getLogger()
+# generate a deployment id on each run
+deployment_id = str(uuid4())
 
 
 class SmartonicProvide(Provide):
@@ -37,7 +41,7 @@ class SmartonicProvide(Provide):
 
     def on_lfm(self, host):
         self.lfm_host = host
-        self.lfm = XMPPAgentApi(xmpp_client, host)
+        self.lfm = XMPPAgentApi(xmpp_client, host, deployment_id=deployment_id)
 
     def do_call(self):
         if dont_call:
@@ -47,7 +51,19 @@ class SmartonicProvide(Provide):
 
 
 class XMPPSmartonic(XMPPClientBase):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        XMPPClientBase.__init__(self, *args, **kwargs)
+        self.add_event_handler("groupchat_message", self.on_agent_log)
+
+    def session_start(self, event):
+        XMPPClientBase.session_start(self, event)
+        # Join room to get agent logs
+        self.join_muc_room(deployment_id)
+
+    def on_agent_log(self, msg):
+        if msg['body']:
+            logger.info('%s%s%s' % (COLOR_SEQ % MAGENTA, msg['body'], RESET_SEQ))
 
 
 if __name__ == '__main__':
@@ -84,7 +100,8 @@ if __name__ == '__main__':
         output_file = args.output
 
     root_provide = SmartonicProvide(generic_xpath=args.xpath)
-    xmpp_client = XMPPClientBase(args.jid, args.password)
+    xmpp_client = XMPPSmartonic(args.jid, args.password,
+                                plugins=[], muc_domain=args.muc_domain)
 
     def run_smart():
         try:

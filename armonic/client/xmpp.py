@@ -128,6 +128,7 @@ class XMPPClientBase(ClientXMPP):
 
     def join_muc_room(self, id):
         if self.muc_domain is None:
+            logger.warning("MUC domain not set, can't send or read logs.")
             return
         logger.info('Joining muc_room %s' % self._get_muc_room_name(id))
         self['xep_0045'].joinMUC(self._get_muc_room_name(id), self.boundjid.jid)

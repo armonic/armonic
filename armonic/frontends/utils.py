@@ -244,7 +244,6 @@ class CliXMPP(Cli):
                help="Password (default '%(default)s')"),
         CliArg('--muc-domain',
                type=str,
-               default="logs.im.aeolus.org",
                help="XMPP MUC domain"),
         CliArg('--verbose-xmpp', action='store_true',
                default=False,
