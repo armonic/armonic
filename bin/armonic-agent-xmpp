@@ -46,19 +46,38 @@ else:
     raw_input = input
 
 
+class MUCHandler(logging.Handler):
+
+    def init(self, client, id):
+        self.client = client
+        self.id = id
+
+    def emit(self, record):
+        if not self.client:
+            return
+        self.client.send_muc_message(self.id, str(record.msg))
+        return True
+
+
+muc_handler = MUCHandler()
+format = '%(ip)-15s %(message)s'
+muc_handler.addFilter(logging.Filter('armonic'))
+muc_handler.setFormatter(logging.Formatter(format))
+
+
 class MalformedJID(Exception):
     pass
 
 
 class XMPPAgent(XMPPClientBase):
 
-    def __init__(self, jid, password, lfm, master_jid):
-        XMPPClientBase.__init__(self, jid, password, plugins=[('xep_0066',), ('xep_0077',)])
+    def __init__(self, jid, password, muc_domain=None, lfm=None, jid_master=None):
+        XMPPClientBase.__init__(self, jid, password, plugins=[('xep_0066',), ('xep_0077',)], muc_domain=muc_domain)
 
         self['xep_0077'].force_registration = True
         self.add_event_handler("register", self.register, threaded=True)
 
-        self.master_jid = master_jid
+        self.jid_master = jid_master
         self.lfm = lfm
 
         # To handle LifecycleManager method calls
@@ -73,7 +92,7 @@ class XMPPAgent(XMPPClientBase):
 
     def session_start(self, event):
         XMPPClientBase.session_start(self, event)
-        self.send_presence(pto=self.master_jid, ptype='subscribe',
+        self.send_presence(pto=self.jid_master, ptype='subscribe',
                            pstatus="New Armonic Agent %s" % self.boundjid.jid, pshow="chat")
 
     def _handle_action(self, iq):
@@ -92,8 +111,14 @@ class XMPPAgent(XMPPClientBase):
         """
         params = iq['call']['params']
         method = iq['call']['method']
+        deployment_id = iq['call'].get('deployment_id', None)
         reponse_error_to = iq['from']
         reponse_error_from = iq['to']
+
+        if deployment_id and self.muc_domain:
+            self.join_muc_room(deployment_id)
+            muc_handler.init(self, deployment_id)
+            logger.addHandler(muc_handler)
 
         logger.info("Executing method '%s' called by '%s'..." % (
             method, iq['from']))
@@ -120,6 +145,9 @@ class XMPPAgent(XMPPClientBase):
                 method,
                 e.iq['error']['condition'])
             )
+
+        if deployment_id and self.muc_domain:
+            logger.removeHandler(muc_handler)
 
     def register(self, iq):
         """
@@ -194,7 +222,11 @@ if __name__ == "__main__":
     lfm = Serialize(os_type=cli_local.os_type)
 
     try:
-        xmpp_client = XMPPAgent("%s/agent" % args.jid, cli_xmpp.password, lfm, args.jid_master)
+        xmpp_client = XMPPAgent("%s/agent" % args.jid,
+                                cli_xmpp.password,
+                                muc_domain=args.muc_domain,
+                                lfm=lfm,
+                                jid_master=args.jid_master)
     except MalformedJID:
         sys.exit(1)
 

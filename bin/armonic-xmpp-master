@@ -17,34 +17,11 @@ import armonic.frontends.utils
 from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase
 
 
-class MUCHandler(logging.Handler):
-
-    def init_client(self, client):
-        self.client = client
-
-    def emit(self, record):
-        if not self.client:
-            return
-        if self.client.muc_room and record:
-            self.client.send_message(mto=self.client.muc_room,
-                                     mbody="[%s] %s" % (str(record._ip), str(record.msg)),
-                                     mtype='groupchat')
-        return True
-
-
-muc_handler = MUCHandler()
-format = '%(ip)-15s %(message)s'
-muc_handler.addFilter(logging.Filter('armonic'))
-muc_handler.setFormatter(logging.Formatter(format))
 agent_handler = logging.StreamHandler()
 format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
 agent_handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
 xmpp_client = None
-
-
 logger = logging.getLogger()
-# To redirect master agent log to xmpp clients
-# logger.addHandler(muc_handler)
 
 
 class BuildProvide(Provide):
@@ -58,33 +35,15 @@ class BuildProvide(Provide):
 
     def on_lfm(self, host):
         self.lfm_host = host
-        self.lfm = XMPPAgentApi(xmpp_client, host)
+        self.lfm = XMPPAgentApi(xmpp_client, host, deployment_id=xmpp_client.session_id)
 
 
 class XMPPMaster(XMPPClientBase):
 
     def __init__(self, jid, password, plugins=[], muc_domain=None, lfm=None):
-        XMPPClientBase.__init__(self, jid, password, plugins)
-
+        XMPPClientBase.__init__(self, jid, password, plugins, muc_domain)
         self.lfm = lfm
         self.smart = None
-
-        self.muc_nick = 'master'
-        self.muc_domain = muc_domain
-        self.muc_room = None
-
-        muc_handler.init_client(self)
-
-    def leave_muc_room(self):
-        if self.muc_room:
-            self['xep_0045'].leaveMUC(self.muc_room, self.muc_nick)
-            self.muc_room = None
-
-    def join_muc_room(self, session):
-        self.muc_room = "%s@%s" % (session['id'], self.muc_domain)
-        logger.info('Joining muc_room %s' % self.muc_room)
-        self['xep_0045'].joinMUC(self.muc_room,
-                                 self.muc_nick)
 
     def session_start(self, event):
         XMPPClientBase.session_start(self, event)
@@ -97,8 +56,6 @@ class XMPPMaster(XMPPClientBase):
                                      handler=self._handle_command_build)
 
     def _handle_command_provides(self, iq, session):
-        self.leave_muc_room()
-
         form = self['xep_0004'].makeForm('form', 'List of provides')
         form['instructions'] = 'Choose a xpath amongst them'
         form.add_reported("xpath")
@@ -126,7 +83,10 @@ class XMPPMaster(XMPPClientBase):
         return session
 
     def _handle_command_build(self, iq, session):
-        self.leave_muc_room()
+        self.session_id = str(uuid4())
+        self.smart = None
+        self.root_provide = None
+        self.current_step = None
 
         form = self['xep_0004'].makeForm('form', 'Specify a provide to build')
         form['instructions'] = 'specify'
@@ -134,12 +94,7 @@ class XMPPMaster(XMPPClientBase):
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next
         session['has_next'] = True
-        session['id'] = str(uuid4())
-        self.smart = None
-        self.root_provide = None
-        self.current_step = None
-
-        self.join_muc_room(session)
+        session['id'] = self.session_id
 
         return session
 
@@ -278,7 +233,7 @@ if __name__ == '__main__':
     # Use /master resource by default
     xmpp_client = XMPPMaster('%s/master' % args.jid,
                              cli_xmpp.password,
-                             plugins=[('xep_0050',), ('xep_0045',)],
+                             plugins=[('xep_0050',)],
                              muc_domain=args.muc_domain,
                              lfm=lfm)
     if not args.host:

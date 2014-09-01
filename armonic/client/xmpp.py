@@ -25,6 +25,7 @@ class ArmonicCall(ElementBase):
     """
     A stanza class for XML content of the form:
     <call xmlns="armonic">
+      <deployment_id>X</deployment_id>
       <method>X</method>
       <params>X</params>
       <status>X</status>
@@ -33,7 +34,7 @@ class ArmonicCall(ElementBase):
     name = 'call'
     namespace = 'armonic'
     plugin_attrib = 'call'
-    interfaces = set(('method', 'params', 'status'))
+    interfaces = set(('method', 'params', 'status', 'deployment_id'))
     sub_interfaces = interfaces
 
 
@@ -52,11 +53,12 @@ class XMPPClientBase(ClientXMPP):
     base_plugins = [
         ('xep_0030',),  # Disco
         ('xep_0004',),  # Dataforms
+        ('xep_0045',),  # MUC
         ('xep_0199', {'keepalive': True, 'frequency': 15})
     ]
     """Always loaded plugins"""
 
-    def __init__(self, jid, password, plugins=[]):
+    def __init__(self, jid, password, plugins=[], muc_domain=None):
         ClientXMPP.__init__(self, jid, password)
         self.add_event_handler("session_start", self.session_start)
         self.add_event_handler("roster_update", self.changed_roster)
@@ -76,6 +78,9 @@ class XMPPClientBase(ClientXMPP):
             else:
                 config = {}
             self.register_plugin(plugin[0], config)
+
+        self.muc_domain = muc_domain
+        self.muc_rooms = []
 
     def session_start(self, event):
         self.send_presence()
@@ -112,12 +117,36 @@ class XMPPClientBase(ClientXMPP):
         msg['exception']['message'] = message
         msg.send()
 
+    def _get_muc_room_name(self, id):
+        return "%s@%s" % (id, self.muc_domain)
+
+    def leave_muc_room(self, id):
+        if self.muc_domain is None:
+            return
+        self['xep_0045'].leaveMUC(self._get_muc_room_name(id), self.boundjid.jid)
+        self.muc_rooms.remove(self._get_muc_room_name(id))
+
+    def join_muc_room(self, id):
+        if self.muc_domain is None:
+            return
+        logger.info('Joining muc_room %s' % self._get_muc_room_name(id))
+        self['xep_0045'].joinMUC(self._get_muc_room_name(id), self.boundjid.jid)
+        self.muc_rooms.append(self._get_muc_room_name(id))
+
+    def send_muc_message(self, id, message):
+        if self.muc_domain is None:
+            return
+        self.send_message(mto=self._get_muc_room_name(id),
+                          mbody="[%s] %s" % (self.boundjid.user, message),
+                          mtype='groupchat')
+
 
 class XMPPAgentApi(object):
 
-    def __init__(self, client, agent_jid):
+    def __init__(self, client, agent_jid, deployment_id=None):
         self.client = client
         self.jid = agent_jid
+        self.deployment_id = deployment_id
 
     def call(self, method, *args, **kwargs):
         iq = self.client.Iq()
@@ -125,6 +154,8 @@ class XMPPAgentApi(object):
         iq['type'] = 'set'
         iq['call']['method'] = method
         iq['call']['params'] = json.dumps({'args': args, 'kwargs': kwargs})
+        if self.deployment_id:
+            iq['call']['deployment_id'] = self.deployment_id
         try:
             resp = iq.send()
         except IqError:
