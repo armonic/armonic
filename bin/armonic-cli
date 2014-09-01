@@ -7,12 +7,12 @@ Actions needed to control agent:
 
 """
 
-import argparse
-import re
 import sys
+import argparse
 import logging
-from armonic.client.xmpp import Xmpp, XmppError
+from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase, XMPPError
 import armonic.frontends.cli
+from threading import Event
 
 logger = logging.getLogger()
 
@@ -31,16 +31,23 @@ cli = armonic.frontends.cli.Cli(parser)
 args = cli_base.parse_args()
 args = cli_xmpp.parse_args()
 
-format = '%(asctime)s|%(levelname)6s - %(ip)s/%(xpath)s - %(message)s'
-sh = logging.StreamHandler()
-sh.setLevel(cli_base.logging_level)
-sh.setFormatter(logging.Formatter(format))
+xmpp_client_ready = Event()
+xmpp_client = XMPPClientBase(args.jid, cli_xmpp.password)
+agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent")
 
-client = Xmpp(args.jid, cli_xmpp.password, args.jid_agent, args.host, args.port)
+def run_cli():
+    try:
+        cli.func(agent)
+    except XMPPError:
+        pass
+    xmpp_client.disconnect()
+    sys.exit(0)
 
-try:
-    cli.func(client)
-except XmppError:
-    pass
-
-client.close()
+xmpp_client.add_event_handler('session_start', lambda e: xmpp_client_ready.set())
+if args.host:
+    xmpp_client.connect(address=(args.host, args.port))
+else:
+    xmpp_client.connect()
+xmpp_client.process(block=False)
+xmpp_client_ready.wait()
+run_cli()
