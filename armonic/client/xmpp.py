@@ -123,7 +123,7 @@ class XMPPClientBase(ClientXMPP):
     def leave_muc_room(self, id):
         if self.muc_domain is None:
             return
-        self['xep_0045'].leaveMUC(self._get_muc_room_name(id), self.boundjid.jid)
+        self['xep_0045'].leaveMUC(self._get_muc_room_name(id), self.boundjid.user)
         self.muc_rooms.remove(self._get_muc_room_name(id))
 
     def join_muc_room(self, id):
@@ -131,14 +131,14 @@ class XMPPClientBase(ClientXMPP):
             logger.warning("MUC domain not set, can't send or read logs.")
             return
         logger.info('Joining muc_room %s' % self._get_muc_room_name(id))
-        self['xep_0045'].joinMUC(self._get_muc_room_name(id), self.boundjid.jid)
+        self['xep_0045'].joinMUC(self._get_muc_room_name(id), self.boundjid.user)
         self.muc_rooms.append(self._get_muc_room_name(id))
 
     def send_muc_message(self, id, message):
         if self.muc_domain is None:
             return
         self.send_message(mto=self._get_muc_room_name(id),
-                          mbody="[%s] %s" % (self.boundjid.user, message),
+                          mbody=message,
                           mtype='groupchat')
 
 

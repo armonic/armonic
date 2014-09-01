@@ -9,7 +9,7 @@ from uuid import uuid4
 from threading import Event
 
 from armonic.frontends.utils import CliBase, CliClient, CliXMPP
-from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED, MAGENTA
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED, CYAN
 from armonic.client.xmpp import XMPPClientBase, XMPPAgentApi
 from armonic.client.smart import Provide
 from armonic.frontends.smartonic import run
@@ -63,7 +63,8 @@ class XMPPSmartonic(XMPPClientBase):
 
     def on_agent_log(self, msg):
         if msg['body']:
-            logger.info('%s%s%s' % (COLOR_SEQ % MAGENTA, msg['body'], RESET_SEQ))
+            logger.info('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
+                                             COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
 
 
 if __name__ == '__main__':
