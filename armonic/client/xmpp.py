@@ -205,6 +205,10 @@ class XMPPAgentApi(object):
         self.client.event('result', iq)
 
     def _handle_result_method(self, iq):
+        # result is not for this agent
+        if not iq['from'] == self.jid:
+            return
+
         result = iq['result']['value']
 
         iq.reply()
