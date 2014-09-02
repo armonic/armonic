@@ -10,11 +10,33 @@ Actions needed to control agent:
 import sys
 import argparse
 import logging
-from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase, XMPPError
-import armonic.frontends.cli
 from threading import Event
+from uuid import uuid4
+
+from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase, XMPPError
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, CYAN
+import armonic.frontends.cli
 
 logger = logging.getLogger()
+# generate a deployment id on each run
+deployment_id = str(uuid4())
+
+
+class XMPPCli(XMPPClientBase):
+
+    def __init__(self, *args, **kwargs):
+        XMPPClientBase.__init__(self, *args, **kwargs)
+        self.add_event_handler("groupchat_message", self.on_agent_log)
+
+    def session_start(self, event):
+        XMPPClientBase.session_start(self, event)
+        # Join room to get agent logs
+        self.join_muc_room(deployment_id)
+
+    def on_agent_log(self, msg):
+        if msg['body']:
+            logger.info('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
+                                             COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
 
 parser = argparse.ArgumentParser(
     prog='armonic-cli',
@@ -32,8 +54,10 @@ args = cli_base.parse_args()
 args = cli_xmpp.parse_args()
 
 xmpp_client_ready = Event()
-xmpp_client = XMPPClientBase(args.jid, cli_xmpp.password)
-agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent")
+xmpp_client = XMPPCli(args.jid, cli_xmpp.password,
+                      plugins=[], muc_domain=cli_xmpp.muc_domain)
+agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent", deployment_id=deployment_id)
+
 
 def run_cli():
     try:
