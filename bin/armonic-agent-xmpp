@@ -39,6 +39,7 @@ import armonic.frontends.utils
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
+
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
     setdefaultencoding('utf8')
@@ -59,10 +60,15 @@ class MUCHandler(logging.Handler):
         return True
 
 
+class SleekXMPPFilter(logging.Filter):
+    """Don't forward SleekXMPP logs to avoid infinite loop on MUC
+    handler."""
+    def filter(self, record):
+        return not record.name.startswith("sleekxmpp")
+
+
 muc_handler = MUCHandler()
-format = '%(ip)-15s %(message)s'
-muc_handler.addFilter(logging.Filter('armonic'))
-muc_handler.setFormatter(logging.Formatter(format))
+muc_handler.addFilter(SleekXMPPFilter())
 
 
 class MalformedJID(Exception):
@@ -82,7 +88,7 @@ class XMPPAgent(XMPPClientBase):
 
         # To handle LifecycleManager method calls
         self.registerHandler(
-            Callback('Some custom iq',
+            Callback('handle a call',
                      StanzaPath('iq@type=set/call'),
                      self._handle_action)
         )
@@ -112,8 +118,7 @@ class XMPPAgent(XMPPClientBase):
         params = iq['call']['params']
         method = iq['call']['method']
         deployment_id = iq['call'].get('deployment_id', None)
-        reponse_error_to = iq['from']
-        reponse_error_from = iq['to']
+        caller = iq['from']
 
         if deployment_id and self.muc_domain:
             self.join_muc_room(deployment_id)
@@ -125,29 +130,41 @@ class XMPPAgent(XMPPClientBase):
 
         try:
             request = self.parse_json(params)
-            ret = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
             iq.reply()
-            iq['call']['status'] = json.dumps(ret)
+            iq['status']['value'] = "executing"
+            iq.send()
+            result = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
+            # stop logging
+            if deployment_id and self.muc_domain:
+                logger.removeHandler(muc_handler)
+            # send the call result
+            iq = self.Iq()
+            iq['type'] = 'set'
+            iq['to'] = caller
+            iq['result']['value'] = json.dumps(result)
             iq.send()
         except MethodNotExposed as e:
-            logger.info("Method %s not supported : %s" % (method, e))
-            iq['call']['status'] = "error"
+            # stop logging
+            if deployment_id and self.muc_domain:
+                logger.removeHandler(muc_handler)
+            message = "Method %s is not supported" % method
+            logger.error(message)
             iq.error()
+            iq['status']['value'] = 'not found'
+            iq['exception']['code'] = 'MethodNotExposed'
+            iq['exception']['message'] = message
             iq['error']['code'] = "424"
-            iq['error']['text'] = e
-            iq['error']['type'] = "error"
-            iq['error']['condition'] = 'Method failure'
-            iq['to'] = reponse_error_to
-            iq['from'] = reponse_error_from
+            iq['error']['text'] = message
+            iq['error']['condition'] = 'MethodNotExposed'
             iq.send()
         except IqError as e:
+            # stop logging
+            if deployment_id and self.muc_domain:
+                logger.removeHandler(muc_handler)
             logger.error("Call method %s returned an error: %s" % (
                 method,
                 e.iq['error']['condition'])
             )
-
-        if deployment_id and self.muc_domain:
-            logger.removeHandler(muc_handler)
 
     def register(self, iq):
         """

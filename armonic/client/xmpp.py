@@ -7,6 +7,10 @@ import logging
 from sleekxmpp import ClientXMPP, Iq, Message
 from sleekxmpp.exceptions import IqError
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
+from sleekxmpp.xmlstream.handler import Callback
+from sleekxmpp.xmlstream.matcher import StanzaPath
+from threading import Event
+
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
     setdefaultencoding('utf8')
@@ -28,13 +32,42 @@ class ArmonicCall(ElementBase):
       <deployment_id>X</deployment_id>
       <method>X</method>
       <params>X</params>
-      <status>X</status>
     </call>
     """
     name = 'call'
     namespace = 'armonic'
     plugin_attrib = 'call'
-    interfaces = set(('method', 'params', 'status', 'deployment_id'))
+    interfaces = set(('method', 'params', 'deployment_id'))
+    sub_interfaces = interfaces
+
+
+class ArmonicStatus(ElementBase):
+    """
+    A stanza class for XML content of the form:
+    <status xmlns="armonic">
+      <deployment_id>X</deployment_id>
+      <value>X</value>
+    </status>
+    """
+    name = 'status'
+    namespace = 'armonic'
+    plugin_attrib = 'status'
+    interfaces = set(('value', 'deployment_id'))
+    sub_interfaces = interfaces
+
+
+class ArmonicResult(ElementBase):
+    """
+    A stanza class for XML content of the form:
+    <result xmlns="armonic">
+      <deployment_id>X</deployment_id>
+      <value>X</value>
+    </result>
+    """
+    name = 'result'
+    namespace = 'armonic'
+    plugin_attrib = 'result'
+    interfaces = set(('value', 'deployment_id'))
     sub_interfaces = interfaces
 
 
@@ -70,6 +103,9 @@ class XMPPClientBase(ClientXMPP):
         self.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
 
         register_stanza_plugin(Iq, ArmonicCall)
+        register_stanza_plugin(Iq, ArmonicResult)
+        register_stanza_plugin(Iq, ArmonicStatus)
+
         register_stanza_plugin(Message, ArmonicError)
 
         for plugin in self.base_plugins + plugins:
@@ -149,6 +185,35 @@ class XMPPAgentApi(object):
         self.jid = agent_jid
         self.deployment_id = deployment_id
 
+        # To handle LifecycleManager method calls
+        self.client.registerHandler(
+            Callback('handle result of a call',
+                     StanzaPath('iq@type=set/result'),
+                     self._handle_action)
+        )
+        self.client.add_event_handler('result',
+                                      self._handle_result_method,
+                                      threaded=True)
+
+        self._result_ready = Event()
+
+    def _handle_action(self, iq):
+        """
+        Raise an event for the stanza so that it can be processed in its
+        own thread without blocking the main stanza processing loop.
+        """
+        self.client.event('result', iq)
+
+    def _handle_result_method(self, iq):
+        result = iq['result']['value']
+
+        iq.reply()
+        iq['status']['value'] = 'received'
+        iq.send()
+
+        self._result_ready._result = result
+        self._result_ready.set()
+
     def call(self, method, *args, **kwargs):
         iq = self.client.Iq()
         iq['to'] = self.jid
@@ -162,7 +227,14 @@ class XMPPAgentApi(object):
         except IqError:
             logger.exception("Failed to send message to %s" % self.jid)
             raise XMPPError("Failed to contact %s" % self.jid)
-        return json.loads(resp['call']['status'])
+
+        if not resp['status']['value'] == 'executing':
+            logger.error(resp)
+
+        # Waiting for a result
+        self._result_ready.wait()
+        self._result_ready.clear()
+        return json.loads(self._result_ready._result)
 
     def info(self):
         return self.call("info")
