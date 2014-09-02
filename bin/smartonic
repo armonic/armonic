@@ -101,8 +101,8 @@ if __name__ == '__main__':
         output_file = args.output
 
     root_provide = SmartonicProvide(generic_xpath=args.xpath)
-    xmpp_client = XMPPSmartonic(args.jid, args.password,
-                                plugins=[], muc_domain=args.muc_domain)
+    xmpp_client = XMPPSmartonic(args.jid, cli_xmpp.password,
+                                plugins=[], muc_domain=cli_xmpp.muc_domain)
 
     def run_smart():
         try:

@@ -241,7 +241,7 @@ if __name__ == "__main__":
     try:
         xmpp_client = XMPPAgent("%s/agent" % args.jid,
                                 cli_xmpp.password,
-                                muc_domain=args.muc_domain,
+                                muc_domain=cli_xmpp.muc_domain,
                                 lfm=lfm,
                                 jid_master=args.jid_master)
     except MalformedJID:

@@ -234,7 +234,7 @@ if __name__ == '__main__':
     xmpp_client = XMPPMaster('%s/master' % args.jid,
                              cli_xmpp.password,
                              plugins=[('xep_0050',)],
-                             muc_domain=args.muc_domain,
+                             muc_domain=cli_xmpp.muc_domain,
                              lfm=lfm)
     if not args.host:
         xmpp_client.connect()

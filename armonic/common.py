@@ -9,7 +9,6 @@ from armonic.utils import get_first_ip
 
 VERSION = "0.1"
 
-
 SIMULATION = False
 """If set to True, provide call is not realized, just simulated. This
 is used to design Provide/Require interactions.
@@ -21,6 +20,8 @@ DONT_VALIDATE_ON_CALL = False
 calls. This is mainly use with SIMULATION flag, in order to simulate calls
 that have provide ret which are not available (since provides return None).
 """
+
+MUC_SUBDOMAIN = "logs"
 
 
 class NetworkFilter(logging.Filter):

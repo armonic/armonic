@@ -3,6 +3,8 @@ import json
 import logging
 import getpass
 
+from sleekxmpp.jid import JID
+
 import armonic.common
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
 
@@ -271,6 +273,11 @@ class CliXMPP(Cli):
 
         if not self.has_arg('--password'):
             raise Exception('--password is mandatory.')
+
+        if self.has_arg('--muc-domain'):
+            self.muc_domain = args.muc_domain
+            if self.muc_domain is None:
+                self.muc_domain = armonic.common.MUC_SUBDOMAIN + '.' + JID(args.jid).domain
 
         if not args.password:
             self.password = read_passwd(check=self.confirm_password)
