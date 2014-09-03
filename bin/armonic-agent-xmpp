@@ -1,29 +1,14 @@
 #!/usr/bin/python
 """
-Socket agent.
+XMPP agent for armonic
 
-All logger event are send through the socket.
-The return of function call is :
-{"return":value} | {"exception":value}.
-'value' is "picklized".
+armonic-agent-xmpp --jid server1@example.com --password passwd --jid-master master@example.com
 
-Protocol:
-1) send a struct ((int) msg_size_in_bytes , (bool) last_msg?)
-2) send message
-
-xmpp agent
-
-add compte serveur ejabbert
-ejabberdctl register armonictest localhost armonictest
-
-_____________
-
-the command line options always override
-
-eg . armonic-agent-xmpp --host localhost --jid user2@localhost
-        --jid-master master@localhost --password user2
-
+The agent will try to register an account on the XMPP server by default.
+It will subscribe to the --jid-master to that the master account has all agents
+in its roster.
 """
+
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
@@ -48,7 +33,9 @@ else:
 
 
 class MUCHandler(logging.Handler):
-
+    """Logging handler used to send armonic logs
+    in a MUC room.
+    """
     def init(self, client, id):
         self.client = client
         self.id = id
