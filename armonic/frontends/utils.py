@@ -225,7 +225,7 @@ class CliXMPP(Cli):
         CliArg('--jid', '-j',
                required=True,
                type=str,
-               help="Agent JID <username@fqdn>"),
+               help="A client JID <username@fqdn>"),
         CliArg('--password', '-p', type=str,
                help="Password (default '%(default)s')"),
         CliArg('--muc-domain',
