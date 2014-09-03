@@ -72,10 +72,10 @@ class StateFactory(type):
         for method_name in STATE_RESERVED_PROVIDES:
             method = getattr(state_class, method_name).__func__
             if not hasattr(method, "_provide"):
-                setattr(method, "_provide", Provide(method_name))
-            # setup class properties to access reserved provides
-            # cls.provide_enter etc...
-            setattr(state_class, "provide_%s" % method_name, property(lambda self: getattr(method, "_provide")))
+                provide_inst = Provide(method_name)
+            else:
+                provide_inst = copy.deepcopy(method._provide)
+            setattr(state_class, "provide_%s" % method_name, provide_inst)
 
         # register custom provides
         funcs = inspect.getmembers(state_class, predicate=inspect.ismethod)
