@@ -13,7 +13,7 @@ import logging
 from threading import Event
 from uuid import uuid4
 
-from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase, XMPPError
+from armonic.client.xmpp import XMPPAgentApi, XMPPCallSync, XMPPError
 from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, CYAN
 import armonic.frontends.cli
 
@@ -22,14 +22,14 @@ logger = logging.getLogger()
 deployment_id = str(uuid4())
 
 
-class XMPPCli(XMPPClientBase):
+class XMPPCli(XMPPCallSync):
 
     def __init__(self, *args, **kwargs):
-        XMPPClientBase.__init__(self, *args, **kwargs)
+        XMPPCallSync.__init__(self, *args, **kwargs)
         self.add_event_handler("groupchat_message", self.on_agent_log)
 
     def session_start(self, event):
-        XMPPClientBase.session_start(self, event)
+        XMPPCallSync.session_start(self, event)
         # Join room to get agent logs
         self.join_muc_room(deployment_id)
 

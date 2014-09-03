@@ -14,7 +14,7 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call, SmartException
 from armonic.utils import OsTypeAll
 import armonic.frontends.utils
-from armonic.client.xmpp import XMPPAgentApi, XMPPClientBase
+from armonic.client.xmpp import XMPPAgentApi, XMPPCallSync
 
 
 agent_handler = logging.StreamHandler()
@@ -38,15 +38,15 @@ class BuildProvide(Provide):
         self.lfm = XMPPAgentApi(xmpp_client, host, deployment_id=xmpp_client.session_id)
 
 
-class XMPPMaster(XMPPClientBase):
+class XMPPMaster(XMPPCallSync):
 
     def __init__(self, jid, password, plugins=[], muc_domain=None, lfm=None):
-        XMPPClientBase.__init__(self, jid, password, plugins, muc_domain)
+        XMPPCallSync.__init__(self, jid, password, plugins, muc_domain)
         self.lfm = lfm
         self.smart = None
 
     def session_start(self, event):
-        XMPPClientBase.session_start(self, event)
+        XMPPCallSync.session_start(self, event)
 
         self['xep_0050'].add_command(node='provides',
                                      name='Get the list of provides',
@@ -127,7 +127,7 @@ class XMPPMaster(XMPPClientBase):
             provide, step, args = self.smart.next()
 
         if isinstance(args, SmartException):
-            self.report_error(args.name, args.message, session['from'])
+            self.report_exception(session['from'], args)
             self.smart.next()
 
         form = self['xep_0004'].makeForm('form', 'Build a provide')

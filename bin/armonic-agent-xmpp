@@ -126,7 +126,13 @@ class XMPPAgent(XMPPClientBase):
             logger.addHandler(muc_handler)
 
         logger.info("Executing method '%s' called by '%s'..." % (
-            method, iq['from']))
+            method, caller))
+
+        def call_done():
+            # stop logging
+            if deployment_id and self.muc_domain:
+                logger.removeHandler(muc_handler)
+                self.leave_muc_room(deployment_id)
 
         try:
             request = self.parse_json(params)
@@ -134,22 +140,20 @@ class XMPPAgent(XMPPClientBase):
             iq['status']['value'] = "executing"
             iq.send()
             result = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
-            # stop logging
-            if deployment_id and self.muc_domain:
-                logger.removeHandler(muc_handler)
+            call_done()
             # send the call result
             iq = self.Iq()
             iq['type'] = 'set'
             iq['to'] = caller
             iq['result']['value'] = json.dumps(result)
             iq.send()
-        except MethodNotExposed as e:
-            # stop logging
-            if deployment_id and self.muc_domain:
-                logger.removeHandler(muc_handler)
+        except MethodNotExposed:
+            call_done()
             message = "Method %s is not supported" % method
             logger.error(message)
+            iq = self.Iq()
             iq.error()
+            iq['to'] = caller
             iq['status']['value'] = 'not found'
             iq['exception']['code'] = 'MethodNotExposed'
             iq['exception']['message'] = message
@@ -158,13 +162,17 @@ class XMPPAgent(XMPPClientBase):
             iq['error']['condition'] = 'MethodNotExposed'
             iq.send()
         except IqError as e:
-            # stop logging
-            if deployment_id and self.muc_domain:
-                logger.removeHandler(muc_handler)
+            call_done()
             logger.error("Call method %s returned an error: %s" % (
                 method,
                 e.iq['error']['condition'])
             )
+        except Exception as error:
+            call_done()
+            logger.exception("Exception while calling method %s with %s" % (method, request))
+            self.report_exception(caller, error)
+
+        logger.debug("Method %s call end" % method)
 
     def register(self, iq):
         """

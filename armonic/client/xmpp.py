@@ -4,8 +4,8 @@ import sys
 import json
 import logging
 
-from sleekxmpp import ClientXMPP, Iq, Message
-from sleekxmpp.exceptions import IqError
+from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
@@ -71,7 +71,7 @@ class ArmonicResult(ElementBase):
     sub_interfaces = interfaces
 
 
-class ArmonicError(ElementBase):
+class ArmonicException(ElementBase):
     """
     A stanza class to send armonic exception over XMPP
     """
@@ -100,13 +100,20 @@ class XMPPClientBase(ClientXMPP):
         self.add_event_handler("stream_error", self.got_stream_error)
         self.add_event_handler("failed_auth", self.failed_auth)
         #  self.add_event_handler("presence_available", self._handle_presence_available)
-        self.add_event_handler("session_end", lambda e: logger.info("Disconnecting..."))
+        self.add_event_handler("session_end", self.session_end)
 
         register_stanza_plugin(Iq, ArmonicCall)
         register_stanza_plugin(Iq, ArmonicResult)
         register_stanza_plugin(Iq, ArmonicStatus)
+        register_stanza_plugin(Iq, ArmonicException)
 
-        register_stanza_plugin(Message, ArmonicError)
+        self.registerHandler(
+            Callback('handle armonic exceptions',
+                     StanzaPath('iq/exception'),
+                     self._handle_armonic_exception)
+        )
+        self.add_event_handler('armonic_exception',
+                               self.handle_armonic_exception)
 
         for plugin in self.base_plugins + plugins:
             if len(plugin) > 1:
@@ -118,9 +125,19 @@ class XMPPClientBase(ClientXMPP):
         self.muc_domain = muc_domain
         self.muc_rooms = []
 
+    def _handle_armonic_exception(self, iq):
+        self.event('armonic_exception', iq['exception'])
+
+    def handle_armonic_exception(self, exception):
+        logger.error("%s: %s" % (exception['code'],
+                                 exception['message']))
+
     def session_start(self, event):
         self.send_presence()
         self.get_roster()
+
+    def session_end(self, event):
+        logger.info("Exiting...")
 
     def got_stream_error(self, event):
         if event['condition'] == "conflict":
@@ -144,14 +161,17 @@ class XMPPClientBase(ClientXMPP):
     def parse_json(self, data):
         return json.loads(data)
 
-    def report_error(self, code, message, jid):
-        msg = self.Message()
-        msg['to'] = jid
-        msg['type'] = 'error'
-        msg['subject'] = 'An error has occured.'
-        msg['exception']['code'] = code
-        msg['exception']['message'] = message
-        msg.send()
+    def report_exception(self, jid, exception):
+        iq = self.Iq()
+        iq.error()
+        iq['to'] = jid
+        iq['subject'] = 'An error has occured.'
+        iq['exception']['code'] = exception.__class__.__name__
+        iq['exception']['message'] = exception.message
+        try:
+            iq.send(block=False)
+        except IqTimeout:
+            pass
 
     def _get_muc_room_name(self, id):
         return "%s@%s" % (id, self.muc_domain)
@@ -178,37 +198,27 @@ class XMPPClientBase(ClientXMPP):
                           mtype='groupchat')
 
 
-class XMPPAgentApi(object):
+class XMPPCallSync(XMPPClientBase):
 
-    def __init__(self, client, agent_jid, deployment_id=None):
-        self.client = client
-        self.jid = agent_jid
-        self.deployment_id = deployment_id
-
+    def __init__(self, *args, **kwargs):
+        XMPPClientBase.__init__(self, *args, **kwargs)
         # To handle LifecycleManager method calls
-        self.client.registerHandler(
+        self.registerHandler(
             Callback('handle result of a call',
                      StanzaPath('iq@type=set/result'),
-                     self._handle_action)
+                     self._handle_armonic_result)
         )
-        self.client.add_event_handler('result',
-                                      self._handle_result_method,
-                                      threaded=True)
+        self.add_event_handler('armonic_result',
+                               self.handle_armonic_result,
+                               threaded=True)
 
+        # flag to wait for a result
         self._result_ready = Event()
 
-    def _handle_action(self, iq):
-        """
-        Raise an event for the stanza so that it can be processed in its
-        own thread without blocking the main stanza processing loop.
-        """
-        self.client.event('result', iq)
+    def _handle_armonic_result(self, iq):
+        self.event('armonic_result', iq)
 
-    def _handle_result_method(self, iq):
-        # result is not for this agent
-        if not iq['from'] == self.jid:
-            return
-
+    def handle_armonic_result(self, iq):
         result = iq['result']['value']
 
         iq.reply()
@@ -218,14 +228,14 @@ class XMPPAgentApi(object):
         self._result_ready._result = result
         self._result_ready.set()
 
-    def call(self, method, *args, **kwargs):
-        iq = self.client.Iq()
-        iq['to'] = self.jid
+    def call(self, jid, deployment_id, method, *args, **kwargs):
+        iq = self.Iq()
+        iq['to'] = jid
         iq['type'] = 'set'
         iq['call']['method'] = method
         iq['call']['params'] = json.dumps({'args': args, 'kwargs': kwargs})
-        if self.deployment_id:
-            iq['call']['deployment_id'] = self.deployment_id
+        if deployment_id is not None:
+            iq['call']['deployment_id'] = deployment_id
         try:
             resp = iq.send()
         except IqError:
@@ -239,6 +249,17 @@ class XMPPAgentApi(object):
         self._result_ready.wait()
         self._result_ready.clear()
         return json.loads(self._result_ready._result)
+
+
+class XMPPAgentApi(object):
+
+    def __init__(self, client, agent_jid, deployment_id=None):
+        self.client = client
+        self.jid = agent_jid
+        self.deployment_id = deployment_id
+
+    def call(self, method, *args, **kwargs):
+        return self.client.call(self.jid, self.deployment_id, method, *args, **kwargs)
 
     def info(self):
         return self.call("info")
