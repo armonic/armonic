@@ -28,6 +28,7 @@ class Provide(IterContainer, XMLRessource, ExtraInfoMixin):
     _persist = True
 
     def __init__(self, name=None, requires=[], flags={}, **extra):
+        XMLRessource.__init__(self)
         IterContainer.__init__(self, *requires)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name

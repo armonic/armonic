@@ -337,6 +337,7 @@ class Lifecycle(XMLRessource):
         return instance
 
     def __init__(self):
+        XMLRessource.__init__(self)
         if self.initial_state:
             self.init(self.initial_state)
 
@@ -829,6 +830,7 @@ class LifecycleManager(XMLRessource):
         If it is not specified, the os type is automatically discovered.
     """
     def __init__(self, os_type=None, autoload=True):
+        XMLRessource.__init__(self)
         self.os_type = armonic.utils.OS_TYPE
         if os_type:
             self.os_type = os_type

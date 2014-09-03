@@ -78,6 +78,7 @@ class Require(XMLRessource, ExtraInfoMixin):
     :param nargs: variables occurences (1 or more, '*', '?')
     """
     def __init__(self, name, variables, nargs='1', **extra):
+        XMLRessource.__init__(self)
         ExtraInfoMixin.__init__(self, **extra)
         self.name = name
         self.type = "simple"

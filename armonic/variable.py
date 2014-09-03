@@ -28,6 +28,7 @@ class Variable(XMLRessource, ExtraInfoMixin):
     type = None
 
     def __init__(self, name, default=None, required=True, from_xpath=None, **extra):
+        XMLRessource.__init__(self)
         ExtraInfoMixin.__init__(self, **extra)
         # FIXME : this is a problem if we use two time this require:
         # First time, we specified a value

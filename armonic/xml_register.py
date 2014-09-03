@@ -25,8 +25,10 @@ class XpathInvalidExpression(Exception):
 
 
 class XMLRessource(PersistRessource):
-    _xpath = None
-    _xpath_relative = None
+
+    def __init__(self):
+        self._xpath = None
+        self._xpath_relative = None
 
     def _xml_tag(self):
         raise NotImplementedError
@@ -64,7 +66,6 @@ class XMLRessource(PersistRessource):
         """Get a relatvie xpath, ie. without host.
         This can be useful when a client wants to mix hostname and ip addr."""
         return self._xpath_relative
-
 
 
 class XMLRegistery(object):

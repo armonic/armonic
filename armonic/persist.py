@@ -35,7 +35,7 @@ class PersistRessource(object):
     @property
     def _persist_file(self):
         return Persist().state_path % (self._xml_ressource_name(),
-                                             self.get_xpath().replace('/', '_'))
+                                       self.get_xpath().replace('/', '_'))
 
     def _persist_register(self):
         if self._persist and (Persist().save_state or Persist().load_state):
