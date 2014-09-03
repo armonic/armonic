@@ -35,7 +35,7 @@ class SmartonicProvide(Provide):
             status = "%soffline%s" % (COLOR_SEQ % RED, RESET_SEQ)
             if item.resources:
                 status = "%sonline%s" % (COLOR_SEQ % GREEN, RESET_SEQ)
-            locations.append({'value': '%s/%s' % (jid, item.resources.keys()[0]),
+            locations.append({'value': "%s/%s" % (jid, "agent"),
                               'label': "%s [%s]" % (jid, status)})
         return locations
 
