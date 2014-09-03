@@ -199,18 +199,17 @@ class ValidationError(Exception):
 class ProvideError(Exception):
     def __init__(self, provide, message, exc_info=None):
         self.provide = provide
-        self.message = message
+        self.message = "Error in %s" % self.provide.get_xpath()
+        if message:
+            self.message += " : %s" % message
         if exc_info:
             exc_type, exc_value, exc_traceback = exc_info
             self.traceback = "".join(traceback.format_exception(exc_type, exc_value,
                                                                 exc_traceback))
-        Exception.__init__(self, message)
+            self.message += "\n" + self.traceback
 
     def __str__(self):
-        str = "%s in %s" % (self.message, self.provide.get_xpath())
-        if self.traceback:
-            str += "\n" + self.traceback
-        return str
+        return self.message
 
 
 class IterContainer(list):

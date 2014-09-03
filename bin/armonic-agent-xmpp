@@ -157,6 +157,7 @@ class XMPPAgent(XMPPClientBase):
             iq['status']['value'] = 'not found'
             iq['exception']['code'] = 'MethodNotExposed'
             iq['exception']['message'] = message
+            iq['exception']['deployment_id'] = deployment_id
             iq['error']['code'] = "424"
             iq['error']['text'] = message
             iq['error']['condition'] = 'MethodNotExposed'
@@ -170,7 +171,7 @@ class XMPPAgent(XMPPClientBase):
         except Exception as error:
             call_done()
             logger.exception("Exception while calling method %s with %s" % (method, request))
-            self.report_exception(caller, error)
+            self.report_exception(caller, error, deployment_id=deployment_id)
 
         logger.debug("Method %s call end" % method)
 

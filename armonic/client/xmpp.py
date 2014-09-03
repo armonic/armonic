@@ -78,7 +78,7 @@ class ArmonicException(ElementBase):
     name = 'exception'
     namespace = 'armonic'
     plugin_attrib = 'exception'
-    interfaces = set(('code', 'message'))
+    interfaces = set(('code', 'message', 'deployment_id'))
     sub_interfaces = interfaces
 
 
@@ -161,13 +161,15 @@ class XMPPClientBase(ClientXMPP):
     def parse_json(self, data):
         return json.loads(data)
 
-    def report_exception(self, jid, exception):
+    def report_exception(self, jid, exception, deployment_id=None):
         iq = self.Iq()
         iq.error()
         iq['to'] = jid
         iq['subject'] = 'An error has occured.'
         iq['exception']['code'] = exception.__class__.__name__
         iq['exception']['message'] = exception.message
+        if deployment_id is not None:
+            iq['exception']['deployment_id'] = deployment_id
         try:
             iq.send(block=False)
         except IqTimeout:
@@ -179,6 +181,7 @@ class XMPPClientBase(ClientXMPP):
     def leave_muc_room(self, id):
         if self.muc_domain is None:
             return
+        logger.info('Leaving muc_room %s' % self._get_muc_room_name(id))
         self['xep_0045'].leaveMUC(self._get_muc_room_name(id), self.boundjid.user)
         self.muc_rooms.remove(self._get_muc_room_name(id))
 

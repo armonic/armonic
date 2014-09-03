@@ -8,6 +8,7 @@ import json
 import os.path
 
 from sleekxmpp.thirdparty import OrderedDict
+from sleekxmpp.exceptions import IqTimeout, IqError
 
 import armonic.common
 from armonic.serialize import Serialize
@@ -54,6 +55,20 @@ class XMPPMaster(XMPPCallSync):
         self['xep_0050'].add_command(node='build',
                                      name='Build a provide',
                                      handler=self._handle_command_build)
+
+    def handle_armonic_exception(self, exception):
+        # Forward exception to client
+        logger.error("%s: %s" % (exception['code'],
+                                 exception['message']))
+        iq = self.Iq()
+        iq.error()
+        iq['to'] = self['xep_0050'].sessions[exception['deployment_id']]['from']
+        iq['exception']['code'] = exception['code']
+        iq['exception']['message'] = exception['message']
+        try:
+            iq.send(block=False)
+        except (IqTimeout, IqError):
+            pass
 
     def _handle_command_provides(self, iq, session):
         form = self['xep_0004'].makeForm('form', 'List of provides')
