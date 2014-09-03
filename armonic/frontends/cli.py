@@ -3,7 +3,7 @@ from prettytable import PrettyTable
 import json
 
 import armonic.frontends.utils
-
+from armonic.client.utils import require_validation_error
 
 def req_list(args):
     """take a list of "args:value" strings and return a dict"""
@@ -212,7 +212,7 @@ class Cli(object):
             if ret['errors'] is False:
                 print "Requires are valid."
             else:
-                pprint.pprint(armonic.frontends.utils.require_validation_error(ret))
+                pprint.pprint(require_validation_error(ret))
         else:
             pprint.pprint(self.client.provide_call(args.xpath,  args_require))
 
