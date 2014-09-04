@@ -42,6 +42,7 @@ class SmartonicProvide(Provide):
     def on_lfm(self, host):
         self.lfm_host = host
         self.lfm = XMPPAgentApi(xmpp_client, host, deployment_id=deployment_id)
+        self.host = self.lfm.info()['public-ip']
 
     def do_call(self):
         if dont_call:
