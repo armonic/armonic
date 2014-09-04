@@ -874,17 +874,7 @@ class Provide(ArmonicProvide):
 
     def matches(self):
         """Return the list of provides that matched the generic_xpath"""
-        matches = []
-        provides = self.lfm.uri(xpath=self.generic_xpath,
-                                relative=True,
-                                resource="provide")
-
-        for xpath in provides:
-            provide_info = self.lfm.provide(xpath)
-            if provide_info:
-                matches.append(provide_info[0])
-
-        return matches
+        return self.lfm.provide(self.generic_xpath)
 
     def on_specialize(self, xpath):
         """Actions after the provide has been specialized."""
