@@ -8,7 +8,7 @@ from platform import uname
 import armonic.common
 
 from armonic.common import IterContainer, DoesNotExist, ProvideError, \
-                           format_input_variables
+    format_input_variables
 from armonic.provide import Provide
 from armonic.variable import ValidationError
 import armonic.utils
@@ -663,8 +663,6 @@ class Lifecycle(XMLRessource):
         else:
             return []
 
-
-
     def provide_call(self, state, provide_name, requires=[], path_idx=0):
         """Go to provide state and call provide.
 
@@ -749,9 +747,9 @@ class Lifecycle(XMLRessource):
         for s in state_list:
             acc += '"%s"[\n' % s.name
             acc += 'shape = "record"\n'
-            #requires = ""
-            #provides = list_to_table([(p.name, p.flags) for p in
-                                      #s.provides])
+            # requires = ""
+            # provides = list_to_table([(p.name, p.flags) for p in
+            # s.provides])
             # Begin of label
             acc += 'label = "{%s | %s ' % (
                 s.name,
