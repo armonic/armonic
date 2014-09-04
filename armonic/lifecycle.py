@@ -826,12 +826,14 @@ class LifecycleManager(XMLRessource):
 
     :param os_type: to specify which kind of os has to be used.
         If it is not specified, the os type is automatically discovered.
+    :param public_ip: the public ip of the agent. This is used by clients to know how to contact services deployed by this agent.
     """
-    def __init__(self, os_type=None, autoload=True):
+    def __init__(self, os_type=None, autoload=True, public_ip="localhost"):
         XMLRessource.__init__(self)
         self.os_type = armonic.utils.OS_TYPE
         if os_type:
             self.os_type = os_type
+        self.public_ip = public_ip
         self.lf_loaded = {}
         self.lf = {}
         for lf in armonic.utils.get_subclasses(Lifecycle):
@@ -869,7 +871,8 @@ class LifecycleManager(XMLRessource):
         """
         return {"os-type": self.os_type.name,
                 "os-release": self.os_type.release,
-                "version": armonic.common.VERSION}
+                "version": armonic.common.VERSION,
+                "public-ip": self.public_ip}
 
     def lifecycle(self, lifecycle_xpath):
         """List loaded lifecycle objects

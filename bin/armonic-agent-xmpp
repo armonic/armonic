@@ -212,6 +212,9 @@ if __name__ == "__main__":
     parser.add_argument('--jid-master', type=armonic.frontends.utils.jidType,
                         default="master@im.aeolus.org",
                         help="JID of the master (default '%(default)s')")
+    parser.add_argument('--public-ip', type=str, default="localhost",
+                        help="Public IP (default '%(default)s')")
+
 
     cli = armonic.frontends.utils.CliBase(parser)
     cli_xmpp = armonic.frontends.utils.CliXMPP(parser, confirm_password=True)
@@ -235,7 +238,7 @@ if __name__ == "__main__":
     save_state = not args.no_save_state
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
-    lfm = Serialize(os_type=cli_local.os_type)
+    lfm = Serialize(os_type=cli_local.os_type, public_ip=args.public_ip)
 
     try:
         xmpp_client = XMPPAgent(args.jid,
