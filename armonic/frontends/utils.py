@@ -15,7 +15,7 @@ def jidType(string):
         jid = JID(string)
     except InvalidJID:
         raise argparse.ArgumentTypeError('Incorrect JID')
-    return jid
+    return str(jid)
 
 
 def read_variable(string):
