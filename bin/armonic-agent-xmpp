@@ -67,6 +67,9 @@ class XMPPAgent(XMPPClientBase):
     def __init__(self, jid, password, muc_domain=None, lfm=None, jid_master=None):
         XMPPClientBase.__init__(self, jid, password, plugins=[('xep_0066',), ('xep_0077',)], muc_domain=muc_domain)
 
+        # fixed resource name for agents
+        self.requested_jid.resource = "agent"
+
         self['xep_0077'].force_registration = True
         self.add_event_handler("register", self.register, threaded=True)
 
@@ -235,7 +238,7 @@ if __name__ == "__main__":
     lfm = Serialize(os_type=cli_local.os_type)
 
     try:
-        xmpp_client = XMPPAgent("%s/agent" % args.jid,
+        xmpp_client = XMPPAgent(args.jid,
                                 cli_xmpp.password,
                                 muc_domain=cli_xmpp.muc_domain,
                                 lfm=lfm,

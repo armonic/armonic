@@ -5,6 +5,7 @@ import json
 import logging
 
 from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp.jid import JID, InvalidJID
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
@@ -92,6 +93,8 @@ class XMPPClientBase(ClientXMPP):
     """Always loaded plugins"""
 
     def __init__(self, jid, password, plugins=[], muc_domain=None):
+        if JID(jid).resource:
+            raise InvalidJID("The provided JID shouldn't have a resource")
         ClientXMPP.__init__(self, jid, password)
         self.add_event_handler("session_start", self.session_start)
         self.add_event_handler("roster_update", self.changed_roster)

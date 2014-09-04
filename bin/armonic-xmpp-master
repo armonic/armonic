@@ -20,7 +20,7 @@ from armonic.client.xmpp import XMPPAgentApi, XMPPCallSync
 
 agent_handler = logging.StreamHandler()
 format = '%(ip)-15s %(levelname)-19s %(module)s %(message)s'
-agent_handler.setFormatter(armonic.client.utils.ColoredFormatter(format))
+agent_handler.setFormatter(armonic.frontends.utils.ColoredFormatter(format))
 xmpp_client = None
 logger = logging.getLogger()
 
@@ -43,6 +43,8 @@ class XMPPMaster(XMPPCallSync):
 
     def __init__(self, jid, password, plugins=[], muc_domain=None, lfm=None):
         XMPPCallSync.__init__(self, jid, password, plugins, muc_domain)
+        # fixed resource name for xmpp master
+        self.requested_jid.resource = "master"
         self.lfm = lfm
         self.smart = None
 
@@ -246,7 +248,7 @@ if __name__ == '__main__':
     logging.getLogger('armonic').setLevel(cli_base.logging_level)
 
     # Use /master resource by default
-    xmpp_client = XMPPMaster('%s/master' % args.jid,
+    xmpp_client = XMPPMaster(args.jid,
                              cli_xmpp.password,
                              plugins=[('xep_0050',)],
                              muc_domain=cli_xmpp.muc_domain,
