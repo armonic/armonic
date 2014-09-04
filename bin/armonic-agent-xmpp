@@ -206,7 +206,7 @@ if __name__ == "__main__":
                         default="/tmp/armonic_%s%s_state",
                         help='Armonic state files paths (default: %(default)s))')
 
-    parser.add_argument('--jid-master', type=str,
+    parser.add_argument('--jid-master', type=armonic.frontends.utils.jidType,
                         default="master@im.aeolus.org",
                         help="JID of the master (default '%(default)s')")
 

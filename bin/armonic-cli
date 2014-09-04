@@ -40,11 +40,13 @@ class XMPPCli(XMPPCallSync):
 
 parser = argparse.ArgumentParser(
     prog='armonic-cli',
-    description=("A simple client to contact a Armonic agent. "
+    description=("A simple client to contact an Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
-parser.add_argument("-J", "--jid-agent", required=True,
-                    help="Agent JID <username@fqdn>")
+parser.add_argument("-J", "--jid-agent",
+                    type=armonic.frontends.utils.jidType,
+                    required=True,
+                    help="Agent JID to query")
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli_xmpp = armonic.frontends.utils.CliXMPP(parser)

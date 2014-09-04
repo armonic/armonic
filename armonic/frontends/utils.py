@@ -2,11 +2,20 @@ import re
 import json
 import logging
 import getpass
+import argparse
 
-from sleekxmpp.jid import JID
+from sleekxmpp.jid import JID, InvalidJID
 
 import armonic.common
 from armonic.utils import OsTypeMBS, OsTypeDebianWheezy, OsTypeAll
+
+
+def jidType(string):
+    try:
+        jid = JID(string)
+    except InvalidJID:
+        raise argparse.ArgumentTypeError('Incorrect JID')
+    return jid
 
 
 def read_variable(string):
@@ -224,7 +233,7 @@ class CliXMPP(Cli):
                help="XMPP server port (default '%(default)s')"),
         CliArg('--jid', '-j',
                required=True,
-               type=str,
+               type=jidType,
                help="A client JID <username@fqdn>"),
         CliArg('--password', '-p', type=str,
                help="Password (default '%(default)s')"),
