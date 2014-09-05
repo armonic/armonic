@@ -37,6 +37,7 @@ class BuildProvide(Provide):
     def on_lfm(self, host):
         self.lfm_host = host
         self.lfm = XMPPAgentApi(xmpp_client, host, deployment_id=xmpp_client.session_id)
+        self.host = self.lfm.info()['public-ip']
 
 
 class XMPPMaster(XMPPCallSync):
