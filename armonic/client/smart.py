@@ -834,6 +834,10 @@ class Provide(ArmonicProvide):
         local. We may only call it when the provide is external
 
         """
+        # If lfm_host is set at the multiplicity step
+        # we can create the lfm automatically
+        if self.lfm_host:
+            self.on_lfm(self.lfm_host)
         return self.lfm is None
 
     def on_lfm(self, lfm):
