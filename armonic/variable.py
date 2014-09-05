@@ -172,6 +172,24 @@ class VList(Variable):
     def value(self, value):
         self.fill(value)
 
+    @property
+    def raw_value(self):
+        values = []
+        if not self.value:
+            return values
+        for variable in self.value:
+            # List of lists
+            if self._inner_inner_class:
+                values.append(variable.raw_value)
+            else:
+                values.append(variable.value)
+        return values
+
+    def to_primitive(self):
+        primitive = Variable.to_primitive(self)
+        primitive["value"] = self.raw_value
+        return primitive
+
     def fill(self, primitive):
         values = []
         for key, val in enumerate(primitive):
