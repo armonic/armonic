@@ -645,7 +645,7 @@ class Provide(ArmonicProvide):
 
         # the host contains the adress (IP or DNS) used to contact the
         # service.
-        self.host = None
+        self._host = None
 
         # lfm_host contain the adress used to contact this agent
         self.lfm_host = None
@@ -674,6 +674,19 @@ class Provide(ArmonicProvide):
 
     def __repr__(self):
         return "<Provide(%s)>" % self.generic_xpath
+
+    @property
+    def host(self):
+        # When filling ArmonicHosts we need the host
+        # value of each Provide but each Provide might
+        # not have any lfm setup yet.
+        if self._host is None and self.lfm_host:
+            self.on_lfm(self.lfm_host)
+        return self._host
+
+    @host.setter
+    def host(self, value):
+        self._host = value
 
     def variables_serialized(self):
         """Get variables in the format for provide_call"""
