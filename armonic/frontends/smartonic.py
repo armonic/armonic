@@ -207,8 +207,16 @@ def run(root_provide, prefill, output_file, manage, autofill):
             if require.skel.type == 'external':
                 for i in range(0, data):
                     tmp_var = "host[%d]" % i
-                    adresses.append(user_input_variable(variable_name=tmp_var,
-                                                        message=indent(provide.depth, "What is adress of node %s? " % i))[tmp_var])
+                    # If the provide can list possible locations
+                    if hasattr(provide, "list_locations"):
+                        locations = provide.list_locations()
+                        data = user_input_choose_amongst(locations,
+                                                         "Choose location for node %d" % i,
+                                                         prefix=indent(provide.depth))
+                        adresses.append(data)
+                    else:
+                        adresses.append(user_input_variable(variable_name=tmp_var,
+                                                            message=indent(provide.depth, "What is the location of node %s? " % i))[tmp_var])
                 data = adresses
 
         elif provide.step == "call":
