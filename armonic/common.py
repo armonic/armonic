@@ -88,9 +88,9 @@ def process(self, dct, *args, **kws):
     if len(t) == 1:
         self._processline += t[0]
     elif len(t) > 1:
-        self._log(PROCESS_LEVELV_NUM, self._processline + t[0], args, **kws)
+        self._log(PROCESS_LEVELV_NUM, self._processline + t[0], *args, **kws)
         for i in t[1:-1]:
-            self._log(PROCESS_LEVELV_NUM, i, args, **kws)
+            self._log(PROCESS_LEVELV_NUM, i, *args, **kws)
         if t[-1] != '':
             self._processline = t[-1]
         else:
