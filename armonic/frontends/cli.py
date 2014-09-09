@@ -232,24 +232,24 @@ class Cli(object):
     def _add_arguments(self):
         help_require="specify requires. Format is 'require_name value1:value value2:value'. If the variable is a list, the format is 'require_name variable_list:[value1,value2,...]' (spaces are forbidden)."
 
-        subparsers = self.parser.add_subparsers(help='<subcommand>')
+        self.subparsers = self.parser.add_subparsers(help='<subcommand>')
 
-        parser_status = subparsers.add_parser('status', help='Show status of agent.')
+        parser_status = self.subparsers.add_parser('status', help='Show status of agent.')
         parser_status.set_defaults(func=lambda a : self.cmd_status(a))
 
-        parser_lifecycle = subparsers.add_parser('lifecycle', help='List lifecycles.')
+        parser_lifecycle = self.subparsers.add_parser('lifecycle', help='List lifecycles.')
         parser_lifecycle.add_argument("xpath" , type=str,
                                   default="//*[@ressource='lifecycle']", nargs="?",
                                   help="A xpath. Default is '%(default)s' which matches all lifecycles.")
         parser_lifecycle.add_argument('--long-description','-l',action='store_true',help="Show long description.")
         parser_lifecycle.set_defaults(func=lambda a : self.cmd_lifecycle(a))
 
-        parser_xpath = subparsers.add_parser('xpath', help='Get xpath')
+        parser_xpath = self.subparsers.add_parser('xpath', help='Get xpath')
         parser_xpath.add_argument('xpath' , type=str, help='an xpath')
         parser_xpath.add_argument('--uri','-u',action='store_true',help="Get uri associated to ressources that match the xpath.")
         parser_xpath.set_defaults(func=lambda a : self.cmd_xpath(a))
 
-        parser_state = subparsers.add_parser('state', help='List states.')
+        parser_state = self.subparsers.add_parser('state', help='List states.')
         parser_state.add_argument("state_xpath", type=str,
                                   default="//*[@ressource='state']", nargs="?",
                                   help="A xpath that matches states. Default is '%(default)s' which matches all states.")
@@ -259,11 +259,11 @@ class Cli(object):
 
         parser_state.set_defaults(func=lambda a : self.cmd_state(a))
 
-        parser_state_current = subparsers.add_parser('state-current', help='Show current state of a module.')
+        parser_state_current = self.subparsers.add_parser('state-current', help='Show current state of a module.')
         parser_state_current.add_argument('state_xpath' , type=str, help='a xpath that matches states')
         parser_state_current.set_defaults(func=lambda a : self.cmd_state_current(a))
 
-        parser_state_goto = subparsers.add_parser('state-goto', help='go to a state of a module')
+        parser_state_goto = self.subparsers.add_parser('state-goto', help='go to a state of a module')
         parser_state_goto.add_argument('state_xpath_uri' , type=str, help='a XPath URI corresponding to a State')
         group = parser_state_goto.add_mutually_exclusive_group()
         group.add_argument('-R',dest="require" , type=str,  nargs="*", action='append', help=help_require)
@@ -271,7 +271,7 @@ class Cli(object):
         parser_state_goto.set_defaults(func=lambda a : self.cmd_state_goto(a))
 
 
-        parser_provide = subparsers.add_parser('provide', help='List provides.')
+        parser_provide = self.subparsers.add_parser('provide', help='List provides.')
         parser_provide.add_argument('provide_xpath' , type=str, help='a xpath that matches Provide resources')
         parser_provide.add_argument('--long-description','-l',action='store_true',help="Show long description")
         parser_provide.add_argument('--path','-p',action='store_true',help="Show the path of state to call the provides")
@@ -279,7 +279,7 @@ class Cli(object):
 
         parser_provide.set_defaults(func=lambda a : self.cmd_provide(a))
 
-        parser_provide_call = subparsers.add_parser('provide-call', help='Call a provide.')
+        parser_provide_call = self.subparsers.add_parser('provide-call', help='Call a provide.')
         parser_provide_call.add_argument('xpath' , type=str, help='a xpath')
         parser_provide_call.add_argument('--check','-c',action='store_true',help="check if requires are valid. This calls provide_call_validation API method.")
         group = parser_provide_call.add_mutually_exclusive_group()
@@ -287,7 +287,7 @@ class Cli(object):
         group.add_argument('-J',dest="json_require" , type=str, help="Use raw JSON require format (useful for debugging, see provide_call API for more informations)")
         parser_provide_call.set_defaults(func=lambda a : self.cmd_provide_call(a))
 
-        parser_plot = subparsers.add_parser('plot', help='Plot a lifecycle')
+        parser_plot = self.subparsers.add_parser('plot', help='Plot a lifecycle')
         parser_plot.add_argument('module' , type=str, nargs='?', help='a module')
         parser_plot.add_argument('--reachable','-r',action='store_true',help="Only reachable states from current state")
         parser_plot.add_argument('-T', choices=['dot','json','json-human','automaton','xml'],help="print path to call this provide. For xml format, you can pipe armonic stdout to xmllint --format - to have a indented output ('client.py plot -T xml | xmllint --format -').")

@@ -37,6 +37,25 @@ class XMPPCli(XMPPCallSync):
         if msg['body']:
             logger.info('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
                                              COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
+    def list_locations(self):
+        locations = []
+        for jid in self.client_roster:
+            item = self.client_roster[jid]
+            # don't show offline agents or other accounts
+            if 'agent' not in item.resources:
+                continue
+            status = "offline"
+            if item.resources:
+                status = "online"
+            locations.append((jid, status))
+        return locations
+
+def print_locations(client):
+    print "Retrieving online locations..."
+    from time import sleep
+    sleep(2)
+    for (j, s) in client.list_locations():
+        print j, "is", s
 
 parser = argparse.ArgumentParser(
     prog='armonic-cli',
@@ -45,12 +64,15 @@ parser = argparse.ArgumentParser(
                  "but can also do some simple actions."))
 parser.add_argument("-J", "--jid-agent",
                     type=armonic.frontends.utils.jidType,
-                    required=True,
+                    # required=True, # FIXME: This is required by all subcommand except list...
                     help="Agent JID to query")
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli_xmpp = armonic.frontends.utils.CliXMPP(parser)
 cli = armonic.frontends.cli.Cli(parser)
+
+parser_list = cli.subparsers.add_parser('list', help='List available agents')
+parser_list.set_defaults(func=lambda args : print_locations(xmpp_client))
 
 args = cli_base.parse_args()
 args = cli_xmpp.parse_args()
@@ -58,6 +80,7 @@ args = cli_xmpp.parse_args()
 xmpp_client_ready = Event()
 xmpp_client = XMPPCli(args.jid, cli_xmpp.password,
                       plugins=[], muc_domain=cli_xmpp.muc_domain)
+
 agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent", deployment_id=deployment_id)
 
 
