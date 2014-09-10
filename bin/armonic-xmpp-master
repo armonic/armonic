@@ -165,7 +165,7 @@ class XMPPMaster(XMPPCallSync):
 
         form.add_field(var="host",
                        ftype="fixed",
-                       value=str(json.dumps(provide.host) or ""))
+                       value=str(json.dumps(provide.lfm_host) or ""))
 
         if step == 'manage':
             provide_label = provide.extra.get('label', provide.generic_xpath)
