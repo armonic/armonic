@@ -62,10 +62,6 @@ parser = argparse.ArgumentParser(
     description=("A simple client to contact an Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
-parser.add_argument("-J", "--jid-agent",
-                    type=armonic.frontends.utils.jidType,
-                    # required=True, # FIXME: This is required by all subcommand except list...
-                    help="Agent JID to query")
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli_xmpp = armonic.frontends.utils.CliXMPP(parser)
@@ -81,8 +77,10 @@ xmpp_client_ready = Event()
 xmpp_client = XMPPCli(args.jid, cli_xmpp.password,
                       plugins=[], muc_domain=cli_xmpp.muc_domain)
 
-agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent", deployment_id=deployment_id)
-
+if 'jid_agent' in args:
+    agent = XMPPAgentApi(xmpp_client, args.jid_agent + "/agent", deployment_id=deployment_id)
+else:
+    agent = None
 
 def run_cli():
     try:
