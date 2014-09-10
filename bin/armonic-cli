@@ -65,7 +65,14 @@ parser = argparse.ArgumentParser(
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli_xmpp = armonic.frontends.utils.CliXMPP(parser)
-cli = armonic.frontends.cli.Cli(parser)
+
+parent_parser = argparse.ArgumentParser(add_help=False)
+parent_parser.add_argument("-J", "--jid-agent",
+                           type=armonic.frontends.utils.jidType,
+                           required=True,
+                           help="Agent JID to query")
+
+cli = armonic.frontends.cli.Cli(parser, [parent_parser])
 
 parser_list = cli.subparsers.add_parser('list', help='List available agents')
 parser_list.set_defaults(func=lambda args : print_locations(xmpp_client))
