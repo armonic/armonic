@@ -198,13 +198,12 @@ class XMPPAgent(XMPPClientBase):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=__file__)
-
-    parser.add_argument('--no-load-state', '-l', dest="no_load_state",
+    parser.add_argument('--no-load-state', dest="no_load_state",
                         action="store_true", default=False,
-                        help='Load Armonic agent state on start (default: %(default)s))')
-    parser.add_argument('--no-save-state', '-s', dest="no_save_state",
+                        help='Don\'t load Armonic agent state on start (default: %(default)s))')
+    parser.add_argument('--no-save-state', dest="no_save_state",
                         action="store_true", default=False,
-                        help='Save Armonic agent state on exit (default: %(default)s))')
+                        help='Don\'t save Armonic agent state on exit (default: %(default)s))')
     parser.add_argument('--state-path', dest="state_path", type=str,
                         default="/tmp/armonic_%s%s_state",
                         help='Armonic state files paths (default: %(default)s))')
@@ -214,7 +213,6 @@ if __name__ == "__main__":
                         help="JID of the master (default '%(default)s')")
     parser.add_argument('--public-ip', type=str, default="localhost",
                         help="Public IP (default '%(default)s')")
-
 
     cli = armonic.frontends.utils.CliBase(parser)
     cli_xmpp = armonic.frontends.utils.CliXMPP(parser, confirm_password=True)
@@ -255,3 +253,4 @@ if __name__ == "__main__":
         xmpp_client.connect()
 
     xmpp_client.process(block=True)
+    persist.save()
