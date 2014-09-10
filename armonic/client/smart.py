@@ -863,6 +863,12 @@ class Provide(ArmonicProvide):
         if self.lfm_host is None:
             raise AttributeError("'lfm_host' attribute must not be None. Must be set at 'lfm' step")
 
+    def reset_lfm(self):
+        """
+        Reset all data set at the lfm step
+        """
+        self.lfm = self.lfm_host = self.host = None
+
     def do_call(self):
         return self.call is None
 
@@ -1238,7 +1244,8 @@ def smart_call(root_provide, values={}):
                         # Go back to the lfm step if specialize doesn't match anything
                         scope._previous_step()
                         # Reset the lfm since we need to choose another one
-                        scope.lfm = None
+                        scope.reset_lfm()
+
                         yield (scope, scope.step, PathNotFound('No path to %s found on %s (%s %s)' % (
                                                                scope.generic_xpath, scope.lfm_host,
                                                                os_type, os_release)))
