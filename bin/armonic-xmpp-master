@@ -175,8 +175,15 @@ class XMPPMaster(XMPPCallSync):
                                    label="Do you want to %s ?" % label)
 
         elif step == 'lfm':
-            provide_label = provide.extra.get('label', provide.generic_xpath)
-            label = provide_label[0].lower() + provide_label[1:]
+            # Try to find the provide on the local lfm since the provide
+            # is not resolved yet
+            local_provides = lfm.provide(provide.generic_xpath)
+            if len(local_provides) == 1:
+                provide_label = local_provides[0]['extra'].get('label', provide.generic_xpath)
+                label = provide_label[0].lower() + provide_label[1:]
+            else:
+                label = "call %s" % provide.generic_xpath
+
             field = form.add_field(var="host",
                                    ftype="input-single",
                                    label="Where do you want to %s ?" % label,
