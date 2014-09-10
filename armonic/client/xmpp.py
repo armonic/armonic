@@ -22,6 +22,10 @@ else:
 logger = logging.getLogger(__name__)
 
 
+class LifecycleException(Exception):
+    pass
+
+
 class XMPPError(Exception):
     pass
 
@@ -130,6 +134,8 @@ class XMPPClientBase(ClientXMPP):
 
     def _handle_armonic_exception(self, iq):
         self.event('armonic_exception', iq['exception'])
+        logger.debug("Handle exception '%s': %s" % (iq['exception']['code'],
+                                                    iq['exception']['message']))
 
     def handle_armonic_exception(self, exception):
         logger.error("%s: %s" % (exception['code'],
@@ -220,6 +226,11 @@ class XMPPCallSync(XMPPClientBase):
 
         # flag to wait for a result
         self._result_ready = Event()
+        # This will contains the result
+        self._result_ready._result = None
+        # This is used to know if the result is an exception or not
+        self._result_ready._result_is_exception = False
+
 
     def _handle_armonic_result(self, iq):
         self.event('armonic_result', iq)
@@ -231,7 +242,13 @@ class XMPPCallSync(XMPPClientBase):
         iq['status']['value'] = 'received'
         iq.send()
 
+        self._result_ready._result_is_exception = False
         self._result_ready._result = result
+        self._result_ready.set()
+
+    def handle_armonic_exception(self, exception):
+        self._result_ready._result_is_exception = True
+        self._result_ready._result = exception
         self._result_ready.set()
 
     def call(self, jid, deployment_id, method, *args, **kwargs):
@@ -254,7 +271,12 @@ class XMPPCallSync(XMPPClientBase):
         # Waiting for a result
         self._result_ready.wait()
         self._result_ready.clear()
-        return json.loads(self._result_ready._result)
+        if self._result_ready._result_is_exception:
+            raise LifecycleException("%s: %s" % (
+                self._result_ready._result['code'],
+                self._result_ready._result['message']))
+        else:
+            return json.loads(self._result_ready._result)
 
 
 class XMPPAgentApi(object):
