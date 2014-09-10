@@ -262,8 +262,8 @@ class XMPPCallSync(XMPPClientBase):
         try:
             resp = iq.send()
         except IqError:
-            logger.exception("Failed to send message to %s" % self.jid)
-            raise XMPPError("Failed to contact %s" % self.jid)
+            logger.error("Failed to send message to %s" % jid)
+            raise XMPPError("Failed to contact %s" % jid)
 
         if not resp['status']['value'] == 'executing':
             logger.error(resp)
