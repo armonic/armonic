@@ -2,7 +2,7 @@
 
 import sys
 import logging
-import argparse
+import configargparse as argparse
 from uuid import uuid4
 import json
 import os.path
@@ -240,10 +240,7 @@ class XMPPMaster(XMPPCallSync):
 
 
 if __name__ == '__main__':
-
-    prog = os.path.basename(sys.argv[0])
-
-    parser = argparse.ArgumentParser(prog=prog)
+    parser = argparse.ArgumentParser(default_config_files=armonic.common.MASTER_CONF)
 
     cli_base = armonic.frontends.utils.CliBase(parser)
     cli_local = armonic.frontends.utils.CliLocal(parser, disable_options=["--os-type", "--simulation"])

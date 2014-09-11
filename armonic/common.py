@@ -22,6 +22,18 @@ that have provide ret which are not available (since provides return None).
 """
 
 MUC_SUBDOMAIN = "logs"
+"""Default subdomain for the MUC service
+"""
+
+CLI_CONF = [os.path.expanduser("~/.config/armonic/cli.conf"), "/etc/armonic/cli.conf"]
+"""Default locations for Armonic clients (armonic-cli, smartonic configuration files
+"""
+AGENT_CONF = [os.path.expanduser("~/.config/armonic/agent.conf"), "/etc/armonic/agent.conf"]
+"""Default locations for Armonic agent configuration files
+"""
+MASTER_CONF = [os.path.expanduser("~/.config/armonic/master.conf"), "/etc/armonic/master.conf"]
+"""Default locations for Armonic master configuration files
+"""
 
 
 class NetworkFilter(logging.Filter):

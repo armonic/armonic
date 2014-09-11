@@ -12,7 +12,7 @@ in its roster.
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
-import argparse
+import configargparse as argparse
 import json
 
 import armonic.common
@@ -197,7 +197,7 @@ class XMPPAgent(XMPPClientBase):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog=__file__)
+    parser = argparse.ArgumentParser(default_config_files=armonic.common.AGENT_CONF)
     parser.add_argument('--no-load-state', dest="no_load_state",
                         action="store_true", default=False,
                         help='Don\'t load Armonic agent state on start (default: %(default)s))')

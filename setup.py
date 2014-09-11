@@ -11,7 +11,8 @@ install_requires = [
     'nose',
     'termcolor',
     'sleekxmpp',
-    'jinja2'
+    'jinja2',
+    'configargparse'
 ]
 
 setup(

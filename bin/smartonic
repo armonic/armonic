@@ -1,13 +1,14 @@
 #!/usr/bin/python
 
+import os
 import sys
-import argparse
-import os.path
+import configargparse as argparse
 import logging
 import json
 from uuid import uuid4
 from threading import Event
 
+import armonic.common
 from armonic.frontends.utils import CliBase, CliClient, CliXMPP
 from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED, CYAN
 from armonic.client.xmpp import XMPPCallSync, XMPPAgentApi, LifecycleException
@@ -69,7 +70,7 @@ class XMPPSmartonic(XMPPCallSync):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
+    parser = argparse.ArgumentParser(default_config_files=armonic.common.CLI_CONF)
     parser.add_argument(dest="xpath", type=str, help='A provide Xpath')
 
     parser.add_argument('--input', type=str, default=None,

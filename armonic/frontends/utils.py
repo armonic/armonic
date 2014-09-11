@@ -135,6 +135,8 @@ class CliBase(Cli):
                help='Can be specified many times (%s)' % [v[1] for v in VERBOSE_LEVELS]),
         CliArg('--version', "-V",
                action='version', version='%(prog)s ' + "0.1"),
+        CliArg('--config', "-c",
+               is_config_file=True, help='Path to config file'),
         CliArg('--log-filter',
                default=None,
                action='append',
@@ -172,23 +174,27 @@ class CliClient(Cli):
         CliArg('--dont-call', action='store_true',
                default=False,
                help="Don't execute provide calls.\
-               States are not applied. This is only useful on no-remote mode."),
+               States are not applied.",
+               env_var='ARMONIC_DONT_CALL'),
         CliArg('--manage', action='store_true', default=False,
-               help="Manage all provides without confirmation")
+               help="Manage all provides without confirmation",
+               env_var='ARMONIC_MANAGE')
     ]
 
 
 class CliLocal(Cli):
     ARGUMENTS = [
         CliArg('--os-type', choices=['mbs', 'debian', 'arch', 'any'],
-               default=None, help="Manually specify an OsType."),
+               default=None, help="Manually specify an OsType.",
+               env_var='ARMONIC_OS_TYPE'),
         CliArg('--lifecycle-dir', type=str, action='append',
                help="Load a lifecycle directory."),
         CliArg('--no-default', action='store_true',
                default=False, help="Don't load default lifecycles."),
         CliArg('--simulation', action='store_true',
                default=False,
-               help="Simulate provide calls. States are applied."),
+               help="Simulate provide calls. States are applied.",
+               env_var='ARMONIC_SIMULATION'),
         CliArg('--halt-on-error', action="store_true",
                default=False,
                help='Halt if a module import occurs (default: %(default)s))'),
@@ -226,20 +232,25 @@ class CliLocal(Cli):
 class CliXMPP(Cli):
     ARGUMENTS = [
         CliArg('--host', '-H', type=str,
-               help="XMPP server IP (if DNS is not set correctly)"),
+               help="XMPP server IP (if DNS is not set correctly)",
+               env_var='ARMONIC_XMPP_HOST'),
         CliArg('--port', '-P',
                type=int,
                default=5222,
-               help="XMPP server port (default '%(default)s')"),
+               help="XMPP server port (default '%(default)s')",
+               env_var='ARMONIC_XMPP_PORT'),
         CliArg('--jid', '-j',
                required=True,
                type=jidType,
-               help="A client JID <username@fqdn>"),
+               help="The client JID",
+               env_var='ARMONIC_XMPP_JID'),
         CliArg('--password', '-p', type=str,
-               help="Password (default '%(default)s')"),
+               help="The client password",
+               env_var='ARMONIC_XMPP_PASSWD'),
         CliArg('--muc-domain',
                type=str,
-               help="XMPP MUC domain"),
+               help="XMPP MUC domain (default is %s.<JID_DOMAIN>)" % armonic.common.MUC_SUBDOMAIN,
+               env_var='ARMONIC_XMPP_MUC_DOMAIN'),
         CliArg('--verbose-xmpp', action='store_true',
                default=False,
                help="Enable sleekxmpp logging")
