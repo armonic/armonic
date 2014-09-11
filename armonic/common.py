@@ -163,13 +163,13 @@ def load_lifecycle(lifecycle_path, raise_import_error=False):
 def load_default_lifecycles(raise_import_error=False):
     """Import default lifecycles"""
     lifecycle_dir = os.path.join(os.path.dirname(__file__), 'modules')
-    logger.info("Loading default lifecycles...")
-    for lifecycle in os.listdir(lifecycle_dir):
-        load_lifecycle(os.path.join(lifecycle_dir, lifecycle))
+    logger.info("Loading default lifecycles (in %s):" % lifecycle_dir)
+    load_lifecycle_repository(
+        lifecycle_dir, raise_import_error=raise_import_error)
 
 
 def load_lifecycle_repository(lifecycle_repository,
-                    raise_import_error=False):
+                              raise_import_error=False):
     """Import Lifecycle modules from lifecycle_repository which is a
     directory that contains several modules.
 
