@@ -7,20 +7,19 @@ from subprocess import Popen, PIPE, STDOUT
 logger = logging.getLogger(__name__)
 
 
-def run(executable, args=[], name=None, env=None):
+def run(executable, args=[], cwd=None, env=None):
     """Launch a executable and wait it. Return True if command succeed
     (ie. if executable return 0).
 
     :param executable: Absolute path of executable
     :param args: List of arguments
-    :param name: An optionnal name for logging
+    :param cwd: The working directory
     :param env: A optionnal dict containing environnement variable
                 name and its value
 
     """
     thread = ProcessThread("None", None, "None",
-                           [executable] + args,
-                           None, None, None, env=env)
+                           [executable] + args, cwd=cwd, env=env)
     return thread.launch()
 
 
