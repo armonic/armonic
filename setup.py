@@ -2,14 +2,12 @@ import os.path
 from setuptools import setup, find_packages
 
 install_requires = [
+    'nose',
     'netifaces',
     'lxml',
     'IPy',
     'MySQL-python',
-    'argcomplete',
     'prettytable',
-    'nose',
-    'termcolor',
     'sleekxmpp',
     'jinja2',
     'configargparse'
