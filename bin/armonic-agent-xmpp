@@ -21,6 +21,7 @@ from armonic.persist import Persist
 from armonic.client.xmpp import XMPPClientBase
 import armonic.frontends.utils
 
+from sleekxmpp.jid import JID
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
@@ -209,8 +210,7 @@ if __name__ == "__main__":
                         help='Armonic state files paths (default: %(default)s))')
 
     parser.add_argument('--jid-master', type=armonic.frontends.utils.jidType,
-                        default="master@im.aeolus.org",
-                        help="JID of the master (default '%(default)s')")
+                        help="JID of the master (default master@<JID_DOMAIN>)")
     parser.add_argument('--public-ip', type=str, default="localhost",
                         help="Public IP (default '%(default)s')")
 
@@ -233,6 +233,13 @@ if __name__ == "__main__":
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
+    if args.jid_master is None:
+        jid_master = 'master@%s' % JID(args.jid).domain
+    else:
+        jid_master = args.jid_master
+
+    logger.debug("JID master is %s" % jid_master)
+
     save_state = not args.no_save_state
     load_state = not args.no_load_state
     persist = Persist(load_state, save_state, args.state_path)
@@ -243,7 +250,7 @@ if __name__ == "__main__":
                                 cli_xmpp.password,
                                 muc_domain=cli_xmpp.muc_domain,
                                 lfm=lfm,
-                                jid_master=args.jid_master)
+                                jid_master=jid_master)
     except MalformedJID:
         sys.exit(1)
 
