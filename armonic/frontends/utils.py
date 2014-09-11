@@ -189,6 +189,8 @@ class CliLocal(Cli):
                env_var='ARMONIC_OS_TYPE'),
         CliArg('--lifecycle-dir', type=str, action='append',
                help="Load a lifecycle directory."),
+        CliArg('--lifecycle-repository', type=str, action='append',
+               help="Load a lifecycle repository (composed by several lifecycles)."),
         CliArg('--no-default', action='store_true',
                default=False, help="Don't load default lifecycles."),
         CliArg('--simulation', action='store_true',
@@ -223,6 +225,12 @@ class CliLocal(Cli):
         if self.has_arg('--lifecycle-dir') and args.lifecycle_dir is not None:
             for l in args.lifecycle_dir:
                 armonic.common.load_lifecycle(
+                    l,
+                    raise_import_error=args.halt_on_error)
+
+        if self.has_arg('--lifecycle-repository') and args.lifecycle_repository is not None:
+            for l in args.lifecycle_repository:
+                armonic.common.load_lifecycle_repository(
                     l,
                     raise_import_error=args.halt_on_error)
 
