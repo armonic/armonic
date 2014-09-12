@@ -35,6 +35,8 @@ MASTER_CONF = [os.path.expanduser("~/.config/armonic/master.conf"), "/etc/armoni
 """Default locations for Armonic master configuration files
 """
 
+PUBLIC_IP = "localhost"
+"""Public IP that should be used to contact deployed service. It has to be set by command line."""
 
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be

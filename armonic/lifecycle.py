@@ -834,6 +834,9 @@ class LifecycleManager(XMLRessource):
         if os_type:
             self.os_type = os_type
         self.public_ip = public_ip
+        # Here we globally set PUBLIC_IP
+        armonic.common.PUBLIC_IP = public_ip
+
         self.lf_loaded = {}
         self.lf = {}
         for lf in armonic.utils.get_subclasses(Lifecycle):
