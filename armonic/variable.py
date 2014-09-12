@@ -388,6 +388,11 @@ class Port(VInt):
 
 
 class VUrl(VString):
+    """Open an url, download the remote object to a local file and return
+    the local path of this object.
+    
+    This should be renamed.
+    """
     def get_file(self):
         """
         :rtype: A local file name which contain uri object datas."""
@@ -396,6 +401,10 @@ class VUrl(VString):
         localFile.write(u.read())
         localFile.close()
         return localFile.name
+
+
+class Url(VString):
+    pass
 
 
 class Password(VString):
