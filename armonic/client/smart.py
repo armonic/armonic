@@ -38,6 +38,15 @@ it which returns a generator. We use this generator to walk on provides::
             # ...
         elif step == ....
 
+
+Some tips about how it works...
+-------------------------------
+
+About provide_ret validation:
+Since provide_ret variables's values are known at runtime, we need to
+do special thing to pass agent validation before deployement. Smart
+ignore validation errors returned by agents if error occurs on
+variables that belongs to provide_ret.
 """
 
 # Limitiations
@@ -100,9 +109,9 @@ class Variable(object):
         # If its value is None, that means the provide is not managed
         # by smart and the value has to be manually provided.
         #
-        # You should use the property provided_by in order to auto
+        # You should use the property provided_by_xpath in order to auto
         # update this field.
-        self._provided_by = None
+        self._provided_by_xpath = None
 
         # Capture the variable used to resolve self
         self._resolved_by = None
@@ -162,7 +171,11 @@ class Variable(object):
                 logger.error("Error: Failed to update attr %s to %s" % (key, value))
 
     @property
-    def provided_by(self):
+    def provided_by_xpath(self):
+        """If this variable belongs to a provide_ret, return None if the
+        Provide that has to provide the value is not managed by
+        smart. In this case, user will have to fill it manually.
+        """
         if (self.belongs_provide_ret and
                 self.from_require.provide is not None and
                 self.from_require.provide.manage):
@@ -939,6 +952,12 @@ class Provide(ArmonicProvide):
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.xpath,
             requires=self.variables_serialized())
+        if self.provide_ret is None:
+            logger.debug("Provide '%s' should not return None!" % self.xpath)
+        else:
+            logger.info("Provide '%s' returns:" % self.xpath)
+            for i in self.provide_ret.items():
+                logger.info("\t%s : '%s'" % i)
 
         self.update_scope_provide_ret(self.provide_ret)
         # self.provide_ret = self.lfm.call("provide_call_validate",
