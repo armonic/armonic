@@ -59,7 +59,9 @@ class Configured(State):
 
 
 class SetRootPassword(State):
-    """Set initial Mysql root password"""
+    """Set initial Mysql root password. This currently just works on
+    MBS. This should be ported to Debian."""
+    supported_os_type = [armonic.utils.OsTypeMBS()]
 
     @Require('auth', [Password("password", label="Initial root password for MySQL")])
     def enter(self, requires):
