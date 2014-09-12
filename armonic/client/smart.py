@@ -520,11 +520,12 @@ class Remote(Require):
         """:rtype: [:class:`Variable`]"""
         acc = self.provide_args
         for v in self.provide_ret:
-            if v.provided_by is None:
-                acc.append(v)
+            acc.append(v)
+            if v.provided_by_xpath is None:
+                pass
             else:
-                logger.debug("Variable %s will be provided_by by %s" % (
-                    v.xpath, v.provided_by))
+                logger.debug("Variable %s will be provided_by_xpath by %s" % (
+                    v.xpath, v.provided_by_xpath))
         return acc
 
     def update_provide_ret(self, provide_ret):
@@ -534,7 +535,6 @@ class Remote(Require):
                     v._value = value
                     logger.debug("Variable %s has been updated with value "
                                  "'%s' from provide_ret" % (v.xpath, value))
-                    logger.debug("%s", id(v))
                     break
 
 
