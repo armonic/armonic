@@ -64,6 +64,12 @@ logger = logging.getLogger(__name__)
 # represents provide_ret value.
 SPECIAL_REQUIRE_RETURN_NAME = "return"
 
+# Describe the step that sent (through the generator) values used for
+# the deployment
+STEP_DEPLOYMENT_VALUES = "deployment_values"
+
+# The last step that sent datas returned by the root provide.
+STEP_FINAL_VALUES = "final_values"
 
 class ValidationError(Exception):
     pass
@@ -966,6 +972,8 @@ class Provide(ArmonicProvide):
         # from pprint import pprint
         # pprint(self.provide_ret)
 
+        return self.provide_ret
+
 
 class XpathNotFound(Exception):
     pass
@@ -1175,11 +1183,14 @@ class Deployment(object):
 
 
 def smart_call(root_provide, values={}):
-    """Return a generator which 'yields' a 3-uple (provide, step,
+    """Generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
 
     scope = root_provide
     deployment = Deployment(scope, values)
+
+    # The provide call return value.
+    ret = None
 
     logger.info("Smart is using prefilled values: %s" % deployment.to_primitive())
 
@@ -1369,12 +1380,14 @@ def smart_call(root_provide, values={}):
                     data = yield(scope, scope.step, None)
                     scope.on_call(data)
                 if scope.call:
-                    scope.lfm_call()
+                    ret = scope.lfm_call()
                 scope._next_step()
 
             else:
                 yield (scope, scope.step, None)
                 scope._next_step()
 
-    yield (None, None, deployment.to_primitive())
+    yield (None, STEP_DEPLOYMENT_VALUES, deployment.to_primitive())
+    print "STEP_FINAL_VALUES"
+    yield (None, STEP_FINAL_VALUES, ret)
     return

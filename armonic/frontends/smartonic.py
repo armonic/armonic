@@ -6,7 +6,7 @@ import json
 
 from armonic.frontends.utils import read_variable, show_variable, \
     COLOR_SEQ, RESET_SEQ, CYAN
-from armonic.client.smart import smart_call, SmartException
+from armonic.client.smart import smart_call, SmartException, STEP_DEPLOYMENT_VALUES, STEP_FINAL_VALUES
 
 
 logger = logging.getLogger()
@@ -86,12 +86,16 @@ def run(root_provide, prefill, output_file, manage, autofill):
         except StopIteration:
             break
 
-        if provide is None and step is None:
+        if provide is None and step is STEP_DEPLOYMENT_VALUES:
             if output_file:
                 with open(output_file, 'w') as fp:
                     json.dump(args, fp, indent=2)
                     logger.info("Deployment values written in %s" % output_file)
-            break
+            continue
+
+        if provide is None and step is STEP_FINAL_VALUES:
+            provide_ret_value = args
+            return provide_ret_value
 
         if provide.tree_id is None:
             pass
