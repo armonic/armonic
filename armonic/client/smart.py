@@ -958,8 +958,8 @@ class Provide(ArmonicProvide):
         self.provide_ret = self.lfm.provide_call(
             provide_xpath_uri=self.xpath,
             requires=self.variables_serialized())
-        if self.provide_ret is None:
-            logger.debug("Provide '%s' should not return None!" % self.xpath)
+        if type(self.provide_ret) is not dict:
+            logger.debug("Provide '%s' return type is %s (instead a dict)!" % (self.xpath, type(self.provide_ret)))
         else:
             logger.info("Provide '%s' returns:" % self.xpath)
             for i in self.provide_ret.items():
