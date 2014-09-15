@@ -44,7 +44,16 @@ class MUCHandler(logging.Handler):
     def emit(self, record):
         if not self.client:
             return
-        self.client.send_muc_message(self.id, str(record.msg))
+        message = self.client.Message()
+        message['log']['level'] = str(record.levelno)
+        # because of armonic.frontends.utils.ColoredFormatter
+        try:
+            level_name = str(record._levelname)
+        except AttributeError:
+            level_name = str(record.levelname)
+        message['log']['level_name'] = level_name.lower()
+        message['body'] = str(record.msg)
+        self.client.send_muc_message(self.id, message)
         return True
 
 

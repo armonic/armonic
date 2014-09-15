@@ -10,7 +10,7 @@ from threading import Event
 
 import armonic.common
 from armonic.frontends.utils import CliBase, CliClient, CliXMPP
-from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED, CYAN
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, RED
 from armonic.client.xmpp import XMPPCallSync, XMPPAgentApi, LifecycleException
 from armonic.client.smart import Provide
 from armonic.frontends.smartonic import run
@@ -54,19 +54,10 @@ class SmartonicProvide(Provide):
 
 class XMPPSmartonic(XMPPCallSync):
 
-    def __init__(self, *args, **kwargs):
-        XMPPCallSync.__init__(self, *args, **kwargs)
-        self.add_event_handler("groupchat_message", self.on_agent_log)
-
     def session_start(self, event):
         XMPPCallSync.session_start(self, event)
         # Join room to get agent logs
         self.join_muc_room(deployment_id)
-
-    def on_agent_log(self, msg):
-        if msg['body']:
-            logger.info('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
-                                             COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
 
 
 if __name__ == '__main__':

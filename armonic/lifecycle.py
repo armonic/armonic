@@ -205,7 +205,7 @@ class State(XMLRessource):
 
     def cross(self, **kwargs):
         """Called when the state is traversed"""
-        logger.info("State %s crossed" % self)
+        logger.debug("State %s crossed" % self)
 
     def enter_doc(self):
         """NOT YET IMPLEMENTED.

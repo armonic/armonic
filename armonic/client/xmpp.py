@@ -4,13 +4,15 @@ import sys
 import json
 import logging
 
-from sleekxmpp import ClientXMPP, Iq
+from sleekxmpp import ClientXMPP, Iq, Message
 from sleekxmpp.jid import JID, InvalidJID
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 from threading import Event
+
+from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, CYAN
 
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
@@ -87,6 +89,14 @@ class ArmonicException(ElementBase):
     sub_interfaces = interfaces
 
 
+class ArmonicLog(ElementBase):
+    name = 'log'
+    namespace = 'armonic'
+    plugin_attrib = 'log'
+    interfaces = set(('level', 'level_name', 'deployment_id'))
+    sub_interfaces = interfaces
+
+
 class XMPPClientBase(ClientXMPP):
     base_plugins = [
         ('xep_0030',),  # Disco
@@ -113,6 +123,7 @@ class XMPPClientBase(ClientXMPP):
         register_stanza_plugin(Iq, ArmonicResult)
         register_stanza_plugin(Iq, ArmonicStatus)
         register_stanza_plugin(Iq, ArmonicException)
+        register_stanza_plugin(Message, ArmonicLog)
 
         self.registerHandler(
             Callback('handle armonic exceptions',
@@ -205,9 +216,9 @@ class XMPPClientBase(ClientXMPP):
     def send_muc_message(self, id, message):
         if self.muc_domain is None:
             return
-        self.send_message(mto=self._get_muc_room_name(id),
-                          mbody=message,
-                          mtype='groupchat')
+        message['to'] = self._get_muc_room_name(id)
+        message['type'] = 'groupchat'
+        message.send()
 
 
 class XMPPCallSync(XMPPClientBase):
@@ -224,13 +235,21 @@ class XMPPCallSync(XMPPClientBase):
                                self.handle_armonic_result,
                                threaded=True)
 
+        self.registerHandler(
+            Callback('handle armonic log messages',
+                     StanzaPath('message/log'),
+                     self._handle_armonic_log)
+        )
+        self.add_event_handler('armonic_log',
+                               self.handle_armonic_log,
+                               threaded=True)
+
         # flag to wait for a result
         self._result_ready = Event()
         # This will contains the result
         self._result_ready._result = None
         # This is used to know if the result is an exception or not
         self._result_ready._result_is_exception = False
-
 
     def _handle_armonic_result(self, iq):
         self.event('armonic_result', iq)
@@ -250,6 +269,19 @@ class XMPPCallSync(XMPPClientBase):
         self._result_ready._result_is_exception = True
         self._result_ready._result = exception
         self._result_ready.set()
+
+    def _handle_armonic_log(self, message):
+        self.event('armonic_log', message)
+
+    def handle_armonic_log(self, msg):
+        logger_method = logger.info
+        if msg['log']:
+            try:
+                logger_method = getattr(logger, msg['log']['level_name'])
+            except AttributeError:
+                logger_method = logger.info
+        logger_method('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
+                                           COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
 
     def call(self, jid, deployment_id, method, *args, **kwargs):
         iq = self.Iq()
