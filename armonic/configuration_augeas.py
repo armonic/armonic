@@ -435,7 +435,7 @@ class Configuration(object):
 
     """
 
-    def __init__(self, augeas_root="/", autoload=False):
+    def __init__(self, augeas_root="/", autoload=True):
         """augeas_root parameter permits to specify the root of configuration
         files (a kind of chroot).
 
