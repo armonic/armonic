@@ -3,7 +3,7 @@ Armonic
 =======
 
 Armonic is a deployment tool based on state machines. It's basically
-composed by an agent and several kinds of client.
+composed by an agent and several kinds of clients.
 
 With Armonic, an sysadmin/devops can:
 * build a distributed application by assembling predefined services,
@@ -37,12 +37,12 @@ Then, you can begin to use Armonic by listing available modules so-called [*Life
 
   `armonic-cli-local lifecycle`
 
-We have implemented two dummy lifecycle:
+Two dummy lifecycle are available:
 
 * *WebServer* simulates a webserver service,
 * *WebSite* simulates a website and depends of *WebServer*.
 
-To activate the webserver run:
+For instance, to activate the webserver run:
 
   `armonic-cli-local -v provide-call //WebServer//start`
 
