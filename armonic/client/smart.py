@@ -1388,6 +1388,5 @@ def smart_call(root_provide, values={}):
                 scope._next_step()
 
     yield (None, STEP_DEPLOYMENT_VALUES, deployment.to_primitive())
-    print "STEP_FINAL_VALUES"
     yield (None, STEP_FINAL_VALUES, ret)
     return
