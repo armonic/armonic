@@ -1,7 +1,7 @@
 from armonic import Lifecycle, State, Transition, Provide, Require
 from armonic.states import InitialState
 from armonic.variable import VString, Port
-
+import armonic.common
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,9 +21,9 @@ class Configured(State):
 
     @Require("conf", variables=[Port("port", default=80)])
     def enter(self, requires):
-        port = requires.conf.variables().port.value
+        self.port = requires.conf.variables().port.value
         logger.info("Configuration of webserver service...")
-        logger.info("Webserver listening on port %d" % port)
+        logger.info("Webserver listening on port %d" % self.port)
 
     @Provide(tags=['internal'])
     @Require("document_root", variables=[VString("path", default="/var/www/")])
@@ -40,7 +40,7 @@ class Active(State):
     @Provide(label='Fake webserver activation',
              tags=['demo'])
     def start(self):
-        pass
+        return {'url': 'http://%s:%s' % (armonic.common.PUBLIC_IP, Configured().port)}
 
 
 class WebServer(Lifecycle):
