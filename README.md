@@ -57,7 +57,7 @@ Let's try it:
 
 `smartonic-cli-local //WebSite//start` 
 
-Then, follow it and see messages which simulates the deployment of a website.
+Then, follow it and see messages which simulate deployment of a web site (and a web server).
 
 Full documentation
 ------------------
