@@ -62,6 +62,7 @@ class MyProvide(Provide):
             return True
 
 root_provide = MyProvide(generic_xpath=args.xpath)
+root_provide.lfm_host = "localhost"
 
 prefill = {}
 if args.input and os.path.exists(args.input):
@@ -73,4 +74,8 @@ if args.output:
     output_file = args.output
 
 
-armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
+ret = armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
+
+print "Values returned by '%s':" % root_provide.xpath
+print ret
+
