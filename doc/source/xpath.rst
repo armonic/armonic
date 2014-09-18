@@ -50,16 +50,16 @@ XPath permits to address one or several resources in a generic and
 standardized way. For instance, we can list all states of the
 lifecycle `Webserver` with the command::
 
-  $ armonic-cli state "//WebServer/*"
+  $ armocli state "//WebServer/*"
 
 The XPath `"//WebServer/*"` matches all states of resource WebServer which is a lifecycle. To get states of all lifecycles::
 
-  $ armonic-cli state "/*/*"
+  $ armocli state "/*/*"
 
 
 To get description of provide start of state Active::
-  
-  $ armonic-cli provide "/*/WebServer/Active/start" -l
+
+  $ armocli provide "/*/WebServer/Active/start" -l
 
 Absolute XPath
 --------------
@@ -87,7 +87,7 @@ Since Armonic resources are modelized by a tree, we use the path to
 provide unique resource identifier. Some methods of the API needs of
 resource URI to avoid potential conflict. For instance, to reach a
 state, we have to use a URI instead of a more generic XPath
-(`state-goto` needs a XPath URI). 
+(`state-goto` needs a XPath URI).
 
 A XPath URI is just a XPath that matches only one resource. To be sure
 to provide an URI, use full specialized XPath, ie. don't use

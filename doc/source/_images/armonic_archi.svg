@@ -10,13 +10,55 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="800"
-   height="550"
+   height="580"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.4 r9939"
+   inkscape:version="0.48.5 r10040"
    sodipodi:docname="armonic_archi.svg">
   <defs
      id="defs4">
+    <marker
+       inkscape:stockid="Arrow2Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Mend"
+       style="overflow:visible">
+      <path
+         id="path5821"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="scale(-0.6,-0.6)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Mstart"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Mstart"
+       style="overflow:visible">
+      <path
+         id="path5818"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="scale(0.6,0.6)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Sstart"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Sstart"
+       style="overflow:visible">
+      <path
+         id="path5824"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(0.3,0,0,0.3,-0.69,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
     <marker
        inkscape:stockid="Arrow1Lend"
        orient="auto"
@@ -157,6 +199,132 @@
          d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
          transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
     </marker>
+    <marker
+       inkscape:stockid="Arrow2Lstart"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lstart-7-2"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4411-6-8"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(1.1,0,0,1.1,1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-4-3"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4414-6-9"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-4-30"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4414-6-92"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker5295"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path5297"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-4-12"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4414-6-0"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-4-0"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4414-6-97"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker5399"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path5401"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-4-9"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4414-6-3"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker5434"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path5436"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -165,18 +333,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.979899"
-     inkscape:cx="361.22089"
-     inkscape:cy="179.90253"
+     inkscape:zoom="0.84346165"
+     inkscape:cx="321.03929"
+     inkscape:cy="288.05296"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g3476"
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:window-width="1982"
-     inkscape:window-height="1097"
-     inkscape:window-x="1642"
-     inkscape:window-y="181"
+     inkscape:window-width="1548"
+     inkscape:window-height="1069"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -194,158 +362,294 @@
      inkscape:label="Calque 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-502.36218)">
+     transform="translate(0,-472.36218)">
     <g
        id="g4286"
        transform="matrix(1.3227036,0,0,1.3227036,-60.116779,429.56021)"
        inkscape:export-filename="/home/eon/armonic_archi.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90">
+      <rect
+         y="298.48868"
+         x="255.54498"
+         height="151.97687"
+         width="381.85144"
+         id="rect5457"
+         style="fill:#e6e6e6;fill-opacity:1;stroke:#000000;stroke-width:1.00022411;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.00022409, 3.00067226;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path5977-4"
+         d="m 146.86138,308.20976 c 13.27816,-9.76147 22.20758,-35.12807 22.7881,-59.05477"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:url(#Arrow2Lend-4)" />
       <g
-         id="g4327">
+         transform="translate(99.724915,-28.729039)"
+         id="g3467">
         <rect
-           y="314.72202"
-           x="266.28226"
-           height="45.280315"
+           y="337.05222"
+           x="168.75034"
+           height="62.554138"
            width="164.57834"
-           id="rect2991-0-5-4"
-           style="fill:#808080;fill-rule:evenodd;stroke:none" />
+           id="rect2991-0-5-4-1"
+           style="fill:#04c800;fill-rule:evenodd;stroke:none" />
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path5977"
+           d="M 251.11136,345.64866 C 227.15477,290.32084 140.25353,364.91038 116.19682,277.80171"
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:url(#Arrow2Lend-4)" />
         <text
            sodipodi:linespacing="125%"
-           id="text3819-2-0-3-2"
-           y="341.54324"
-           x="316.30576"
-           style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           id="text3819-2-0-3-2-7"
+           y="389.79062"
+           x="212.97351"
+           style="font-size:13.57345581px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
            xml:space="preserve"><tspan
-             y="341.54324"
-             x="316.30576"
-             id="tspan3821-7-0-5-6"
+             y="389.79062"
+             x="212.97351"
+             id="tspan3821-7-0-5-6-8"
              sodipodi:role="line"
-             style="font-size:11.21522236px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">Smartonic</tspan></text>
+             style="font-size:13.57345581px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">smartonic</tspan></text>
         <path
-           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow2Lstart);marker-end:url(#Arrow2Lend)"
-           d="m 245.71429,389.50504 c -24.60136,-37.37668 -5.65083,-54.33593 28.57143,-63.57143"
-           id="path4344"
+           sodipodi:nodetypes="cc"
            inkscape:connector-curvature="0"
-           transform="translate(-7.8572283,10.714286)"
-           sodipodi:nodetypes="cc" />
-        <text
-           xml:space="preserve"
-           style="font-size:9.31068897px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#666666;fill-opacity:1;stroke:none;font-family:Sans"
-           x="194.45544"
-           y="366.85825"
-           id="text4346"
-           sodipodi:linespacing="125%"><tspan
-             sodipodi:role="line"
-             id="tspan4348"
-             x="194.45544"
-             y="366.85825">xmmp</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-size:9.31068897px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#666666;fill-opacity:1;stroke:none;font-family:Sans"
-           x="475.33603"
-           y="366.14395"
-           id="text4346-9"
-           sodipodi:linespacing="125%"><tspan
-             sodipodi:role="line"
-             id="tspan4348-8"
-             x="475.33603"
-             y="366.14395">xmmp</tspan></text>
-        <path
-           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow2Lstart-7);marker-end:url(#Arrow2Lend-4)"
-           d="m 335.71417,314.50504 c -10.71428,-33.57142 -23.01372,-31.64336 -81.42857,-14.28572 -62.17179,18.47401 -82.14286,12.85715 -110,-29.28571"
-           id="path5977"
-           inkscape:connector-curvature="0"
-           sodipodi:nodetypes="csc" />
-        <path
-           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow2Lstart-7);marker-end:url(#Arrow2Lend-4)"
-           d="m 352.25757,314.06709 c 10.71428,-33.57142 23.01372,-31.64336 81.42857,-14.28572 62.17179,18.47401 82.14286,12.85715 110,-29.28571"
            id="path5977-5"
-           inkscape:connector-curvature="0"
-           sodipodi:nodetypes="csc" />
+           d="m 249.74381,345.63989 c 46.92327,-31.06492 9.40024,-119.77793 104.65283,-118.10775"
+           style="fill:none;stroke:#000000;stroke-width:1.00022411;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:none;marker-end:url(#Arrow2Lend-4)" />
+        <g
+           id="g3426"
+           transform="translate(-19.70277,6.4473402)">
+          <rect
+             style="fill:#80e800;fill-rule:evenodd;stroke:none"
+             id="rect2991-0-5-4"
+             width="140.13985"
+             height="26.951447"
+             x="200.67235"
+             y="338.35074" />
+          <text
+             xml:space="preserve"
+             style="font-size:9.24164104px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+             x="247.17789"
+             y="355.27176"
+             id="text3819-2-0-3-2"
+             sodipodi:linespacing="125%"><tspan
+               style="font-size:9.24164104px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold"
+               sodipodi:role="line"
+               id="tspan3821-7-0-5-6"
+               x="247.17789"
+               y="355.27176">lib smart</tspan></text>
+        </g>
         <text
-           xml:space="preserve"
-           style="font-size:9.31068897px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#666666;fill-opacity:1;stroke:none;font-family:Sans"
-           x="186.05032"
-           y="301.14395"
-           id="text4346-5"
-           sodipodi:linespacing="125%"><tspan
-             sodipodi:role="line"
-             id="tspan4348-6"
-             x="186.05032"
-             y="301.14395">xmmp</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-size:9.31068897px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#666666;fill-opacity:1;stroke:none;font-family:Sans"
-           x="468.90747"
-           y="301.14395"
-           id="text4346-8"
-           sodipodi:linespacing="125%"><tspan
-             sodipodi:role="line"
-             id="tspan4348-81"
-             x="468.90747"
-             y="301.14395">xmmp</tspan></text>
-        <path
-           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow2Lstart);marker-end:url(#Arrow2Lend)"
-           d="m 459.80473,397.91877 c 24.60136,-37.37668 5.65083,-54.33593 -28.57143,-63.57143"
-           id="path4344-5"
-           inkscape:connector-curvature="0"
-           sodipodi:nodetypes="cc" />
+           sodipodi:linespacing="125%"
+           id="text3485"
+           y="397.32791"
+           x="296.51056"
+           style="font-size:8.5316925px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="397.32791"
+             x="296.51056"
+             id="tspan3487"
+             sodipodi:role="line">cli client</tspan></text>
       </g>
-    </g>
-    <g
-       id="g4332"
-       transform="matrix(1.3227036,0,0,1.3227036,46.644303,453.36887)"
-       inkscape:export-filename="/home/eon/armonic_archi.png"
-       inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90">
-      <rect
-         y="380.43634"
-         x="275.56796"
-         height="45.280315"
-         width="164.57834"
-         id="rect2991-0-5"
-         style="fill:#808080;fill-rule:evenodd;stroke:none" />
+      <g
+         transform="translate(87.69924,-6.2843632)"
+         id="g3476">
+        <rect
+           y="314.60754"
+           x="374.5899"
+           height="62.554138"
+           width="164.57834"
+           id="rect2991-0-5-4-1-3"
+           style="fill:#04c800;fill-rule:evenodd;stroke:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text3819-2-0-3-2-7-7"
+           y="367.34595"
+           x="406.35309"
+           style="font-size:13.57345581px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="367.34595"
+             x="406.35309"
+             id="tspan3821-7-0-5-6-8-5"
+             sodipodi:role="line"
+             style="font-size:13.57345581px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">xmpp master</tspan></text>
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path5977-56"
+           d="M 459.11363,323.05195 C 442.79407,267.72413 236.06757,232.00872 155.11498,231.19848"
+           style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:url(#Arrow2Lend-4)" />
+        <path
+           sodipodi:nodetypes="cc"
+           inkscape:connector-curvature="0"
+           id="path5977-5-47"
+           d="m 458.74172,323.30494 c 22.05331,-47.5262 34.4671,-20.56359 56.69807,-67.92856"
+           style="fill:none;stroke:#000000;stroke-width:1.00022411;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:none;marker-end:url(#Arrow2Lend-4)" />
+        <g
+           id="g3426-6"
+           transform="translate(186.1376,-15.997347)">
+          <rect
+             style="fill:#80e800;fill-rule:evenodd;stroke:none"
+             id="rect2991-0-5-4-8"
+             width="140.13985"
+             height="26.951447"
+             x="200.67235"
+             y="338.35074" />
+          <text
+             xml:space="preserve"
+             style="font-size:9.24164104px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+             x="247.17789"
+             y="355.27176"
+             id="text3819-2-0-3-2-9"
+             sodipodi:linespacing="125%"><tspan
+               style="font-size:9.24164104px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold"
+               sodipodi:role="line"
+               id="tspan3821-7-0-5-6-9"
+               x="247.17789"
+               y="355.27176">lib smart</tspan></text>
+        </g>
+        <text
+           sodipodi:linespacing="125%"
+           id="text3485-2"
+           y="375.56082"
+           x="503.81174"
+           style="font-size:8.5316925px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="375.56082"
+             x="503.81174"
+             id="tspan3487-7"
+             sodipodi:role="line">daemon</tspan></text>
+        <rect
+           y="401.8288"
+           x="374.5899"
+           height="44.988972"
+           width="164.57834"
+           id="rect2991-0-5-4-1-3-4"
+           style="fill:#04c800;fill-opacity:1;fill-rule:evenodd;stroke:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text3819-2-0-3-2-7-7-5"
+           y="429.38351"
+           x="419.94641"
+           style="font-size:13.57345581px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="429.38351"
+             x="419.94641"
+             id="tspan3821-7-0-5-6-8-5-1"
+             sodipodi:role="line"
+             style="font-size:13.57345581px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">warmonic</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text3485-2-8"
+           y="445.30435"
+           x="494.57303"
+           style="font-size:8.5316925px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="445.30435"
+             x="494.57303"
+             id="tspan3487-7-7"
+             sodipodi:role="line">web client</tspan></text>
+      </g>
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path5977-5-4"
+         d="m 546.55298,394.23438 3.81125,-22.08324"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow2Mstart);marker-end:url(#Arrow2Mend)" />
+      <g
+         id="g3467-5"
+         transform="translate(-94.088962,-29.302935)">
+        <rect
+           y="337.05222"
+           x="168.75034"
+           height="62.554138"
+           width="164.57834"
+           id="rect2991-0-5-4-1-4"
+           style="fill:#005000;fill-rule:evenodd;stroke:none" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text3819-2-0-3-2-7-0"
+           y="373.3895"
+           x="222.94484"
+           style="font-size:13.57345581px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="373.3895"
+             x="222.94484"
+             id="tspan3821-7-0-5-6-8-2"
+             sodipodi:role="line"
+             style="font-size:13.57345581px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">armocli</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text3485-8"
+           y="397.32791"
+           x="296.51056"
+           style="font-size:8.5316925px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             y="397.32791"
+             x="296.51056"
+             id="tspan3487-3"
+             sodipodi:role="line">cli client</tspan></text>
+      </g>
       <text
          sodipodi:linespacing="125%"
-         id="text3819-2-0-3"
-         y="407.25757"
-         x="292.48795"
-         style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+         id="text5459"
+         y="425.33908"
+         x="262.93561"
+         style="font-size:7.30236721px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#4d4d4d;fill-opacity:1;stroke:none;font-family:Sans"
          xml:space="preserve"><tspan
-           y="407.25757"
-           x="292.48795"
-           id="tspan3821-7-0-5"
-           sodipodi:role="line">Armonic Web Frontend</tspan></text>
-    </g>
-    <g
-       id="g4337"
-       transform="matrix(1.3227036,0,0,1.3227036,-202.02397,370.22749)"
-       inkscape:export-filename="/home/eon/armonic_archi.png"
-       inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90">
-      <rect
-         y="444.15063"
-         x="275.56796"
-         height="45.280315"
-         width="164.57834"
-         id="rect2991-0-5-7"
-         style="fill:#808080;fill-rule:evenodd;stroke:none" />
+           y="425.33908"
+           x="262.93561"
+           id="tspan5461"
+           sodipodi:role="line">Deployment orchestration </tspan><tspan
+           id="tspan5493"
+           y="434.46704"
+           x="262.93561"
+           sodipodi:role="line">on multiple servers</tspan><tspan
+           id="tspan5463"
+           y="443.595"
+           x="262.93561"
+           sodipodi:role="line">via cli or web clients.</tspan></text>
       <text
          sodipodi:linespacing="125%"
-         id="text3819-2-0-3-9"
-         y="470.97186"
-         x="297.67935"
-         style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+         id="text5459-8"
+         y="380.65436"
+         x="74.682823"
+         style="font-size:7.30236769px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#4d4d4d;fill-opacity:1;stroke:none;font-family:Sans"
          xml:space="preserve"><tspan
-           y="470.97186"
-           x="297.67935"
-           id="tspan3821-7-0-5-5"
-           sodipodi:role="line">Armonic CLI Frontend</tspan></text>
+           id="tspan5463-5"
+           y="380.65436"
+           x="74.682823"
+           sodipodi:role="line">Low level cli client.</tspan><tspan
+           id="tspan5491"
+           y="389.78232"
+           x="74.682823"
+           sodipodi:role="line">Calls armonic API directly on only one agent.</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5459-88"
+         y="223.25168"
+         x="313.09961"
+         style="font-size:9.64604568px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#4d4d4d;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan5463-2"
+           y="223.25168"
+           x="313.09961"
+           sodipodi:role="line">XMPP protocol</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5459-88-3"
+         y="385.71255"
+         x="553.26868"
+         style="font-size:5.86010456px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#4d4d4d;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan5463-2-7"
+           y="385.71255"
+           x="553.26868"
+           sodipodi:role="line">XMPP protocol</tspan></text>
     </g>
     <g
        id="g4210"
-       transform="matrix(1.3227036,0,0,1.3227036,-593.16632,444.67682)"
+       transform="matrix(1.3227036,0,0,1.3227036,-593.16632,414.67682)"
        inkscape:export-filename="/home/eon/armonic_archi.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90">
@@ -357,7 +661,7 @@
          x="470.69391"
          y="65.198975" />
       <rect
-         style="fill:#808080;fill-rule:evenodd;stroke:none"
+         style="fill:#0070e4;fill-rule:evenodd;stroke:none"
          id="rect4214"
          width="164.57834"
          height="170.9946"
@@ -445,7 +749,7 @@
            sodipodi:role="line"
            id="tspan4242"
            x="481.54282"
-           y="96.884789">Armonic agent</tspan></text>
+           y="96.884789">Armonic XMPP agent</tspan></text>
       <text
          xml:space="preserve"
          style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -456,10 +760,10 @@
            sodipodi:role="line"
            id="tspan4246"
            x="476.54282"
-           y="77.741936">Server</tspan></text>
+           y="77.741936">Server A</tspan></text>
     </g>
     <g
-       transform="matrix(1.3227036,0,0,1.3227036,-79.768336,444.67682)"
+       transform="matrix(1.3227036,0,0,1.3227036,-79.768336,414.67682)"
        id="g4248"
        inkscape:export-filename="/home/eon/armonic_archi.png"
        inkscape:export-xdpi="90"
@@ -477,7 +781,7 @@
          height="170.9946"
          width="164.57834"
          id="rect4252"
-         style="fill:#808080;fill-rule:evenodd;stroke:none" />
+         style="fill:#0070e4;fill-rule:evenodd;stroke:none" />
       <rect
          y="105.25888"
          x="487.86295"
@@ -560,7 +864,7 @@
            y="96.884789"
            x="481.54282"
            id="tspan4280"
-           sodipodi:role="line">Armonic agent</tspan></text>
+           sodipodi:role="line">Armonic XMPP agent</tspan></text>
       <text
          sodipodi:linespacing="125%"
          id="text4282"
@@ -571,7 +875,7 @@
            y="77.741936"
            x="476.54282"
            id="tspan4284"
-           sodipodi:role="line">Server</tspan></text>
+           sodipodi:role="line">Server B</tspan></text>
     </g>
   </g>
 </svg>

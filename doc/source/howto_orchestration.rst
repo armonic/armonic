@@ -1,52 +1,55 @@
-How to write modules ready for orchestration 
-============================================
+Write modules ready for orchestration
+=====================================
 
 Replication
 -----------
 
 Some modules allow replication which improves performance or
-brings fault tolerance. Different kinds of replications can be
-encountered such as master-slave or master/master.
+brings fault tolerance features. Different kinds of replications
+can be encountered such as master/slave or master/master.
 
 In the master/master case, there is no difference between instances at
-runtime. Thus, they expose same API (require and provide). However,
-they could require differents parameters at set up time. 
+runtime. Thus, they expose same API (require and provide).
+However, they could require differents parameters at set up time.
 
-For instance, the first instance of a galera cluster must create the
+For instance, the first instance of a Galera cluster must create the
 cluster, all other will just connect to it. Once the cluster is built,
 all instances are equivalent.
-
 
 The problem that appears is that instances are different at set up
 time and equivalent at runtime. Because they are equivalent at
 runtime, we don't want to use different state or lifecycle to build
-them. Then, we are using to different technique to solve this
-problem. 
+them.
 
-The first one consists of using the list of armonic_hosts, while the
-second one consists of declarating a armonic_first_instance variables.
+This can be solved by using :class:`armonic.variable.ArmonicHosts` and
+:class:`armonic.variable.ArmonicHost` variables.
 
+We suppose that replicated instances are always load balanced or
+managed by a common entity. For instance, Galera is load balanced by
+HaProxy. Thus, to build a Galera cluster, we first have to build a HaProxy
+load balancer. HaProxy will call X times the creation of Galera nodes.
 
-We suppose that replicated instance are always load balanced or
-managed by a common entities. For instance, Galera is load balanced by
-HaProxy.
+ArmonicHost and ArmonicHosts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When building the deployment tree lib smart construct a list of all instances
+in the case of a replication and it also know which is the current instance.
 
-Thus, to build a Galera cluster, we first have to build a haproxy load
-balancer. 
+The setup method of each instance can require the instances list by declaring
+the variable :class:`armonic.variable.ArmonicHosts` in its `Requires`. You can
+also require the variable :class:`armonic.variable.ArmonicHost` to get the
+address of the current instance.
 
-armonic_hosts
-~~~~~~~~~~~~~
+Example::
 
-Smartlib will build the list of all load balanced hosts. If a load
-balanced instance declare a variable armonic_hosts, smartlib will
-construct and provide this list to all instances.
+    @Require('nodes', [
+        ArmonicHost("current", label="Current instance"),
+        ArmonicHosts("list", label="List of instances")
+    ])
+    def my_instance_setup_method(self, requires):
+        nodes = requires.nodes.variables().list.value
+        # eg: nodes = ["192.168.1.1", "192.168.1.2"]
+        node = requires.nodes.variables().current.value
+        # eg: node = "192.168.1.1"
 
-With the armonic_host variable, the instance is then able to know if
-it is the first one or not.
-
-amronic_first_instance
-~~~~~~~~~~~~~~~~~~~~~~
-
-Another way to specify if a instance is the first one is to declare a
-variable armonic_first_instance. The advantage of this one is that
-this variable can be explicitly set at deploy time.
+With this complete list of instances and the current instance address
+the setup method can fully configure the current node.

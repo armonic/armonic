@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="240"
+   height="350"
+   id="svg3278"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="Nouveau document 3">
+  <defs
+     id="defs3280" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="182.80308"
+     inkscape:cy="161.73059"
+     inkscape:document-units="px"
+     inkscape:current-layer="g4210"
+     showgrid="false"
+     inkscape:window-width="1366"
+     inkscape:window-height="714"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata3283">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-702.36218)">
+    <g
+       id="g4210"
+       transform="matrix(1.3227036,0,0,1.3227036,-594.55009,-54.779612)"
+       inkscape:export-filename="/home/eon/armonic_archi.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         style="fill:#90b4c0;fill-rule:evenodd;stroke:none"
+         id="rect4214"
+         width="164.57834"
+         height="244.97726"
+         x="458.26566"
+         y="582.61523" />
+      <rect
+         style="fill:#e6e6e6;stroke:none"
+         id="rect4216"
+         width="141.50275"
+         height="97.510361"
+         x="470.30847"
+         y="604.56531" />
+      <rect
+         style="fill:#ffffff;stroke:none"
+         id="rect4218"
+         width="127.85714"
+         height="22.073973"
+         x="477.13129"
+         y="621.47754" />
+      <text
+         xml:space="preserve"
+         style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="473.2706"
+         y="616.51318"
+         id="text4224"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4226"
+           x="473.2706"
+           y="616.51318">State A</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:9.00100899px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="482.0723"
+         y="635.87012"
+         id="text4228"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4230"
+           x="482.0723"
+           y="635.87012">Provide enter</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+         x="463.98834"
+         y="596.19122"
+         id="text4240"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4242"
+           x="463.98834"
+           y="596.19122">Lifecycle A</tspan></text>
+      <rect
+         style="fill:#ffffff;stroke:none"
+         id="rect4218-1"
+         width="127.85714"
+         height="22.073973"
+         x="477.13129"
+         y="646.94641" />
+      <text
+         xml:space="preserve"
+         style="font-size:9.00100899px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="482.0723"
+         y="660.34131"
+         id="text4228-1"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4230-9"
+           x="482.0723"
+           y="660.34131">Provide do_some_stuff</tspan></text>
+      <rect
+         style="fill:#ffffff;stroke:none"
+         id="rect4218-1-3"
+         width="127.85714"
+         height="22.073973"
+         x="477.13129"
+         y="672.41522" />
+      <text
+         xml:space="preserve"
+         style="font-size:9.00100899px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="482.0723"
+         y="685.81018"
+         id="text4228-1-5"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4230-9-5"
+           x="482.0723"
+           y="685.81018">Provide do_other_stuff</tspan></text>
+      <rect
+         style="fill:#e6e6e6;stroke:none"
+         id="rect4216-9"
+         width="141.50275"
+         height="71.049408"
+         x="470.27417"
+         y="709.11176" />
+      <rect
+         style="fill:#ffffff;stroke:none"
+         id="rect4218-5"
+         width="127.85714"
+         height="22.073973"
+         x="477.09698"
+         y="726.02399" />
+      <text
+         xml:space="preserve"
+         style="font-size:11.21522236px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="473.2363"
+         y="721.05963"
+         id="text4224-6"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4226-0"
+           x="473.2363"
+           y="721.05963">State B</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:9.00100899px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="482.03799"
+         y="740.41656"
+         id="text4228-4"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4230-4"
+           x="482.03799"
+           y="740.41656">Provide enter</tspan></text>
+      <rect
+         style="fill:#ffffff;stroke:none"
+         id="rect4218-1-9"
+         width="127.85714"
+         height="22.073973"
+         x="477.09698"
+         y="751.49286" />
+      <text
+         xml:space="preserve"
+         style="font-size:9.00100899px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="482.03799"
+         y="764.88776"
+         id="text4228-1-59"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4230-9-6"
+           x="482.03799"
+           y="764.88776">Provide do_many_stuff</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:8.30663872px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+         x="469.79141"
+         y="795.58044"
+         id="text4240-2"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan4242-6"
+           x="469.79141"
+           y="795.58044">Transitions = [</tspan><tspan
+           sodipodi:role="line"
+           x="469.79141"
+           y="805.96375"
+           id="tspan3482">  StateA -&gt; StateB</tspan><tspan
+           sodipodi:role="line"
+           x="469.79141"
+           y="816.34705"
+           id="tspan3478">]</tspan></text>
+    </g>
+  </g>
+</svg>

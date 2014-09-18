@@ -13,6 +13,8 @@ When a state is reached, it is added in a stack managed by :class:`Lifecycle`. T
 know which states have been applied in order to be able to unapplied them. This stack in internally
 managed and thus not exposed.
 
+.. image:: _images/lifecycle_anatomy.svg
+
 State
 =====
 
