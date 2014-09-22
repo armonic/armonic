@@ -26,7 +26,7 @@ MUC_SUBDOMAIN = "logs"
 """
 
 CLI_CONF = [os.path.expanduser("~/.config/armonic/cli.conf"), "/etc/armonic/cli.conf"]
-"""Default locations for Armonic clients (armonic-cli, smartonic configuration files
+"""Default locations for Armonic clients (armocli, smartonic) configuration files
 """
 AGENT_CONF = [os.path.expanduser("~/.config/armonic/agent.conf"), "/etc/armonic/agent.conf"]
 """Default locations for Armonic agent configuration files

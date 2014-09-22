@@ -13,13 +13,12 @@ from armonic.client.sock import ClientSocket
 import armonic.frontends.cli
 
 parser = argparse.ArgumentParser(
-    prog='armonic-client',
     description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."))
-parser.add_argument('--port','-P', type=int, default=8000,help='Armonic agent port (default: %(default)s)')
-parser.add_argument('--host','-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost")
-                    ,help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
+parser.add_argument('--port', '-P', type=int, default=8000, help='Armonic agent port (default: %(default)s)')
+parser.add_argument('--host', '-H', type=str, default=os.environ.get('ARMONIC_AGENT_HOST', "localhost"),
+                    help="Armonic agent host (default: '%(default)s'). Agent host can also be specified with env variable 'ARMONIC_AGENT_HOST'")
 
 cli_base = armonic.frontends.utils.CliBase(parser)
 cli = armonic.frontends.cli.Cli(parser)

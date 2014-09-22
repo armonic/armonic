@@ -15,7 +15,7 @@ Installation
 ------------
 
 Requirements are:
-  
+
 * setuptools:
   `apt-get install setuptools`
 
@@ -35,7 +35,7 @@ doesn't require any agent.
 
 Then, you can begin to use Armonic by listing available modules so-called [*Lifecycle*](http://armonic.readthedocs.org/en/latest/lifecycle.html):
 
-  `armonic-cli-local lifecycle`
+  `armocli-local lifecycle`
 
 Two dummy lifecycle are available:
 
@@ -44,9 +44,9 @@ Two dummy lifecycle are available:
 
 For instance, to activate the webserver run:
 
-  `armonic-cli-local -v provide-call //WebServer//start`
+  `armocli-local -v provide-call //WebServer//start`
 
-`armonic-cli-local` tool is used to do basic task such as get informations about lifecycles, call simple provides, etc. For more informations about it, type `armonic-cli-local -h`.
+`armocli-local` tool is used to do basic task such as get informations about lifecycles, call simple provides, etc. For more informations about it, type `armocli-local -h`.
 
 
 ### Orchestration
@@ -55,7 +55,7 @@ Basically, to deploy a website, we have to first create a document root on the w
 
 Let's try it:
 
-`smartonic-cli-local //WebSite//start` 
+`smartonic-cli-local //WebSite//start`
 
 Then, follow it and see messages which simulate deployment of a web site (and a web server).
 

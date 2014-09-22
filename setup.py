@@ -27,9 +27,9 @@ setup(
     install_requires=install_requires,
     scripts=[
         os.path.join('bin', 'armonic-agent-socket'),
-        os.path.join('bin', 'armonic-cli'),
-        os.path.join('bin', 'armonic-cli-socket'),
-        os.path.join('bin', 'armonic-cli-local'),
+        os.path.join('bin', 'armocli'),
+        os.path.join('bin', 'armocli-socket'),
+        os.path.join('bin', 'armocli-local'),
         os.path.join('bin', 'smartonic'),
         os.path.join('bin', 'smartonic-local'),
         os.path.join('bin', 'smartonic-socket'),

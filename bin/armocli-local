@@ -6,13 +6,11 @@ Actions needed to control agent:
 - get information about this module
 """
 import configargparse as argparse
-import os
-import logging
 
 import armonic.frontends.cli
 
+
 parser = argparse.ArgumentParser(
-    prog='armonic-client',
     description=("A simple client to contact a Armonic agent. "
                  "It is mainly used to get informations "
                  "but can also do some simple actions."),
