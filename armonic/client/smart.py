@@ -1360,7 +1360,7 @@ def smart_call(root_provide, values={}):
                         scope._current_requires = None
 
             elif scope.step == "validation":
-                if not scope.is_validated:
+                if scope.do_validation() and not scope.is_validated:
                     # Fill variables with replay file values
                     for variable in scope.variables():
                         variable_value = deployment.get_variable(variable.xpath)
