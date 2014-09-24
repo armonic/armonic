@@ -699,6 +699,13 @@ class Provide(ArmonicProvide):
         # When filling ArmonicHosts we need the host
         # value of each Provide but each Provide might
         # not have any lfm setup yet.
+        #
+        # FIXME: We should introduce attribute lfm_data which is would
+        # contain the data created at step lfm and used by on_lfm
+        # method. Currently, we are supposing in smart that lfm_host
+        # is created at step lfm. However, smart should not do this
+        # kind of assumptions.
+        #
         if self._host is None and self.lfm_host:
             self.on_lfm(self.lfm_host)
         return self._host
