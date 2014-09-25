@@ -19,6 +19,7 @@ import armonic.common
 from armonic.serialize import Serialize, MethodNotExposed
 from armonic.persist import Persist
 from armonic.xmpp import XMPPClientBase
+from armonic.utils import strip_ansi_codes
 import armonic.frontends.utils
 
 from sleekxmpp.jid import JID
@@ -52,7 +53,7 @@ class MUCHandler(logging.Handler):
         except AttributeError:
             level_name = str(record.levelname)
         message['log']['level_name'] = level_name.lower()
-        message['body'] = str(record.msg)
+        message['body'] = strip_ansi_codes(str(record.msg))
         self.client.send_muc_message(self.id, message)
         return True
 

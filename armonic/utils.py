@@ -1,5 +1,6 @@
 """This module defines some utils used by armonic."""
 
+import re
 import platform
 import netifaces
 from IPy import IP
@@ -122,6 +123,18 @@ def get_subclasses(c):
     for d in list(subclasses):
         subclasses.extend(get_subclasses(d))
     return subclasses
+
+
+# From http://stackoverflow.com/questions/13506033/filtering-out-ansi-escape-sequences
+def strip_ansi_codes(s):
+    """
+    >>> import blessings
+    >>> term = blessings.Terminal()
+    >>> foo = 'hidden'+term.clear_bol+'foo'+term.color(5)+'bar'+term.color(255)+'baz'
+    >>> repr(strip_ansi_codes(foo))
+    u'hiddenfoobarbaz'
+    """
+    return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
 
 
 class Singleton(type):
