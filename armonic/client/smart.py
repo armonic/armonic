@@ -553,6 +553,13 @@ class ArmonicProvide(object):
 
     def _build_provide(self, provide_xpath_uri):
         provides = self.lfm.provide(provide_xpath_uri)
+        # FIXME: This should not happen.  But this happens if a
+        # provide from a replay file is used and the module is not
+        # loaded for instance.
+        if len(provides) < 1:
+            msg = "The XPath used to build the provide doesn't match anything."
+            logger.error(msg)
+            raise Exception(msg)
         self.update_from_json(provides[0])
 
     def update_from_json(self, dct_json):
