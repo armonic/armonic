@@ -12,6 +12,7 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 from threading import Event
 
+import armonic.common
 from armonic.xmpp.stanza import ArmonicResult, ArmonicLog, \
     ArmonicCall, ArmonicStatus, ArmonicException
 from armonic.frontends.utils import COLOR_SEQ, RESET_SEQ, GREEN, CYAN
@@ -217,8 +218,15 @@ class XMPPCallSync(XMPPClientBase):
                 logger_method = getattr(logger, msg['log']['level_name'])
             except AttributeError:
                 logger_method = logger.info
-        logger_method('[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
-                                           COLOR_SEQ % CYAN, msg['body'], RESET_SEQ))
+
+        message = '[%s%s%s] %s%s%s' % (COLOR_SEQ % GREEN, msg['from'].resource, RESET_SEQ,
+                                       COLOR_SEQ % CYAN, msg['body'], RESET_SEQ)
+
+        # !FIXME hack so that the logger.process prints the line
+        if int(msg['log']['level']) == armonic.common.PROCESS_LEVEL:
+            message += "\n"
+
+        logger_method(message)
 
     def call(self, jid, deployment_id, method, *args, **kwargs):
         iq = self.Iq()

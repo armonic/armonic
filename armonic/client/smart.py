@@ -71,6 +71,7 @@ STEP_DEPLOYMENT_VALUES = "deployment_values"
 # The last step that sent datas returned by the root provide.
 STEP_FINAL_VALUES = "final_values"
 
+
 class ValidationError(Exception):
     pass
 

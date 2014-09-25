@@ -125,7 +125,7 @@ class CliBase(Cli):
     """
 
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
-                      (logging.DEBUG + 1, "EVENT"),
+                      (armonic.common.EVENT_LEVEL, armonic.common.EVENT_LEVEL_NAME),
                       (logging.DEBUG, "DEBUG")]
     VERBOSE_DEFAULT_LEVEL = logging.ERROR
 
@@ -154,9 +154,12 @@ class CliBase(Cli):
         if self.has_arg('--verbose') and args.verbose is not None:
             self.logging_level = CliBase.VERBOSE_LEVELS[args.verbose - 1][0]
             print "Verbosity is set to %s" % CliBase.VERBOSE_LEVELS[args.verbose - 1][1]
+        else:
+            self.logging_level = CliBase.VERBOSE_DEFAULT_LEVEL
 
         logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(self.logging_level)
+
         format = '%(levelname)-19s %(module)s %(message)s'
         ch = logging.StreamHandler()
         ch.setLevel(self.logging_level)
@@ -166,6 +169,7 @@ class CliBase(Cli):
             ch.addFilter(Filter(args.log_filter))
 
         logger.addHandler(ch)
+
         return args
 
 

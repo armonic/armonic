@@ -38,6 +38,45 @@ MASTER_CONF = [os.path.expanduser("~/.config/armonic/master.conf"), "/etc/armoni
 PUBLIC_IP = "localhost"
 """Public IP that should be used to contact deployed service. It has to be set by command line."""
 
+# Custom logging levels
+EVENT_LEVEL = 15
+EVENT_LEVEL_NAME = "EVENT"
+logging.addLevelName(EVENT_LEVEL, EVENT_LEVEL_NAME)
+
+
+def event(self, kws):
+    # This level is used in armonic to log an event.
+    self._log(EVENT_LEVEL, kws, [], extra={"event_data": kws})
+logging.Logger.event = event
+
+
+PROCESS_LEVEL = 25
+PROCESS_LEVEL_NAME = "PROCESS"
+logging.addLevelName(PROCESS_LEVEL, PROCESS_LEVEL_NAME)
+
+
+def process(self, dct, *args, **kws):
+    """This level permits to log the output of processes. In fact, the
+    message is transmitted only if it contains a '\n' otherwise, it is
+    buffered until the next '\n'."""
+    if not hasattr(self, "_processline"):
+        self._processline = ""
+    t = dct.split("\n")
+    if len(t) == 1:
+        self._processline += t[0]
+    elif len(t) > 1:
+        self._log(PROCESS_LEVEL, self._processline + t[0], args, **kws)
+        for i in t[1:-1]:
+            self._log(PROCESS_LEVEL, i, args, **kws)
+        if t[-1] != '':
+            self._processline = t[-1]
+        else:
+            self._processline = ""
+logging.Logger.process = process
+
+logger = logging.getLogger(__name__)
+
+
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
     useful if we simultaneous use several agents.
@@ -74,42 +113,6 @@ class XpathFilter(logging.Filter):
                 record.xpath = ""
             break
         return True
-
-
-logger = logging.getLogger(__name__)
-
-EVENT_LEVELV_NUM = 15
-logging.addLevelName(EVENT_LEVELV_NUM, "EVENT")
-
-
-def event(self, kws):
-    # This level is used in armonic to log an event.
-    self._log(EVENT_LEVELV_NUM, kws, [], extra={"event_data": kws})
-logging.Logger.event = event
-
-
-PROCESS_LEVELV_NUM = 16
-logging.addLevelName(PROCESS_LEVELV_NUM, "PROCESS")
-
-
-def process(self, dct, *args, **kws):
-    """This level permits to log the output of processes. In fact, the
-    message is transmitted only if it contains a '\n' otherwise, it is
-    buffered until the next '\n'."""
-    if not hasattr(self, "_processline"):
-        self._processline = ""
-    t = dct.split("\n")
-    if len(t) == 1:
-        self._processline += t[0]
-    elif len(t) > 1:
-        self._log(PROCESS_LEVELV_NUM, self._processline + t[0], args, **kws)
-        for i in t[1:-1]:
-            self._log(PROCESS_LEVELV_NUM, i, args, **kws)
-        if t[-1] != '':
-            self._processline = t[-1]
-        else:
-            self._processline = ""
-logging.Logger.process = process
 
 
 def expose(f):
