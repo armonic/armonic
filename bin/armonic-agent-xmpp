@@ -116,18 +116,20 @@ class XMPPAgent(XMPPClientBase):
         event handler needs to be run in threaded mode, by
         using `threaded=True` in the `add_event_handler` call.
         """
-        params = iq['call']['params']
+
         method = iq['call']['method']
         deployment_id = iq['call'].get('deployment_id', None)
         caller = iq['from']
+        try:
+            params = self.parse_json(iq['call']['params'])
+        except Exception as error:
+            logger.exception("Exception while calling method %s with %s" % (method, iq['call']['params']))
+            self.report_exception(caller, error, deployment_id=deployment_id)
 
         if deployment_id and self.muc_domain:
             self.join_muc_room(deployment_id)
             muc_handler.init(self, deployment_id)
             logger.addHandler(muc_handler)
-
-        logger.info("Executing method '%s' called by '%s'..." % (
-            method, caller))
 
         def call_done():
             # stop logging
@@ -135,12 +137,16 @@ class XMPPAgent(XMPPClientBase):
                 logger.removeHandler(muc_handler)
                 self.leave_muc_room(deployment_id)
 
+        logger.debug("Executing method '%s' called by '%s'" % (
+            method, caller))
+        if method == "provide_call":
+            logger.info("Running %s" % params['kwargs']['provide_xpath_uri'])
+
         try:
-            request = self.parse_json(params)
             iq.reply()
             iq['status']['value'] = "executing"
             iq.send()
-            result = self.lfm._dispatch(method, *request['args'], **request['kwargs'])
+            result = self.lfm._dispatch(method, *params['args'], **params['kwargs'])
             call_done()
             # send the call result
             iq = self.Iq()
@@ -171,7 +177,7 @@ class XMPPAgent(XMPPClientBase):
             )
         except Exception as error:
             call_done()
-            logger.exception("Exception while calling method %s with %s" % (method, request))
+            logger.exception("Exception while calling method %s with %s" % (method, params))
             self.report_exception(caller, error, deployment_id=deployment_id)
 
         logger.debug("Method %s call end" % method)
