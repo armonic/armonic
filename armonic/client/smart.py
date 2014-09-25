@@ -1264,35 +1264,36 @@ def smart_call(root_provide, values={}):
 
                 host, xpath = deployment.specialize
 
+                def specialize(specialized):
+                    deployment.specialize = specialized
+                    scope.on_specialize(specialized)
+                    if scope.manage:
+                        scope._build_provide(specialized)
+                    scope._build_requires()
+                    scope._next_step()
+
                 if xpath is not None:
                     specialized = xpath
                     logger.info("Replay specializes %s with %s" % (scope.generic_xpath, specialized))
+                    specialize(specialized)
+
+                elif len(m) > 1 or scope.do_specialize():
+                    specialized = yield(scope, scope.step, m)
+                    specialize(specialized)
+                elif len(m) == 1:
+                    specialized = m[0]['xpath']
+                    specialize(specialized)
                 else:
-                    def specialize():
-                        deployment.specialize = specialized
-                        scope.on_specialize(specialized)
-                        if scope.manage:
-                            scope._build_provide(specialized)
-                        scope._build_requires()
-                        scope._next_step()
+                    os_type = scope.lfm.info()['os-type']
+                    os_release = scope.lfm.info()['os-release']
+                    # Go back to the lfm step if specialize doesn't match anything
+                    scope._previous_step()
+                    # Reset the lfm since we need to choose another one
+                    scope.reset_lfm()
 
-                    if len(m) > 1 or scope.do_specialize():
-                        specialized = yield(scope, scope.step, m)
-                        specialize()
-                    elif len(m) == 1:
-                        specialized = m[0]['xpath']
-                        specialize()
-                    else:
-                        os_type = scope.lfm.info()['os-type']
-                        os_release = scope.lfm.info()['os-release']
-                        # Go back to the lfm step if specialize doesn't match anything
-                        scope._previous_step()
-                        # Reset the lfm since we need to choose another one
-                        scope.reset_lfm()
-
-                        yield (scope, scope.step, PathNotFound('No path to %s found on %s (%s %s)' % (
-                                                               scope.generic_xpath, scope.lfm_host,
-                                                               os_type, os_release)))
+                    yield (scope, scope.step, PathNotFound('No path to %s found on %s (%s %s)' % (
+                                                           scope.generic_xpath, scope.lfm_host,
+                                                           os_type, os_release)))
 
             elif scope.step == "multiplicity":
                 # If no requires are currently managed, we will try to
