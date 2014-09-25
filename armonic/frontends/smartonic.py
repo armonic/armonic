@@ -38,13 +38,12 @@ def user_input_choose_amongst(choices, message, prefix=''):
             print "%sInvalid choice. Do it again!" % (prefix)
 
 
-def user_input_variable(variable_name, message, prefix="", prefill=""):
+def user_input_variable(message, prefix="", prefill=""):
     """
-    :param variable_name: The name of the variable that user must set
     :param message: A help message
-    :rtype: {variable_name:value}
+    :rtype: value
     """
-    prompt = "%s%s\n%s%s = " % (prefix, message, prefix, variable_name)
+    prompt = "%s%s = " % (prefix, message)
     data = None
     while True:
         readline.set_startup_hook(lambda: readline.insert_text(prefill))
@@ -54,12 +53,11 @@ def user_input_variable(variable_name, message, prefix="", prefill=""):
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            print "%sThe folowing error occurs:" % prefix
-            print "%s  %s" % (prefix, e)
+            logger.error("%sValue is incorrect: %s" % (prefix, e))
             continue
         finally:
             readline.set_startup_hook()
-    return {variable_name: data}
+    return data
 
 
 def run(root_provide, prefill, output_file, manage, autofill):
@@ -125,8 +123,7 @@ def run(root_provide, prefill, output_file, manage, autofill):
                                                  "Choose between available locations",
                                                  prefix=indent(provide.depth))
             else:
-                host = user_input_variable(variable_name="location", message=msg, prefix=indent(provide.depth), prefill=prefill)
-                data = host['location']
+                data = user_input_variable(msg, prefix=indent(provide.depth), prefill=prefill)
 
         elif provide.step == "specialize":
             xpaths = []
@@ -142,7 +139,7 @@ def run(root_provide, prefill, output_file, manage, autofill):
 
         elif provide.step == "validation":
             if provide.variables() != []:
-                logger.info(indent(provide.depth, "Variables are:"))
+                logger.debug(indent(provide.depth, "Variables are:"))
 
                 def xpathOrNone(var):
                     if var is not None:
@@ -159,32 +156,30 @@ def run(root_provide, prefill, output_file, manage, autofill):
                     logger.debug("\tResolvedBy     : %s" % xpathOrNone(v._resolved_by))
                     logger.debug("\tSetBy          : %s" % xpathOrNone(v._set_by))
                     logger.debug("\tSuggestedBy    : %s %s" % (xpathOrNone(v._suggested_by), v.value_get_one()))
-                    logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
+                    logger.debug(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 if provide.variables_scope() != []:
-                    logger.info(indent(provide.depth, "Variables scope is:"))
+                    logger.debug(indent(provide.depth, "Variables scope is:"))
 
                 for v in provide.variables_scope():
-                    logger.info(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
+                    logger.debug(indent(provide.depth, "\t%s : %s [%s]" % (v.name.ljust(25), str(v.value_get_one()).ljust(25), v.xpath)))
 
                 for v in provide.variables():
                     if v.value is None or v.error is not None:
                         # The user has to manually fill the variable
                         if autofill is False or v.value_get_one() is None or v.error is not None:
-                            message = "Fill the variable %s (suggested value '%s')" % (v.xpath, v.value_get_one())
                             if v.error:
-                                message = "Variable %s=%s doesn't validate : %s" % (v.xpath, v.value, v.error)
-                            ret = user_input_variable(variable_name=v.name,
-                                                      prefix=indent(provide.depth),
-                                                      message=message,
-                                                      prefill=show_variable(v.value_get_one()))
-                            v.value = ret[v.name]
+                                logger.error("Value %s doesn't validate : %s" % (v.value, v.error))
+                            message = "%s (%s)" % (v.extra.get('label', v.name), v.xpath)
+                            v.value = user_input_variable(message,
+                                                          prefix=indent(provide.depth),
+                                                          prefill=show_variable(v.value_get_one()))
                             if v.error:
                                 break
                         # The value is auto filled.
                         else:
                             v.value = v.value_get_one()
-                        logger.info("Variable '%s' set with value '%s'" % (v.xpath, v.value))
+                        logger.debug("Variable '%s' set with value '%s'" % (v.xpath, v.value))
 
                 logger.debug("Serialized variables:")
                 serialized = provide.variables_serialized()
@@ -210,7 +205,6 @@ def run(root_provide, prefill, output_file, manage, autofill):
             adresses = []
             if require.skel.type == 'external':
                 for i in range(0, data):
-                    tmp_var = "host[%d]" % i
                     # If the provide can list possible locations
                     if hasattr(provide, "list_locations"):
                         locations = provide.list_locations()
@@ -219,8 +213,7 @@ def run(root_provide, prefill, output_file, manage, autofill):
                                                          prefix=indent(provide.depth))
                         adresses.append(data)
                     else:
-                        adresses.append(user_input_variable(variable_name=tmp_var,
-                                                            message=indent(provide.depth, "What is the location of node %s? " % i))[tmp_var])
+                        adresses.append(user_input_variable("IP address of node %s" % i, prefix=indent(provide.depth)))
                 data = adresses
 
         elif provide.step == "call":

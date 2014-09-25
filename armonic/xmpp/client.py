@@ -109,7 +109,7 @@ class XMPPClientBase(ClientXMPP):
                 logger.debug(" - subscription %s : %s " % (jid, item['subscription']))
 
     def changed_presence(self, event):
-        logger.info("%s is %s" % (event['from'], event['type']))
+        logger.debug("%s is %s" % (event['from'], event['type']))
 
     def failed_auth(self, event):
         logger.error("Authentification failed for '%s'" % self.fulljid)
@@ -138,7 +138,7 @@ class XMPPClientBase(ClientXMPP):
     def leave_muc_room(self, id):
         if self.muc_domain is None:
             return
-        logger.info('Leaving muc_room %s' % self._get_muc_room_name(id))
+        logger.debug('Leaving muc_room %s' % self._get_muc_room_name(id))
         self['xep_0045'].leaveMUC(self._get_muc_room_name(id), self.boundjid.user)
         self.muc_rooms.remove(self._get_muc_room_name(id))
 
@@ -146,7 +146,7 @@ class XMPPClientBase(ClientXMPP):
         if self.muc_domain is None:
             logger.warning("MUC domain not set, can't send or read logs.")
             return
-        logger.info('Joining muc_room %s' % self._get_muc_room_name(id))
+        logger.debug('Joining muc_room %s' % self._get_muc_room_name(id))
         self['xep_0045'].joinMUC(self._get_muc_room_name(id), self.boundjid.user)
         self.muc_rooms.append(self._get_muc_room_name(id))
 
