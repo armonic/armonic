@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
-import sys
 import logging
 import configargparse as argparse
 from uuid import uuid4
 import json
-import os.path
 
 from sleekxmpp.thirdparty import OrderedDict
 from sleekxmpp.exceptions import IqTimeout, IqError
@@ -15,7 +13,7 @@ from armonic.serialize import Serialize
 from armonic.client.smart import Provide, smart_call, SmartException
 from armonic.utils import OsTypeAll
 import armonic.frontends.utils
-from armonic.client.xmpp import XMPPAgentApi, XMPPCallSync
+from armonic.xmpp import XMPPAgentApi, XMPPCallSync
 
 
 agent_handler = logging.StreamHandler()

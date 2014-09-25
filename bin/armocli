@@ -13,7 +13,7 @@ import logging
 from threading import Event
 from uuid import uuid4
 
-from armonic.client.xmpp import XMPPAgentApi, XMPPCallSync, XMPPError
+from armonic.xmpp import XMPPAgentApi, XMPPCallSync, XMPPError
 import armonic.frontends.cli
 
 logger = logging.getLogger()

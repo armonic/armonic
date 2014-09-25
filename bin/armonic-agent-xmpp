@@ -18,7 +18,7 @@ import json
 import armonic.common
 from armonic.serialize import Serialize, MethodNotExposed
 from armonic.persist import Persist
-from armonic.client.xmpp import XMPPClientBase
+from armonic.xmpp import XMPPClientBase
 import armonic.frontends.utils
 
 from sleekxmpp.jid import JID
