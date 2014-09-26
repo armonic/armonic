@@ -1015,6 +1015,7 @@ class Deployment(object):
     _specialize_output = []
     _multiplicity_output = []
     _variables_output = []
+    _variables_output_provide_ret = []
     _mapping_output = []
 
     def __init__(self, scope, sections):
@@ -1177,14 +1178,24 @@ class Deployment(object):
     def set_variables(self, variables):
         if variables is None:
             return
-        for xpath, value in variables:
-            if not self._has_value("_variables_output", self.scope._node_id, xpath):
-                xpath = self.scope._node_id.to_str() + '/' + xpath
-                self._variables_output.append((
-                    xpath,
-                    {"value": value,
-                     "used": True})
-                )
+        for v in variables:
+            if v.belongs_provide_ret:
+                if not self._has_value("_variables_output_provide_ret", self.scope._node_id, v.xpath):
+                    self._variables_output_provide_ret.append((
+                        self.scope._node_id.to_str() + '/' + v.xpath,
+                        {"value": v.provided_by_xpath,
+                         "used": True}))
+
+            else:
+                xpath = v.xpath
+                value = {0: v.value}
+                if not self._has_value("_variables_output", self.scope._node_id, xpath):
+                    xpath = self.scope._node_id.to_str() + '/' + xpath
+                    self._variables_output.append((
+                        xpath,
+                        {"value": value,
+                         "used": True})
+                    )
 
     def to_primitive(self):
         return {
@@ -1193,6 +1204,7 @@ class Deployment(object):
             "specialize": [(k, i["value"]) for k, i in self._specialize_output],
             "multiplicity": [(k, i["value"]) for k, i in self._multiplicity_output],
             "variables": [(k, i["value"]) for k, i in self._variables_output],
+            "provide_ret": [(k, i["value"]) for k, i in self._variables_output_provide_ret],
             "mapping": self._mapping_output
         }
 
@@ -1386,7 +1398,7 @@ def smart_call(root_provide, values={}):
                     data = yield(scope, scope.step, None)
                     if scope.validate(data, static=armonic.common.SIMULATION):
                         # Record variables values
-                        deployment.set_variables(data)
+                        deployment.set_variables(scope.variables())
                         scope._next_step()
                 else:
                     scope._next_step()
