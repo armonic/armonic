@@ -1384,7 +1384,7 @@ def smart_call(root_provide, values={}):
                             variable.value = variable_value
                             logger.debug("Filling '%s' with value '%s' from deployment data" % (variable.xpath, variable_value))
                     data = yield(scope, scope.step, None)
-                    if scope.validate(data):
+                    if scope.validate(data, static=armonic.common.SIMULATION):
                         # Record variables values
                         deployment.set_variables(data)
                         scope._next_step()
