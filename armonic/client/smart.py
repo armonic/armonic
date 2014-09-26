@@ -525,7 +525,7 @@ class Remote(Require):
 
     def variables(self):
         """:rtype: [:class:`Variable`]"""
-        acc = self.provide_args
+        acc = [v for v in self.provide_args]
         for v in self.provide_ret:
             acc.append(v)
             if v.provided_by_xpath is None:
