@@ -167,8 +167,6 @@ def run(root_provide, prefill, output_file, manage, autofill):
                 for v in provide.variables():
                     if v.value is None or v.error is not None:
                         # The user has to manually fill the variable
-                        if v.provided_by_xpath is not None:
-                            continue
                         if autofill is False or v.value_get_one() is None or v.error is not None:
                             if v.error:
                                 logger.error("Value %s doesn't validate : %s" % (v.value, v.error))
