@@ -362,7 +362,7 @@ class RequireLocal(Require):
 
     def __repr__(self):
         return "<RequireLocal(name=%s, xpath=%s, provide_args=%s)>" \
-            % (self.name, self.xpath, self.provide_args)
+            % (self.name, self.xpath, self._variables)
 
     def generate_args(self, dct={}):
         """Return a tuple. First element of tuple a dict of
@@ -418,4 +418,4 @@ class RequireExternal(RequireLocal):
 
     def __repr__(self):
         return "<RequireExternal(name=%s, xpath=%s, provide_args=%s)>" \
-            % (self.name, self.xpath, self.provide_args)
+            % (self.name, self.xpath, self._variables)
