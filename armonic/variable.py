@@ -175,6 +175,12 @@ class VList(Variable):
     @property
     def raw_value(self):
         values = []
+
+        # If it is not a list, we return the current value to help
+        # user to know what is wrong
+        if not type(self.value) is list:
+            return self.value
+
         if not self.value:
             return values
         for variable in self.value:
@@ -192,6 +198,15 @@ class VList(Variable):
 
     def fill(self, primitive):
         values = []
+
+        # If the primitive is not a list, we fill the value with the
+        # primitive. The validation will detect an error and raise an
+        # exception. We have to do a special thing because some types
+        # (such as a str) can be enumerate...
+        if not type(primitive) == list:
+            self._value = primitive
+            return
+
         for key, val in enumerate(primitive):
             if not self._inner_inner_class:
                 var = self._inner_class(key)
