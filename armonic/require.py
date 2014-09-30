@@ -171,7 +171,7 @@ class Require(XMLRessource, ExtraInfoMixin):
                 yield (xpath, variable_name, values)
 
         for xpath, variable_name, values in _filter_values(variables_values):
-            for index, value in values.items():
+            for index, value in sorted(values.items()):
                 if not int(index) < self.nargs_max:
                     logger.warning("Ignoring variable value '%s' for %s. Does not conform to nargs definition" % (value, self))
                     continue
