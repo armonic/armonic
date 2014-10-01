@@ -162,7 +162,8 @@ class VList(Variable):
             self._inner_class = inner.__class__
         if self._inner_class == VList:
             self._inner_inner_class = inner._inner_class
-        Variable.__init__(self, name, default, required, from_xpath=from_xpath, **extra)
+
+        Variable.__init__(self, name, self._fill(default), required, from_xpath=from_xpath, **extra)
 
     @property
     def value(self):
@@ -174,16 +175,23 @@ class VList(Variable):
 
     @property
     def raw_value(self):
+        return self._raw(self.value)
+
+    @property
+    def raw_default(self):
+        return self._raw(self.default)
+
+    def _raw(self, selector):
         values = []
 
         # If it is not a list, we return the current value to help
         # user to know what is wrong
-        if not type(self.value) is list:
-            return self.value
+        if not type(selector) is list:
+            return selector
 
-        if not self.value:
+        if not selector:
             return values
-        for variable in self.value:
+        for variable in selector:
             # List of lists
             if self._inner_inner_class:
                 values.append(variable.raw_value)
@@ -194,9 +202,13 @@ class VList(Variable):
     def to_primitive(self):
         primitive = Variable.to_primitive(self)
         primitive["value"] = self.raw_value
+        primitive["default"] = self.raw_default
         return primitive
 
     def fill(self, primitive):
+        self._value = self._fill(primitive)
+
+    def _fill(self, primitive):
         values = []
 
         # If the primitive is not a list, we fill the value with the
@@ -204,8 +216,7 @@ class VList(Variable):
         # exception. We have to do a special thing because some types
         # (such as a str) can be enumerate...
         if not type(primitive) == list:
-            self._value = primitive
-            return
+            return primitive
 
         for key, val in enumerate(primitive):
             if not self._inner_inner_class:
@@ -215,7 +226,8 @@ class VList(Variable):
             var.fill(val)
             values.append(var)
         if values:
-            self._value = values
+            return values
+        return values
 
     def base_validation(self, value):
         Variable.base_validation(self, value)
