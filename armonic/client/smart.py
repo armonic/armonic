@@ -357,6 +357,7 @@ class Requires(list):
             new.child_num = self[-1].child_num + 1
         except IndexError:
             pass
+        new.multiplicity_num = len(self)
         self.append(new)
         return new
 
@@ -391,6 +392,12 @@ class Require(object):
         self._is_skel = True
 
         self.child_num = child_num
+
+        # Since the same require can be requried several times (via
+        # multiplicity), this attribute describes the index of this
+        # require amongst all same require.
+        self.multiplicity_num = 0
+
         self.from_provide = from_provide
         self._from_requires = None
         # If this require comes from a special provide, ie. entry,
@@ -753,7 +760,8 @@ class Provide(ArmonicProvide):
         return []
 
     def validate(self, values, static=False):
-        """Validate all variables using values from data.
+        """Validate all variables using values from data. Moreover, variable
+        value is set with values coming from data.
 
         The static validation is used to validate variables before
         deployment is running. In this case, we don't handle error on
@@ -765,15 +773,16 @@ class Provide(ArmonicProvide):
         """
         # Update scope variables with values
         for variable in self.variables():
+            idx = variable.from_require.multiplicity_num
             for variable_xpath, variable_values in values:
                 if variable.xpath == variable_xpath:
                     # FIXME - can have multiple values
                     try:
-                        variable.value = variable_values[0]
+                        variable.value = variable_values[idx]
                     except KeyError:
                         # FIXME web interface send string indexes
                         try:
-                            variable.value = variable_values['0']
+                            variable.value = variable_values[str(idx)]
                         except KeyError:
                             variable.value = None
 
