@@ -34,8 +34,11 @@ class LifecycleException(Exception):
 class XMPPError(Exception):
     pass
 
-
 class XMPPClientBase(ClientXMPP):
+    """
+    :param autoconnect: If True, the connection to the server is realized.
+    :param host: If not provided, the fqdn of the jid is used.
+    """
     base_plugins = [
         ('xep_0030',),  # Disco
         ('xep_0004',),  # Dataforms
@@ -44,7 +47,7 @@ class XMPPClientBase(ClientXMPP):
     ]
     """Always loaded plugins"""
 
-    def __init__(self, jid, password, plugins=[], muc_domain=None):
+    def __init__(self, jid, password, plugins=[], muc_domain=None, autoconnect=False, host=None, port=5222):
         if JID(jid).resource:
             raise InvalidJID("The provided JID shouldn't have a resource")
         ClientXMPP.__init__(self, jid, password)
@@ -80,6 +83,17 @@ class XMPPClientBase(ClientXMPP):
 
         self.muc_domain = muc_domain
         self.muc_rooms = []
+
+        if autoconnect:
+            event_ready = Event()
+            self.add_event_handler('session_start',
+                                   lambda e: event_ready.set())
+            if host is not None:
+                self.connect(address=(host, port))
+            else:
+                self.connect()
+            self.process(block=False)
+            event_ready.wait()
 
     def _handle_armonic_exception(self, iq):
         self.event('armonic_exception', iq['exception'])
