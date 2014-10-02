@@ -303,6 +303,10 @@ class Variable(object):
                 self._value = self.from_require.from_provide.host
                 return
 
+        # armonic_host variables must not be resolved.
+        if self.type == 'armonic_host':
+            return
+
         # If the variable has a from_xpath attribute,
         # try to find back its value
         if self.from_xpath is not None:
