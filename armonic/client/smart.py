@@ -193,7 +193,7 @@ class Variable(object):
                 self.from_require.provide is not None and
                 self.from_require.provide.manage):
             return "/".join([
-                self.from_require.provide.lfm_host,
+                self.from_require.provide._node_id.to_str(),
                 self.from_require.provide.xpath,
                 SPECIAL_REQUIRE_RETURN_NAME,
                 self.name])
