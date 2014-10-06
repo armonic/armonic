@@ -1040,7 +1040,11 @@ class Deployment(object):
     _specialize_output = []
     _multiplicity_output = []
     _variables_output = []
+    # Contains variable that belongs to provide_ret require part
     _variables_output_provide_ret = []
+    # Contains variable which type is armonic_host or armonic_hosts.
+    # They can need special translation at deployement time.
+    _variables_output_host = []
     _mapping_output = []
 
     def __init__(self, scope, sections):
@@ -1210,7 +1214,11 @@ class Deployment(object):
                         self.scope._node_id.to_str() + '/' + v.xpath,
                         {"value": v.provided_by_xpath,
                          "used": True}))
-
+            elif v.type in ['armonic_host']:
+                self._variables_output_host.append((
+                    self.scope._node_id.to_str() + '/' + v.xpath,
+                    {"value": {0: v.value},
+                     "used": True}))
             else:
                 xpath = v.xpath
                 value = {0: v.value}
@@ -1230,6 +1238,7 @@ class Deployment(object):
             "multiplicity": [(k, i["value"]) for k, i in self._multiplicity_output],
             "variables": [(k, i["value"]) for k, i in self._variables_output],
             "provide_ret": [(k, i["value"]) for k, i in self._variables_output_provide_ret],
+            "variables_host": [(k, i["value"]) for k, i in self._variables_output_host],
             "mapping": self._mapping_output
         }
 
