@@ -585,6 +585,10 @@ class ArmonicProvide(object):
         self.xpath = dct_json['xpath']
         self.extra = dct_json.get('extra', {})
 
+    def ignore_error_on_variable(self, variable):
+        """Can be overlapped to ignore validation error on some variables."""
+        return False
+
 
 class NodeId(object):
     def __init__(self, node_id):
@@ -810,8 +814,10 @@ class Provide(ArmonicProvide):
                     # consider the error if the variable belongs to
                     # the provide_ret of the require.
                     if json_variable['error'] is not None:
-                        if variable.belongs_provide_ret and static:
+                        if (variable.belongs_provide_ret and static):
                             pass
+                        elif self.ignore_error_on_variable(variable):
+                            logger.info("Ignoring error of variable %s (due to provide.ignore_error_on_variable())" % variable.xpath)
                         else:
                             errors = True
                     variable.update_from_json(json_variable)
