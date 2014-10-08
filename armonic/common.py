@@ -38,6 +38,10 @@ MASTER_CONF = [os.path.expanduser("~/.config/armonic/master.conf"), "/etc/armoni
 PUBLIC_IP = "localhost"
 """Public IP that should be used to contact deployed service. It has to be set by command line."""
 
+# We set a null handler to avoid warning message if no handler is
+# specified.
+logging.getLogger().addHandler(logging.NullHandler())
+
 # Custom logging levels
 EVENT_LEVEL = 15
 EVENT_LEVEL_NAME = "EVENT"
@@ -75,7 +79,6 @@ def process(self, dct, *args, **kws):
 logging.Logger.process = process
 
 logger = logging.getLogger(__name__)
-
 
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
