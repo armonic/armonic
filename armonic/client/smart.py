@@ -1205,6 +1205,19 @@ class Deployment(object):
         return variable_value
 
     def set_variables(self, variables):
+        # Add a variable and its value to the variable_list. If the
+        # variable already exists in the list, its value is added to
+        # the value dict.
+        def add_variable(variable_list, variable):
+            variable_name = self.scope._node_id.to_str() + '/' + variable.xpath
+            for v in variable_list:
+                if variable_name == v[0]:
+                    v[1]['value'][len(v[1]['value'])] = variable.value
+                    return
+            variable_list.append((variable_name,
+                                  {"value": {0: variable.value},
+                                   "used": True}))
+
         if variables is None:
             return
         for v in variables:
@@ -1215,20 +1228,10 @@ class Deployment(object):
                         {"value": v.provided_by_xpath,
                          "used": True}))
             elif v.type in ['armonic_host']:
-                self._variables_output_host.append((
-                    self.scope._node_id.to_str() + '/' + v.xpath,
-                    {"value": {0: v.value},
-                     "used": True}))
+                add_variable(self._variables_output_host, v)
             else:
-                xpath = v.xpath
-                value = {0: v.value}
-                if not self._has_value("_variables_output", self.scope._node_id, xpath):
-                    xpath = self.scope._node_id.to_str() + '/' + xpath
-                    self._variables_output.append((
-                        xpath,
-                        {"value": value,
-                         "used": True})
-                    )
+                if not self._has_value("_variables_output", self.scope._node_id, v.xpath):
+                    add_variable(self._variables_output, v)
 
     def to_primitive(self):
         return {
