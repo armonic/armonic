@@ -60,7 +60,7 @@ def user_input_variable(message, prefix="", prefill=""):
     return data
 
 
-def run(root_provide, prefill, output_file, manage, autofill):
+def run(root_provide, prefill, output_file, manage, autofill, autocall=False):
     generator = smart_call(root_provide, prefill)
 
     # Data sent to the generator
@@ -217,4 +217,7 @@ def run(root_provide, prefill, output_file, manage, autofill):
                 data = adresses
 
         elif provide.step == "call":
-            data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
+            if autocall:
+                data = True
+            else:
+                data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
