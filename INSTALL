@@ -1,16 +1,1 @@
-Installation on debian wheezy
------------------------------
-
-apt-get install -y python-setuptools
-apt-get install -y python-mysqldb
-apt-get install -y python-lxml
-apt-get install -y python-ipy
-apt-get install -y python-netifaces
-apt-get install -y python-prettytable
-apt-get install -y python-nose
-apt-get install -y python-augeas
-apt-get install -y python-dev
-
-python setup.py install
-
-
+README.md
