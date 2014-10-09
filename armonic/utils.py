@@ -147,3 +147,45 @@ class Singleton(type):
         if cls.instance is None:
             cls.instance = super(Singleton, cls).__call__(*args, **kw)
         return cls.instance
+
+
+class DoesNotExist(Exception):
+    pass
+
+
+class IterContainer(list):
+    """
+    Simple object container
+
+    Is an iterator to loop over objects:
+        objects = IterContainer(*objects)
+        for object in objects:
+            print object.name, object.value
+
+    And provide easy way to retrieve objects
+    that have a name attribute:
+
+        objects = IterContainer(*objects)
+        object = objects.object_name
+        print object.name, object.value
+        object = objects.get("object_name")
+        print object.name, object.value
+
+    """
+    def __init__(self, *args):
+        super(IterContainer, self).__init__([arg for arg in args])
+        self._register_args(*args)
+
+    def _register_args(self, *args):
+        for arg in args:
+            if hasattr(arg, 'name'):
+                setattr(self, arg.name, arg)
+
+    def get(self, attr):
+        if hasattr(self, attr):
+            return getattr(self, attr)
+        raise DoesNotExist("%s does not exist" % attr)
+
+    def append(self, arg):
+        super(IterContainer, self).append(arg)
+        self._register_args(arg)

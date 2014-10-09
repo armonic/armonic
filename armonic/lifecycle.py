@@ -7,11 +7,10 @@ from platform import uname
 
 import armonic.common
 
-from armonic.common import IterContainer, DoesNotExist, ProvideError, \
-    format_input_variables
+from armonic.utils import IterContainer, DoesNotExist, OS_TYPE, OsTypeAll, get_subclasses
+from armonic.common import ProvideError, format_input_variables
 from armonic.provide import Provide
 from armonic.variable import ValidationError
-import armonic.utils
 
 from xml_register import XMLRessource, XMLRegistery, Element, SubElement
 
@@ -114,7 +113,7 @@ class State(XMLRessource):
     """
     _lf_name = ""
     _instance = None
-    supported_os_type = [armonic.utils.OsTypeAll()]
+    supported_os_type = [OsTypeAll()]
 
     def _xml_tag(self):
         return self.name
@@ -285,7 +284,7 @@ class Lifecycle(XMLRessource):
     """
     _initialized = False
 
-    os_type = armonic.utils.OS_TYPE
+    os_type = OS_TYPE
     """To specify the current OS type. By default, OS type is
     automatically discovered but it is possible to override this
     attribute to manually specify one.
@@ -830,7 +829,7 @@ class LifecycleManager(XMLRessource):
     """
     def __init__(self, os_type=None, autoload=True, public_ip="localhost"):
         XMLRessource.__init__(self)
-        self.os_type = armonic.utils.OS_TYPE
+        self.os_type = OS_TYPE
         if os_type:
             self.os_type = os_type
         self.public_ip = public_ip
@@ -839,7 +838,7 @@ class LifecycleManager(XMLRessource):
 
         self.lf_loaded = {}
         self.lf = {}
-        for lf in armonic.utils.get_subclasses(Lifecycle):
+        for lf in get_subclasses(Lifecycle):
             if not lf.abstract:
                 logger.debug("Found Lifecycle %s" % lf)
                 self.lf.update({lf.__name__: lf})

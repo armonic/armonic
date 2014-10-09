@@ -2,7 +2,8 @@ import logging
 import itertools
 from time import time
 
-from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
+from armonic.utils import IterContainer, DoesNotExist
+from armonic.common import ValidationError, ExtraInfoMixin
 from armonic.xml_register import XMLRegistery, XMLRessource
 
 

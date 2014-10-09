@@ -21,7 +21,8 @@ types to fill values of a require.
 import logging
 import copy
 
-from armonic.common import IterContainer, DoesNotExist, ValidationError, ExtraInfoMixin
+from armonic.utils import IterContainer, DoesNotExist
+from armonic.common import ValidationError, ExtraInfoMixin
 from armonic.variable import ArmonicHost
 from armonic.provide import Provide
 from armonic.xml_register import XMLRegistery, XMLRessource

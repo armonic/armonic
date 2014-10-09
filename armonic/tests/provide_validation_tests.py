@@ -5,8 +5,8 @@ from armonic.lifecycle import State, LifecycleManager, Lifecycle, Transition
 from armonic.require import Require
 from armonic.provide import Provide
 from armonic.variable import VString, Hostname
-from armonic.common import DoesNotExist
-from armonic.xml_register import XpathMultipleMatch
+from armonic.utils import DoesNotExist
+# from armonic.xml_register import XpathMultipleMatch
 
 
 class StateA(State):
