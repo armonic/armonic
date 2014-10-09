@@ -130,10 +130,9 @@ class Node(BaseNode):
     2. Call setAugeasParamater()
     3. Call load()
 
-
     :param nodes_container: Set to the nodes that contains this node
-    if this node belongs to a Nodes. This is used to remove a Node.
-
+                            if this node belongs to a Nodes.
+                            This is used to remove a Node.
     """
     value = None
     """Permit to specify constant node value. See apache example for

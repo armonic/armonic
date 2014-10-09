@@ -621,11 +621,10 @@ class Provide(ArmonicProvide):
     Method on_step takes as input the sent data.
 
     :param child_number: if this Provide is a dependencies, this is
-    the number of this child.
+                         the number of this child.
     :param requirer: the provide that need this require
     :param require: the remote require of the requirer that leads
                     to this provide.
-
     """
     STEPS = ["manage",
              "lfm",

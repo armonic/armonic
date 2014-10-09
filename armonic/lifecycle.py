@@ -1196,13 +1196,16 @@ class LifecycleManager(XMLRessource):
     def uri(self, xpath="//", relative=False, resource=None):
         """Return the list of xpath_uris that match this xpath.
 
-        :param xpath: an xpath string
         :type xpath: str
+        :param xpath: an xpath string
+        :type relative: bool
         :param relative: If true, returns relative xpath
+        :type resource: str
         :param resource: Returns only xpath that describe this resource type
-        :type resource
+
         :return: list of xpaths
-        :rtype: [xpath_uri]"""
+        :rtype: [xpath_uri]
+        """
         ret = XMLRegistery.find_all_elts(xpath)
         if relative:
             acc = []

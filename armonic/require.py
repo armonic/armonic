@@ -8,7 +8,7 @@ provided by a lifecycle provider, namely :class:`RequireLocal` and
 a provide and what variables it needs and returns. Moreover, it is
 sometime intersting to be able to call several time this provide and
 then, to use several values returned by this provide (see
-:module:`armonic.varnish` for instance).
+:mod:`armonic.varnish` for instance).
 
 * :class:`RequireLocal` specify a provide call on the same agent instance.
 * :class:`RequireExternal` specify a provide call on an other agent instance.
