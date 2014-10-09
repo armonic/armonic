@@ -1,2 +1,5 @@
 recursive-include armonic/tests/data *
 recursive-include armonic/modules/* *.aug
+recursive-include init *
+include doc/Makefile
+recursive-include doc/source *
