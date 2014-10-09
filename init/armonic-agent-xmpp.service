@@ -1,0 +1,9 @@
+[Unit]
+Description=Armonic XMPP Agent
+
+[Service]
+ExecStart=/usr/bin/armonic-agent-xmpp -v
+Restart=on-abort
+
+[Install]
+WantedBy=default.target

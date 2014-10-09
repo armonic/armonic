@@ -1,0 +1,9 @@
+[Unit]
+Description=Armonic Socket Agent
+
+[Service]
+ExecStart=/usr/bin/armonic-agent-socket -v
+Restart=on-abort
+
+[Install]
+WantedBy=default.target
