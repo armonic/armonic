@@ -215,7 +215,8 @@ class XMPPMaster(XMPPCallSync):
                                            {"label": "error", "value": str(getattr(variable, "error", ""))},
                                            {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
                                            {"label": "suggested_by", "value": str(getattr(variable._suggested_by, "xpath", ""))},
-                                           {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))}],
+                                           {"label": "set_by", "value": str(getattr(variable._set_by, "xpath", ""))},
+                                           {"label": "belongs_provide_ret", "value": variable.belongs_provide_ret}],
                                        required=variable.required)
                 for key, value in variable.extra.items():
                     field.add_option(label=str(key), value=str(value))
