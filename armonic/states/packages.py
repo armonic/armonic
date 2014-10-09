@@ -37,7 +37,7 @@ class InstallPackagesUrpm(State):
     def enter(self):
         pkgs = " ".join(self.packages)
         logger.info("Updating repositories...")
-        run("/usr/sbin/urpmi.update", "-a")
+        run("/usr/sbin/urpmi.update", ["-a"])
         logger.info("Installing packages '%s' ..." % (pkgs))
         for p in self.packages:
             thread = process.ProcessThread("/bin/rpm", None, "test",
