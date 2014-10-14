@@ -128,6 +128,9 @@ class Variable(object):
         # Used as a guard to break cycles during variable resolution
         self._resolving = False
 
+        # Used for debugging.
+        self._has_value = False
+
     def copy(self, from_require):
         var = Variable(
             name=self.name,
@@ -217,7 +220,11 @@ class Variable(object):
 
     @property
     def value(self):
-        return self.value_resolved
+        v = self.value_resolved
+        if self._has_value is False and v is not None:
+            self._has_value = True
+            logger.debug("Variable %s gets the value %s" % (self.xpath, v))
+        return v
 
     @value.setter
     def value(self, value):
@@ -325,9 +332,9 @@ class Variable(object):
         if self.from_xpath is None:
             for v in scope:
                 if self.name == v.name and self is not v:
-                    logger.debug("Variable [%s] is suggested by [%s] with value %s" % (
+                    logger.trace("Variable [%s] is suggested by [%s] with value %s" % (
                         self.xpath, v.xpath, v._value))
-                    logger.debug("Variable [%s] is resolved by [%s] with value %s" % (
+                    logger.trace("Variable [%s] is resolved by [%s] with value %s" % (
                         v.xpath, self.xpath, v._value))
                     self._suggested_by = v
                     v._resolved_by = self
@@ -792,6 +799,8 @@ class Provide(ArmonicProvide):
                             variable.value = variable_values[str(idx)]
                         except KeyError:
                             variable.value = None
+                    logger.debug("Updating from user specified value %s=%s" % (variable_xpath, variable.value))
+
 
         values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
