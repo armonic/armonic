@@ -122,8 +122,8 @@ class CliBase(Cli):
     """
 
     VERBOSE_LEVELS = [(logging.INFO, "INFO"),
-                      (armonic.common.EVENT_LEVEL, armonic.common.EVENT_LEVEL_NAME),
-                      (logging.DEBUG, "DEBUG")]
+                      (logging.DEBUG, "DEBUG"),
+                      (armonic.common.TRACE_LEVEL, armonic.common.TRACE_LEVEL_NAME)]
     VERBOSE_DEFAULT_LEVEL = logging.ERROR
 
     ARGUMENTS = [
