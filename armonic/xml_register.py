@@ -122,7 +122,7 @@ class XMLRegistery(object):
                 properties_node.append(elt)
 
         self._xml_register_children(xml_elt, ressource)
-        logger.debug("Registered %s in XML registery" % ressource.__repr__())
+        logger.trace("Registered %s in XML registery" % ressource.__repr__())
         ressource._xml_on_registration()
 
     def _xml_register_children(self, xml_elt, ressource):
