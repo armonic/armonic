@@ -392,6 +392,7 @@ class Host(VString):
 
     Validate that the value is an IP or a hostname
     """
+    type = "host"
     pattern = '^(\d{1,3}\.){3}\d{1,3}$|^[a-z]+[a-z0-9]*$'
     pattern_error = 'Incorrect host (pattern: %s)' % pattern
 
