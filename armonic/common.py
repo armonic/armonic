@@ -40,7 +40,7 @@ PUBLIC_IP = "localhost"
 
 # We set a null handler to avoid warning message if no handler is
 # specified.
-logging.getLogger().addHandler(logging.NullHandler())
+logging.getLogger("armonic").addHandler(logging.NullHandler())
 
 # Custom logging levels
 EVENT_LEVEL = 15
