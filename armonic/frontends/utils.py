@@ -76,15 +76,12 @@ class ColoredFormatter(logging.Formatter):
 
 class Filter(object):
     """Permit to filter log based on a list of pattern applied on
-    record.name."""
+    record.module."""
     def __init__(self, patterns):
         self.patterns = patterns
 
     def filter(self, record):
-        for p in self.patterns:
-            if re.match(p, record.name):
-                return True
-        return False
+        return record.module in self.patterns
 
 
 class CliArg(object):
@@ -140,8 +137,7 @@ class CliBase(Cli):
         CliArg('--log-filter',
                default=None,
                action='append',
-               help='To filter logs by specifing a regex which will be applied on the module name.\
-                    Filters are applied on stdout handler. This option can be specified several times.')
+               help='To filter logs on the module name. Filters are applied on stdout handler. This option can be specified several times.')
     ]
 
     def __init__(self, *args, **kwargs):
