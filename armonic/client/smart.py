@@ -1309,7 +1309,7 @@ def smart_call(root_provide, values={}):
 
             elif scope.step == "specialize":
                 m = scope.matches()
-                logger.debug("Specialize matches: %s" % m)
+                logger.debug("Specialize matches: %s" % [p['xpath'] for p in m])
 
                 host, xpath = deployment.specialize
 
