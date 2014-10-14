@@ -8,6 +8,7 @@ from armonic.frontends.utils import read_variable, show_variable, \
     COLOR_SEQ, RESET_SEQ, CYAN
 from armonic.client.smart import smart_call, SmartException, STEP_DEPLOYMENT_VALUES, STEP_FINAL_VALUES
 
+import armonic.common
 
 logger = logging.getLogger()
 
@@ -166,6 +167,10 @@ def run(root_provide, prefill, output_file, manage, autofill, autocall=False):
 
                 for v in provide.variables():
                     if v.value is None or v.error is not None:
+                        if armonic.common.SIMULATION and v.belongs_provide_ret:
+                            logger.debug("Ignoring variable %s since it belongs to a provide ret and SIMULATION is enable" % v.xpath)
+                            continue
+
                         # The user has to manually fill the variable
                         if autofill is False or v.value_get_one() is None or v.error is not None:
                             if v.error:
