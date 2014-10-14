@@ -109,14 +109,14 @@ class XMLRegistery(object):
             properties_node = SubElement(xml_elt, "properties")
 
             for (prop, value) in ressource._xml_add_properties_tuple():
-                logger.debug("Add property '%s:%s' on node with tag %s" % (
+                logger.trace("Add property '%s:%s' on node with tag %s" % (
                              prop, value, ressource._xml_tag()))
 
                 sub = SubElement(properties_node, prop)
                 sub.text = value
 
             for elt in ressource._xml_add_properties():
-                logger.debug("Add property '%s' on node with tag %s" % (
+                logger.trace("Add property '%s' on node with tag %s" % (
                              elt.tag, ressource._xml_tag()))
 
                 properties_node.append(elt)
