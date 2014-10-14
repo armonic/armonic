@@ -137,7 +137,10 @@ class CliBase(Cli):
         CliArg('--log-filter',
                default=None,
                action='append',
-               help='To filter logs on the module name. Filters are applied on stdout handler. This option can be specified several times.')
+               help='To filter logs on the module name. Filters are applied on stdout handler. This option can be specified several times.'),
+        CliArg('--no-color', action='store_true',
+               default=False,
+               help='Disable colors in output')
     ]
 
     def __init__(self, *args, **kwargs):
@@ -156,10 +159,14 @@ class CliBase(Cli):
         logger = logging.getLogger()
         logger.setLevel(self.logging_level)
 
-        format = '%(levelname)-19s %(module)s %(message)s'
         ch = logging.StreamHandler()
         ch.setLevel(self.logging_level)
-        ch.setFormatter(ColoredFormatter(format))
+        if args.no_color:
+            format = '%(levelname)-7s %(module)s %(message)s'
+            ch.setFormatter(logging.Formatter(format))
+        else:
+            format = '%(levelname)-19s %(module)s %(message)s'
+            ch.setFormatter(ColoredFormatter(format))
 
         if self.has_arg('--log-filter') and args.log_filter:
             ch.addFilter(Filter(args.log_filter))
