@@ -54,6 +54,17 @@ def event(self, kws):
 logging.Logger.event = event
 
 
+# This level is used to log finest debugging messages.
+TRACE_LEVEL = 5
+TRACE_LEVEL_NAME = "TRACE"
+logging.addLevelName(TRACE_LEVEL, TRACE_LEVEL_NAME)
+
+
+def trace(self, kws):
+    self._log(TRACE_LEVEL, kws, [])
+logging.Logger.trace = trace
+
+
 PROCESS_LEVEL = 25
 PROCESS_LEVEL_NAME = "PROCESS"
 logging.addLevelName(PROCESS_LEVEL, PROCESS_LEVEL_NAME)
