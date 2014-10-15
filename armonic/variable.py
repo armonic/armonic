@@ -397,6 +397,13 @@ class Host(VString):
     pattern_error = 'Incorrect host (pattern: %s)' % pattern
 
 
+class ArmonicThisHost(Host):
+    """This variable describe the host where the current provide is
+    executed.
+    """
+    type = 'armonic_this_host'
+
+
 class Hostname(VString):
     """Variable for hostnames.
 

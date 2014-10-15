@@ -295,6 +295,10 @@ class Variable(object):
         """
         scope = self.from_require._scope_variables
 
+        if self.type == 'armonic_this_host' and self.from_require.from_provide is not None:
+            self._value = self.from_require.from_provide.host
+            return
+
         # Variables type armonic_hosts is a special kind of variable. To
         # fill it, we accumulate host value of all brothers of this provide.
         if self.type == 'armonic_hosts' and self.from_require.from_provide.require:
@@ -1235,7 +1239,7 @@ class Deployment(object):
                         self.scope._node_id.to_str() + '/' + v.xpath,
                         {"value": v.provided_by_xpath,
                          "used": True}))
-            elif v.type in ['armonic_host', 'host']:
+            elif v.type in ['armonic_host', 'host', 'armonic_this_host']:
                 add_variable(self._variables_output_host, v)
             else:
                 if not self._has_value("_variables_output", self.scope._node_id, v.xpath):
