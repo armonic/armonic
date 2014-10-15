@@ -93,7 +93,7 @@ class Variable(object):
     :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require.
     """
 
-    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, belongs_provide_ret, extra):
+    def __init__(self, name, from_require, xpath, from_xpath, default, value, required, type, error, belongs_provide_ret, modifier, extra):
         self.from_require = from_require
         self.name = name
         self.xpath = xpath
@@ -104,7 +104,7 @@ class Variable(object):
         self.type = type
         self.error = error
         self.extra = extra
-
+        self.modifier = modifier
         self._is_skel = True
 
         self.belongs_provide_ret = belongs_provide_ret
@@ -143,6 +143,7 @@ class Variable(object):
             type=self.type,
             error=self.error,
             belongs_provide_ret=self.belongs_provide_ret,
+            modifier=self.modifier,
             extra=self.extra)
 
         var._is_skel = False
@@ -170,6 +171,7 @@ class Variable(object):
                    type=dct_json['type'],
                    error=dct_json['error'],
                    belongs_provide_ret=belongs_provide_ret,
+                   modifier=dct_json['modifier'],
                    extra=dct_json['extra'])
         return this
 
@@ -218,13 +220,21 @@ class Variable(object):
             lambda a: a._default,
             lambda a: a.default_resolved)
 
+    def _apply_modifier(self, value):
+        """If self.modifier is not None, we currently apply it only on
+        VString."""
+        if value is not None and self.modifier is not None:
+            if self.type == 'str':
+                return self.modifier % value
+        return value
+
     @property
     def value(self):
         v = self.value_resolved
         if self._has_value is False and v is not None:
             self._has_value = True
             logger.debug("Variable %s gets the value %s" % (self.xpath, v))
-        return v
+        return self._apply_modifier(v)
 
     @value.setter
     def value(self, value):
@@ -240,9 +250,10 @@ class Variable(object):
     @property
     def value_resolved(self):
         """Returns the value resolved."""
-        return self._resolved_break_cycles(
-            lambda a: a._value,
-            lambda a: a.value_resolved)
+        return self._apply_modifier(
+            self._resolved_break_cycles(
+                lambda a: a._value,
+                lambda a: a.value_resolved))
 
     def _resolved_break_cycles(self, f_value, f_resolved):
         """Returns the value resolved and breaks potential cycles.

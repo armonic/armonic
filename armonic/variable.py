@@ -40,6 +40,9 @@ class Variable(XMLRessource, ExtraInfoMixin):
         self.from_xpath = from_xpath
         self.error = None
 
+        # FIXME: This is only implemented by VString
+        self._modifier = None
+
     def _xml_tag(self):
         return self.name
 
@@ -56,6 +59,7 @@ class Variable(XMLRessource, ExtraInfoMixin):
              'default': self.default,
              'value': self.value,
              'error': self.error,
+             'modifier': self._modifier,
              'from_xpath': self.from_xpath})
         return primitive
 
