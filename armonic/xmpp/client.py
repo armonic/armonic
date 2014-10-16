@@ -35,7 +35,9 @@ class XMPPError(Exception):
     pass
 
 class XMPPClientBase(ClientXMPP):
-    """
+    """Be careful if you add handler on session_start and if autoconnect
+    is set: your handler will not be called.
+
     :param autoconnect: If True, the connection to the server is realized.
     :param host: If not provided, the fqdn of the jid is used.
     """
