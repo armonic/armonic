@@ -85,7 +85,7 @@ else:
 def run_cli():
     try:
         cli.func(agent)
-    except XMPPError:
+    except (XMPPError, armonic.xmpp.client.LifecycleException):
         pass
     xmpp_client.disconnect()
     sys.exit(0)
