@@ -127,8 +127,12 @@ class XMLRegistery(object):
 
     def _xml_register_children(self, xml_elt, ressource):
         """Be careful, this removes children before adding them."""
+
+        # Children are removed to avoid multiple adding if the
+        # lifecycle is created several times.
         for c in xml_elt.iterchildren():
-            xml_elt.remove(c)
+            if c.tag != "properties":
+                xml_elt.remove(c)
 
         for c in ressource._xml_children():
             self._xml_register(c, parent=xml_elt)
