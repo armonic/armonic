@@ -147,7 +147,7 @@ class Cli(object):
         if args.uri:
             pprint.pprint(self.client.call('uri', args.xpath))
         else:
-            for r in self.client.call('xpath', args.xpath):
+            for r in self.client.xpath(args.xpath):
                 print r
 
     def cmd_state(self, args):
