@@ -68,9 +68,6 @@ SPECIAL_REQUIRE_RETURN_NAME = "return"
 # the deployment
 STEP_DEPLOYMENT_VALUES = "deployment_values"
 
-# The last step that sent datas returned by the root provide.
-STEP_FINAL_VALUES = "final_values"
-
 
 class ValidationError(Exception):
     pass
@@ -1476,5 +1473,4 @@ def smart_call(root_provide, values={}):
                 scope._next_step()
 
     yield (None, STEP_DEPLOYMENT_VALUES, deployment.to_primitive())
-    yield (None, STEP_FINAL_VALUES, ret)
     return

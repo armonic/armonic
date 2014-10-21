@@ -6,7 +6,7 @@ import json
 
 from armonic.frontends.utils import read_variable, show_variable, \
     COLOR_SEQ, RESET_SEQ, CYAN
-from armonic.client.smart import smart_call, SmartException, STEP_DEPLOYMENT_VALUES, STEP_FINAL_VALUES
+from armonic.client.smart import smart_call, SmartException, STEP_DEPLOYMENT_VALUES
 
 import armonic.common
 
@@ -91,10 +91,6 @@ def run(root_provide, prefill, output_file, automanage, autofill, autocall=False
                     json.dump(args, fp, indent=2)
                     logger.info("Deployment values written in %s" % output_file)
             continue
-
-        if provide is None and step is STEP_FINAL_VALUES:
-            provide_ret_value = args
-            return provide_ret_value
 
         if provide.tree_id is None:
             pass
@@ -226,3 +222,5 @@ def run(root_provide, prefill, output_file, automanage, autofill, autocall=False
                 data = True
             else:
                 data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
+
+    return root_provide.provide_ret
