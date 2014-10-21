@@ -137,8 +137,8 @@ class XMPPMaster(XMPPCallSync):
             provide, step, args = self.smart.send(json.loads(payload['values']['validation']))
 
         elif self.current_step == "call":
-            provide, step, args = self.smart.send(payload['values']['call'])
-
+            if 'call' in payload['values']:
+                provide, step, args = self.smart.send(payload['values']['call'])
         else:
             provide, step, args = self.smart.next()
 
@@ -222,9 +222,14 @@ class XMPPMaster(XMPPCallSync):
                     field.add_option(label=str(key), value=str(value))
 
         elif step == 'call':
-            form.add_field(var="call",
-                           ftype="input-single",
-                           value="1")
+            if args is None:
+                form.add_field(var="call",
+                               ftype="input-single",
+                               value="1")
+            else:
+                form.add_field(var="call_result",
+                               ftype="input-single",
+                               value=json.dumps(args))
 
         session['payload'] = form
         session['next'] = self._handle_command_init_build_next

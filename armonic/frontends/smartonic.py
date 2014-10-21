@@ -218,9 +218,10 @@ def run(root_provide, prefill, output_file, automanage, autofill, autocall=False
                 data = adresses
 
         elif provide.step == "call":
-            if autocall:
-                data = True
-            else:
-                data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
+            if args is None:
+                if autocall:
+                    data = True
+                else:
+                    data = user_input_confirm(indent(provide.depth, "Call %s [Y/n]?" % provide.generic_xpath))
 
     return root_provide.provide_ret

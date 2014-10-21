@@ -1467,7 +1467,9 @@ def smart_call(root_provide, values={}):
                     data = yield(scope, scope.step, None)
                     scope.on_call(data)
                 if scope.call:
-                    ret = scope.lfm_call()
+                    scope.lfm_call()
+                    if scope.provide_ret is not None:
+                        yield (scope, scope.step, scope.provide_ret)
                 scope._next_step()
 
             else:
