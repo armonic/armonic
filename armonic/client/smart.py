@@ -55,6 +55,8 @@ variables that belongs to provide_ret.
 # It's not able to manage path
 
 import logging
+import json
+
 from armonic.client.utils import require_validation_error
 import armonic.common
 
@@ -1022,8 +1024,8 @@ class Provide(ArmonicProvide):
             logger.debug("Provide '%s' return type is %s (instead a dict)!" % (self.xpath, type(self.provide_ret)))
         else:
             logger.info("Provide '%s' returns:" % self.xpath)
-            for i in self.provide_ret.items():
-                logger.info("\t%s : '%s'" % i)
+            for k, v in self.provide_ret.items():
+                logger.info("- %s : %s" % (k, json.dumps(v)))
 
         self.update_scope_provide_ret(self.provide_ret)
         # self.provide_ret = self.lfm.call("provide_call_validate",
