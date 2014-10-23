@@ -61,7 +61,7 @@ def user_input_variable(message, prefix="", prefill=""):
     return data
 
 
-def run(root_provide, prefill, output_file, manage, autofill, autocall=False):
+def run(root_provide, prefill, output_file, automanage, autofill, autocall=False):
     generator = smart_call(root_provide, prefill)
 
     # Data sent to the generator
@@ -102,7 +102,7 @@ def run(root_provide, prefill, output_file, manage, autofill, autocall=False):
 #                               provide.step.ljust(16), provide.tree_id)
 
         if provide.step == "manage":
-            if manage:
+            if automanage:
                 data = True
             else:
                 data = user_input_confirm(

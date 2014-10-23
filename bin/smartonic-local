@@ -32,7 +32,7 @@ args = cli_client.parse_args()
 
 dont_call = args.dont_call
 autofill = args.autofill
-manage = args.manage
+automanage = False
 
 import armonic.common
 armonic.common.SIMULATION = args.simulation
@@ -74,7 +74,7 @@ if args.output:
     output_file = args.output
 
 
-ret = armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
+ret = armonic.frontends.smartonic.run(root_provide, prefill, output_file=output_file, automanage=automanage, autofill=autofill)
 
 print "Values returned by '%s':" % root_provide.xpath
 print ret
