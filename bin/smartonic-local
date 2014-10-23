@@ -52,9 +52,6 @@ class MyProvide(Provide):
             lfms[host] = Serialize(os_type=cli_local.os_type)
         self.lfm = lfms[host]
 
-    def on_manage(self, data):
-        return True
-
     def do_call(self):
         if dont_call:
             return False
