@@ -966,6 +966,19 @@ class Provide(ArmonicProvide):
         if self.call is None:
             raise AttributeError("'call' attribute must not be None. Must be set at 'call' step")
 
+    def do_multiplicity(self):
+        return True
+
+    def on_multiplicity(self, require, data):
+        """Can be overload to adapt behavior of multiplicity step.
+        This method must return either a number or a list.
+
+        This is different than others steps because we can not bind
+        the multiplicity value to the provide object since each
+        require have its own multiplicity.
+        """
+        return data
+
     def do_manage(self):
         return True
 
@@ -1385,7 +1398,9 @@ def smart_call(root_provide, values={}):
                                     logger.info("\t%s" % m)
 
                             if multiplicity is None:
-                                multiplicity = yield (scope, scope.step, req)
+                                if scope.do_multiplicity():
+                                    multiplicity = yield (scope, scope.step, req)
+                                multiplicity = scope.on_multiplicity(req.skel, multiplicity)
 
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
