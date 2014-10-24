@@ -65,9 +65,11 @@ be enabled. Just add the following directive in the configuration::
 Like the XMPP domain, configure your DNS server or /etc/hosts file.
 
 This is all you need to use the armonic cli clients (`smartonic` and
-`armocli`). To use the webinterface `warmonic` you also have to enable the
-bosh and/or websocket modules. The Prosody websocket module can be found in the
-prosody-modules project at https://code.google.com/p/prosody-modules/.
+`armocli`). To use the webinterface `warmonic` you also have to enable
+the bosh and/or websocket modules. The Prosody websocket module can be
+found in the prosody-modules project at
+https://code.google.com/p/prosody-modules/. This module requires the
+lua module lua-bitop which can be installed with your package manager.
 
 For the bosh and websocket modules use the following options::
 
