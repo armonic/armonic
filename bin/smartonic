@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     def run_smart():
         try:
-            ret = run(root_provide, prefill, output_file=output_file, manage=manage, autofill=autofill)
+            ret = run(root_provide, prefill, output_file=output_file, automanage=manage, autofill=autofill)
             print "Values returned by '%s':" % root_provide.xpath
             print ret
         except KeyboardInterrupt:
