@@ -113,7 +113,6 @@ class State(XMLRessource):
     """
     _lf_name = ""
     _instance = None
-    _from_meta_state = None
     supported_os_type = [OsTypeAll()]
 
     def _xml_tag(self):
@@ -319,7 +318,6 @@ class Lifecycle(XMLRessource):
                                   for s in ms.implementations]
                 for s in created_states:
                     s.lf_name = instance.name
-                    s._from_meta_state = ms
                     logger.debug("State %s has been created from MetaState %s" % (s.__name__, ms.name))
                 # For each transtion to MetaState ms
                 for t in transitions:
@@ -943,8 +941,7 @@ class LifecycleManager(XMLRessource):
             lf_name = XMLRegistery.get_ressource(e, "lifecycle")
             state_name = XMLRegistery.get_ressource(e, "state")
             state = self.lifecycle_by_name(lf_name)._get_state_class(state_name)
-            if state._from_meta_state is None:
-                acc.append(state)
+            acc.append(state)
         return acc
 
     def state_current(self, lifecycle_xpath):
@@ -1045,9 +1042,8 @@ class LifecycleManager(XMLRessource):
                     lf = self.lifecycle_by_name(lf_name)
                     state_name = XMLRegistery.get_ressource(m, "state")
                     state = lf.state_by_name(state_name)
-                    if ((lf._is_state_in_stack(state) or
-                            lf.provide_call_path(state) != [])
-                            and state._from_meta_state is None):
+                    if (lf._is_state_in_stack(state) or
+                            lf.provide_call_path(state) != []):
                         acc.append(state.provide_by_name(provide_name))
         return acc
 
