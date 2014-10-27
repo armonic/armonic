@@ -976,6 +976,9 @@ class Provide(ArmonicProvide):
         This is different than others steps because we can not bind
         the multiplicity value to the provide object since each
         require have its own multiplicity.
+
+        Moreover, on_multiplicity is always called even if
+        do_multiplicity returns False.
         """
         return data
 
