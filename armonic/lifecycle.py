@@ -262,7 +262,12 @@ class State(XMLRessource):
 
 
 class MetaState(State):
-    """Set by state.__new__ to add implementation of this metastate."""
+    """Set by state.__new__ to add implementation of this metastate.
+
+    Be careful, provides of states that implement a MetaState are
+    _removed_. You then have to manually redefine them in the metastate
+    if they are required.
+    """
     implementations = []
 
 
