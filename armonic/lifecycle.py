@@ -328,6 +328,14 @@ class Lifecycle(XMLRessource):
                         update_transitions += [(t[0], d())]
                         # And from this implementation to metastate
                         update_transitions += [(d(), ms)]
+                        # We also remove the provide list of an
+                        # implementation.
+                        #
+                        # TODO: we should implement a mecanism to
+                        # import provide from implemenations to
+                        # MetaState iif a provide is defined in all
+                        # implementations.
+                        del d._provides[:]
                     # Finally, we remove useless transitions and add new ones.
                     if update_transitions != []:
                         instance.transitions.remove(t)
