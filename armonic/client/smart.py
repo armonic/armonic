@@ -1265,7 +1265,7 @@ class Deployment(object):
                         self.scope._node_id.to_str() + '/' + v.xpath,
                         {"value": v.provided_by_xpath,
                          "used": True}))
-            elif v.type in ['armonic_host', 'host', 'armonic_this_host']:
+            elif v.type in ['armonic_host', 'host', 'armonic_this_host', 'armonic_hosts']:
                 add_variable(self._variables_output_host, v)
             else:
                 if not self._has_value("_variables_output", self.scope._node_id, v.xpath):
