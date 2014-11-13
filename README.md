@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/armonic/armonic.png)](https://travis-ci.org/armonic/armonic)
+%[![Build Status](https://travis-ci.org/armonic/armonic.png)](https://travis-ci.org/armonic/armonic)
 Armonic
 =======
 
@@ -16,11 +16,7 @@ Installation
 
 Requirements are:
 
-* setuptools:
-  `apt-get install setuptools`
-
-* lxml and python development librairies:
-  `apt-get install python-lxml libpython-dev`
+* `apt-get install python-setuptools python-mysqldb python-lxml python-ipy python-netifaces python-prettytable python-nose python-augeas python-dev`
 
 To install Armonic as a user: `python setup.py install --user`
 
