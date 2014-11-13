@@ -51,7 +51,7 @@ Basically, to deploy a website, we have to first create a document root on the w
 
 Let's try it:
 
-`smartonic-cli-local //WebSite//start`
+`smartonic-local //WebSite//start`
 
 Then, follow it and see messages which simulate deployment of a web site (and a web server).
 
