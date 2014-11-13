@@ -1,4 +1,4 @@
-%[![Build Status](https://travis-ci.org/armonic/armonic.png)](https://travis-ci.org/armonic/armonic)
+[![Build Status](https://travis-ci.org/armonic/armonic.png)](https://travis-ci.org/armonic/armonic)
 Armonic
 =======
 
