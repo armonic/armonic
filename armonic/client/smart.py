@@ -844,7 +844,10 @@ class Provide(ArmonicProvide):
                             errors = True
                     variable.update_from_json(json_variable)
                     if variable.error:
-                        logger.error("Variable %s has error: %s" % (variable.xpath, variable.error))
+                        if armonic.common.SIMULATION:
+                            logger.debug("Variable %s has error: %s" % (variable.xpath, variable.error))
+                        else:
+                            logger.error("Variable %s has error: %s" % (variable.xpath, variable.error))
 
         self.is_validated = not errors
 
