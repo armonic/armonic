@@ -11,6 +11,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': None,
@@ -26,6 +27,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': "test",
@@ -47,6 +49,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': 'var1 is required',
             'default': None,
@@ -69,6 +72,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': None,
@@ -86,6 +90,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': None,
@@ -105,6 +110,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': None,
@@ -122,6 +128,7 @@ class TestVariableSerialization(unittest.TestCase):
         vs = {
             'xpath': None,
             'from_xpath': None,
+            'modifier': '%s',
             'name': 'var1',
             'error': None,
             'default': "foo",
