@@ -971,7 +971,7 @@ class Provide(ArmonicProvide):
     def do_multiplicity(self):
         return True
 
-    def on_multiplicity(self, require, data):
+    def on_multiplicity(self, requires, data):
         """Can be overload to adapt behavior of multiplicity step.
         This method must return either a number or a list.
 
@@ -981,6 +981,8 @@ class Provide(ArmonicProvide):
 
         Moreover, on_multiplicity is always called even if
         do_multiplicity returns False.
+
+        :type requires: Requires
         """
         return data
 
@@ -1405,7 +1407,7 @@ def smart_call(root_provide, values={}):
                             if multiplicity is None:
                                 if scope.do_multiplicity():
                                     multiplicity = yield (scope, scope.step, req)
-                                multiplicity = scope.on_multiplicity(req.skel, multiplicity)
+                                multiplicity = scope.on_multiplicity(req, multiplicity)
 
                             if req.skel.type == 'external':
                                 if type(multiplicity) is not list:
