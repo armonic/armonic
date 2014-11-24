@@ -35,6 +35,7 @@ class Active(State):
         url = requires.webserver.variables().url.value
         return {"url": url}
 
+
 class WebSite(Lifecycle):
     """This is a simulation of a webserver services. This must be just use
     to try Armonic."""
