@@ -18,7 +18,7 @@ class Configured(State):
                      provide_ret=[Url("url")],
                      nargs="*")
     def enter(self, requires):
-        logger.info(requires.websites.variables())
+        logger.info(requires.websites.variables(all=True))
 
 
 class Active(State):

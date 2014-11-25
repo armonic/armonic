@@ -815,7 +815,6 @@ class Provide(ArmonicProvide):
                             variable.value = None
                     logger.debug("Updating from user specified value %s=%s" % (variable_xpath, variable.value))
 
-
         values = (values, {'source': None, 'uuid': None})
         result = self.lfm.provide_call_validate(self.xpath,
                                                 self.variables_serialized())

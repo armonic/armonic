@@ -205,12 +205,14 @@ class XMPPMaster(XMPPCallSync):
 
         elif step == 'validation':
             for variable in provide.variables():
+                idx = variable.from_require.multiplicity_num
                 value = json.dumps(variable.value_get_one())
                 field = form.add_field(var=str(variable.xpath),
                                        label=str(variable.name),
                                        ftype="list-multi",
                                        options=[
                                            {"label": "value", "value": str(value)},
+                                           {"label": "index", "value": str(idx)},
                                            {"label": "type", "value": str(variable.type)},
                                            {"label": "error", "value": str(getattr(variable, "error", ""))},
                                            {"label": "resolved_by", "value": str(getattr(variable._resolved_by, "xpath", ""))},
