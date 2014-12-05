@@ -91,6 +91,7 @@ logging.Logger.process = process
 
 logger = logging.getLogger(__name__)
 
+
 class NetworkFilter(logging.Filter):
     """Use this filter to add ip address of agent in log. Could be
     useful if we simultaneous use several agents.

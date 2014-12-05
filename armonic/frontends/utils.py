@@ -1,4 +1,3 @@
-import re
 import json
 import logging
 import getpass
@@ -46,8 +45,9 @@ RESET_SEQ = "\033[0m"
 COLOR_SEQ = "\033[;%dm"
 BOLD_SEQ = "\033[1;%dm"
 COLORS = {
-    'INFO': WHITE,
+    'TRACE': BLACK,
     'DEBUG': BLUE,
+    'INFO': WHITE,
     'EVENT': GREEN,
     'WARNING': YELLOW,
     'CRITICAL': MAGENTA,
