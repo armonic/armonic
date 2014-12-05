@@ -70,6 +70,21 @@ SPECIAL_REQUIRE_RETURN_NAME = "return"
 # the deployment
 STEP_DEPLOYMENT_VALUES = "deployment_values"
 
+STEPS = ["manage",
+         "lfm",
+         "specialize",
+         "multiplicity",
+         "validation",
+         "call",
+         "done"]
+
+
+def generate_pre_post_steps(step):
+    return ["pre_" + step, step, "post_" + step]
+STEPS = reduce(lambda acc, steps: acc + steps,
+               map(generate_pre_post_steps, STEPS),
+               [])
+
 
 class ValidationError(Exception):
     pass
@@ -647,14 +662,6 @@ class Provide(ArmonicProvide):
     :param require: the remote require of the requirer that leads
                     to this provide.
     """
-    STEPS = ["manage",
-             "lfm",
-             "specialize",
-             "multiplicity",
-             "validation",
-             "call",
-             "done"]
-
     # Contains all variables. This is used to find back from_xpath value.
     Variables = []
 
@@ -858,16 +865,16 @@ class Provide(ArmonicProvide):
 
     @property
     def step(self):
-        return Provide.STEPS[self._step_current]
+        return STEPS[self._step_current]
 
     def _next_step(self):
-        if self._step_current + 1 > len(Provide.STEPS) - 1:
+        if self._step_current + 1 > len(STEPS) - 1:
             raise IndexError
         self._step_current += 1
 
     def _previous_step(self):
         try:
-            if Provide.STEPS[self._step_current - 1]:
+            if STEPS[self._step_current - 1]:
                 self._step_current -= 1
         except IndexError:
             pass
@@ -1318,7 +1325,20 @@ def smart_call(root_provide, values={}):
                 continue
 
         if scope.manage:
-            if scope.step == "manage":
+
+            # post_/pre_ step handle
+            if scope.step.startswith(('post_', 'pre_')):
+                # check do_post_step or do_pre_step
+                do_step = getattr(scope, 'do_' + scope.step, None)
+                if do_step is not None and do_step() is True:
+                    data = yield(scope, scope.step, None)
+                    # run on_step
+                    on_step = getattr(scope, 'on_' + scope.step, None)
+                    if on_step is not None:
+                        on_step(data)
+                scope._next_step()
+
+            elif scope.step == "manage":
                 if scope.do_manage():
 
                     data = deployment.manage
