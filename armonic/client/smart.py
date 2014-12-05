@@ -145,6 +145,8 @@ class Variable(object):
         # Used for debugging.
         self._has_value = False
 
+        logger.debug("Created variable @%s %s" % (id(self), self.xpath))
+
     def copy(self, from_require):
         var = Variable(
             name=self.name,
@@ -174,7 +176,6 @@ class Variable(object):
         :param from_require: the require that declares this variables
         :param belongs_provide_ret: True if this variable belongs to the provide_ret variable list of the from_require
         """
-        logger.debug("Creating variable %s" % dct_json['xpath'])
         this = cls(dct_json['name'],
                    from_require=from_require,
                    xpath=dct_json['xpath'],
@@ -247,7 +248,7 @@ class Variable(object):
         v = self.value_resolved
         if self._has_value is False and v is not None:
             self._has_value = True
-            logger.debug("Variable %s gets the value %s" % (self.xpath, v))
+            logger.debug("Variable (@%s) %s gets the value %s" % ((id(self)), self.xpath, v))
         return self._apply_modifier(v)
 
     @value.setter
@@ -349,8 +350,8 @@ class Variable(object):
             for v in self.from_require.from_provide.Variables:
                 if v.xpath == self.from_xpath:
                     self._set_by = v
-                    logger.debug("Variable [%s] value comes from [%s] with value %s" % (
-                        self.xpath, v.xpath, v._value))
+                    logger.debug("Variable [%s] value comes from [%s] (@%s) with value %s" % (
+                        self.xpath, v.xpath, id(v), v._value))
                     return
             logger.info("Variable [%s] from_xpath [%s] not found" % (
                 self.xpath, self.from_xpath))
