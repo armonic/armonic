@@ -1075,29 +1075,29 @@ class Deployment(object):
     The 'mapping' section store relationship between old and new node id.
     """
 
-    # Variable are splitted into input and output because we don't try
-    # to update input file to generate the output one. We regenerate
-    # the output file each time smart is called.
-    # This simplifies the process of node_id mapping if node_id have changed.
-    _manage_input = []
-    _lfm_input = []
-    _specialize_input = []
-    _multiplicity_input = []
-    _variables_input = []
-
-    _manage_output = []
-    _lfm_output = []
-    _specialize_output = []
-    _multiplicity_output = []
-    _variables_output = []
-    # Contains variable that belongs to provide_ret require part
-    _variables_output_provide_ret = []
-    # Contains variable which type is armonic_host or armonic_hosts.
-    # They can need special translation at deployement time.
-    _variables_output_host = []
-    _mapping_output = []
-
     def __init__(self, scope, sections):
+        # Variable are splitted into input and output because we don't try
+        # to update input file to generate the output one. We regenerate
+        # the output file each time smart is called.
+        # This simplifies the process of node_id mapping if node_id have changed.
+        self._manage_input = []
+        self._lfm_input = []
+        self._specialize_input = []
+        self._multiplicity_input = []
+        self._variables_input = []
+
+        self._manage_output = []
+        self._lfm_output = []
+        self._specialize_output = []
+        self._multiplicity_output = []
+        self._variables_output = []
+        # Contains variable that belongs to provide_ret require part
+        self._variables_output_provide_ret = []
+        # Contains variable which type is armonic_host or armonic_hosts.
+        # They can need special translation at deployement time.
+        self._variables_output_host = []
+        self._mapping_output = []
+
         for section_name, section in sections.items():
             try:
                 for key, value in section:
@@ -1299,6 +1299,9 @@ class Deployment(object):
 def smart_call(root_provide, values={}):
     """Generator which 'yields' a 3-uple (provide, step,
     optionnal_args)."""
+
+    # We clear all variables used for a deployment
+    Provide.Variables = []
 
     scope = root_provide
     deployment = Deployment(scope, values)
